@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   relayer:
     image: gcr.io/abacus-labs-dev/hyperlane-agent:main
@@ -10,8 +8,10 @@ services:
       - relayer-db:/app/relayer-db
     environment:
       - CONFIG_FILES=/app/config/config.json
+      - HYP_CHAINS_CELESTIADEVNET_SIGNER_KEY=${HYP_CHAINS_CELESTIADEVNET_SIGNER_KEY}
+      - HYP_CHAINS_EDENTESTNET_SIGNER_KEY=${HYP_CHAINS_EDENTESTNET_SIGNER_KEY}
     ports:
-      - "9091:9090"
+      - "9090:9090"
     command: "/app/relayer"
     restart: unless-stopped
     dns:
