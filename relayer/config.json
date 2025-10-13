@@ -1,0 +1,114 @@
+{
+    "chains": {
+        "celestiadevnet": {
+            "bech32Prefix": "celestia",
+            "blocks": {
+                "confirmations": 1,
+                "estimateBlockTime": 6,
+                "reorgPeriod": 1
+            },
+            "canonicalAsset": "utia",
+            "chainId": "arabica-11",
+            "contractAddressBytes": 32,
+            "deployer": {
+                "name": "Abacus Works",
+                "url": "https://www.hyperlane.xyz"
+            },
+            "displayName": "Celestia Arabica Devnet",
+            "domainId": 1095909698,
+            "gasPrice": {
+                "denom": "utia",
+                "amount": "0.1"
+            },
+            "index": {
+                "from": 8489809,
+                "chunk": 10
+            },
+            "isTestnet": true,
+            "name": "celestiadevnet",
+            "nativeToken": {
+                "decimals": 6,
+                "denom": "utia",
+                "name": "Celestia",
+                "symbol": "TIA"
+            },
+            "protocol": "cosmosnative",
+            "restUrls": [
+                {
+                    "http": "https://api.celestia-arabica-11.com"
+                }
+            ],
+            "rpcUrls": [
+                {
+                    "http": "https://rpc.celestia-arabica-11.com"
+                }
+            ],
+            "signer": {
+                "type": "cosmosKey",
+                "key": "0xb3560381d25899d68939d4e5f3575954ec332ea78f24c1aab367afdc3951f79d",
+                "prefix": "celestia"
+            },
+            "mailbox": "0x68797065726c616e650000000000000000000000000000000000000000000000",
+            "merkleTreeHook": "0x726f757465725f706f73745f6469737061746368000000030000000000000001",
+            "validatorAnnounce": "0x68797065726c616e650000000000000000000000000000000000000000000000",
+            "interchainGasPaymaster": "0x726f757465725f706f73745f6469737061746368000000000000000000000000",
+            "slip44": 118,
+            "technicalStack": "other",
+            "transactionOverrides": {
+                "gasPrice": "0.0"
+            },
+            "grpcUrls": [
+                {
+                    "http": "https://grpc.celestia-arabica-11.com:443"
+                }
+            ]
+        },
+        "edentestnet": {
+            "blocks": {
+                "confirmations": 1,
+                "estimateBlockTime": 3,
+                "reorgPeriod": 0
+            },
+            "chainId": 3735928814,
+            "displayName": "Eden Testnet",
+            "domainId": 2147483647,
+            "isTestnet": true,
+            "index": {
+                "from": 5361266,
+                "chunk": 10
+            },
+            "name": "edentestnet",
+            "nativeToken": {
+                "decimals": 18,
+                "name": "Eden",
+                "symbol": "EDEN"
+            },
+            "protocol": "ethereum",
+            "rpcUrls": [
+                {
+                    "http": "https://ev-reth-eden-testnet.binarybuilders.services:8545"
+                }
+            ],
+            "signer": {
+                "type": "hexKey",
+                "key": "0xd9ce878d8be4ec701b5c4922f8d38fcd849dae879bb2daad2b2781d097ee7cd1"
+            },
+            "staticMerkleRootMultisigIsmFactory": "0x032e1B988eB5Ac8F0C8617E09de92a664cABf37D",
+            "staticMessageIdMultisigIsmFactory": "0x9246F10f27e411c04838F6b9773aaa76de51b222",
+            "staticAggregationIsmFactory": "0x6efCA431456332594EcC880e2a7A3cb16c8baBE4",
+            "staticAggregationHookFactory": "0x83B89bf59d8A762948b5bd19237FDAa2Ca3fc4C8",
+            "domainRoutingIsmFactory": "0x8ccBa74d0010B76F3E9507bb3A86cC394F96815d",
+            "staticMerkleRootWeightedMultisigIsmFactory": "0xF3818b6218dB6A2FFf438646998e96D51C44908E",
+            "staticMessageIdWeightedMultisigIsmFactory": "0x26d1928BC414ac875Ef67bDcb57dd134202bDcc6",
+            "proxyAdmin": "0xA622183EF8a9076334808838227B3AF364Cc769C",
+            "mailbox": "0xBdEfA74aCf073Fc5c8961d76d5DdA87B1Be2C1b0",
+            "interchainAccountRouter": "0xaC4e25784671BB372fbD733CC86743fb5f67ca7F",
+            "validatorAnnounce": "0x43FF9af89550E0769FEe42026D42C12178390361",
+            "testRecipient": "0x054720DB9239FB966407CaBef832A0753463E5b3",
+            "merkleTreeHook": "0x22379102569dc3fBeA23Dc34e27F52a76c60F034",
+            "interchainGasPaymaster": "0x0000000000000000000000000000000000000000"
+        }
+    },
+    "defaultRpcConsensusType": "fallback",
+    "relayChains": "edentestnet,celestiadevnet"
+}
