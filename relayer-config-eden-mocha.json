@@ -1,0 +1,92 @@
+{
+    "chains": {
+        "edentestnet": {
+            "blocks": {
+                "confirmations": 1,
+                "estimateBlockTime": 3,
+                "reorgPeriod": 0
+            },
+            "chainId": 3735928814,
+            "displayName": "Eden Testnet",
+            "domainId": 2147483647,
+            "isTestnet": true,
+            "name": "edentestnet",
+            "nativeToken": {
+                "decimals": 18,
+                "name": "Eden",
+                "symbol": "EDEN"
+            },
+            "protocol": "ethereum",
+            "rpcUrls": [
+                {
+                    "http": "https://ev-reth-eden-testnet.binarybuilders.services:8545"
+                }
+            ],
+            "signer": {
+                "type": "hexKey",
+                "key": "${EDEN_SIGNER_KEY}"
+            },
+            "mailbox": "0xBdEfA74aCf073Fc5c8961d76d5DdA87B1Be2C1b0",
+            "merkleTreeHook": "0x22379102569dc3fBeA23Dc34e27F52a76c60F034",
+            "proxyAdmin": "0xA622183EF8a9076334808838227B3AF364Cc769C",
+            "testRecipient": "0x054720DB9239FB966407CaBef832A0753463E5b3",
+            "validatorAnnounce": "0x43FF9af89550E0769FEe42026D42C12178390361"
+        },
+        "celestiatestnet": {
+            "bech32Prefix": "celestia",
+            "blocks": {
+                "confirmations": 1,
+                "estimateBlockTime": 6,
+                "reorgPeriod": 1
+            },
+            "canonicalAsset": "utia",
+            "chainId": "mocha-4",
+            "contractAddressBytes": 32,
+            "displayName": "Celestia Mocha Testnet",
+            "domainId": 1297040200,
+            "gasPrice": {
+                "denom": "utia",
+                "amount": "0.005"
+            },
+            "index": {
+                "from": 1,
+                "chunk": 10
+            },
+            "isTestnet": true,
+            "name": "celestiatestnet",
+            "nativeToken": {
+                "decimals": 6,
+                "denom": "utia",
+                "name": "TIA",
+                "symbol": "TIA"
+            },
+            "protocol": "cosmosnative",
+            "restUrls": [
+                {
+                    "http": "https://api-mocha.pops.one"
+                }
+            ],
+            "rpcUrls": [
+                {
+                    "http": "http://public-celestia-mocha4-consensus.numia.xyz:26657"
+                }
+            ],
+            "signer": {
+                "type": "cosmosKey",
+                "key": "${CELESTIA_SIGNER_KEY}",
+                "prefix": "celestia"
+            },
+            "slip44": 118,
+            "technicalStack": "other",
+            "mailbox": "0x68797065726c616e650000000000000000000000000000000000000000000000",
+            "validatorAnnounce": "0x68797065726c616e650000000000000000000000000000000000000000000000",
+            "grpcUrls": [
+                {
+                    "http": "public-celestia-mocha4-consensus.numia.xyz:9090"
+                }
+            ]
+        }
+    },
+    "defaultRpcConsensusType": "fallback",
+    "relayChains": "edentestnet,celestiatestnet"
+}

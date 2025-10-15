@@ -1,0 +1,68 @@
+# Hyperlane Relayer Agent Configuration for Eden-Mocha
+chains:
+  edentestnet:
+    name: edentestnet
+    domain: 2147483647
+    chainId: 3735928814
+    protocol: ethereum
+    rpcUrls:
+      - http: https://ev-reth-eden-testnet.binarybuilders.services:8545
+    blocks:
+      confirmations: 1
+      reorgPeriod: 0
+      estimateBlockTime: 3
+    signer:
+      type: hexKey
+      key: ${EDEN_SIGNER_KEY}
+    mailbox: "0xBdEfA74aCf073Fc5c8961d76d5DdA87B1Be2C1b0"
+    merkleTreeHook: "0x22379102569dc3fBeA23Dc34e27F52a76c60F034"
+    validatorAnnounce: "0x43FF9af89550E0769FEe42026D42C12178390361"
+    index:
+      from: 6130316
+      chunk: 10
+
+  celestiatestnet:
+    name: celestiatestnet
+    domain: 1297040200
+    chainId: mocha-4
+    protocol: cosmosnative
+    bech32Prefix: celestia
+    slip44: 118
+    rpcUrls:
+      - http: http://celestia-mocha-archive-rpc.mzonder.com:26657
+    restUrls:
+      - http: https://api-mocha.pops.one
+    grpcUrls:
+      - http: http://celestia-mocha-archive-rpc.mzonder.com:9090
+    gasPrice:
+      amount: "0.005"
+      denom: utia
+    blocks:
+      confirmations: 1
+      reorgPeriod: 1
+      estimateBlockTime: 6
+    signer:
+      type: cosmosKey
+      key: ${CELESTIA_SIGNER_KEY}
+      prefix: celestia
+    mailbox: "0x68797065726c616e650000000000000000000000000000000000000000000000"
+    merkleTreeHook: "0x726f757465725f706f73745f6469737061746368000000030000000000000000"
+    interchainGasPaymaster: "0x726f757465725f706f73745f6469737061746368000000040000000000000003"
+    validatorAnnounce: "0x68797065726c616e650000000000000000000000000000000000000000000000"
+    index:
+      from: 8417180
+      chunk: 10
+
+defaultSigner:
+  type: hexKey
+  key: ${EDEN_SIGNER_KEY}
+
+relayChains: edentestnet,celestiatestnet
+
+db: /tmp/relayer-db
+
+metrics: "0.0.0.0:9090"
+
+tracing:
+  level: info
+  fmt: json

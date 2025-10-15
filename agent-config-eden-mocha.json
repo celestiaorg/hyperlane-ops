@@ -1,0 +1,106 @@
+{
+  "chains": {
+    "edentestnet": {
+      "blocks": {
+        "confirmations": 1,
+        "estimateBlockTime": 3,
+        "reorgPeriod": 0
+      },
+      "chainId": 3735928814,
+      "displayName": "Eden Testnet",
+      "domainId": 2147483647,
+      "isTestnet": true,
+      "index": {
+        "from": 6130316,
+        "chunk": 10
+      },
+      "name": "edentestnet",
+      "nativeToken": {
+        "decimals": 18,
+        "name": "Eden",
+        "symbol": "EDEN"
+      },
+      "protocol": "ethereum",
+      "rpcUrls": [
+        {
+          "http": "https://ev-reth-eden-testnet.binarybuilders.services:8545"
+        }
+      ],
+      "signer": {
+        "type": "hexKey",
+        "key": ""
+      },
+      "mailbox": "0xBdEfA74aCf073Fc5c8961d76d5DdA87B1Be2C1b0",
+      "merkleTreeHook": "0x22379102569dc3fBeA23Dc34e27F52a76c60F034",
+      "interchainGasPaymaster": "0x0000000000000000000000000000000000000000",
+      "validatorAnnounce": "0x43FF9af89550E0769FEe42026D42C12178390361"
+    },
+    "celestiatestnet": {
+      "bech32Prefix": "celestia",
+      "blocks": {
+        "confirmations": 1,
+        "estimateBlockTime": 6,
+        "reorgPeriod": 1
+      },
+      "canonicalAsset": "utia",
+      "chainId": "mocha-4",
+      "contractAddressBytes": 32,
+      "displayName": "Celestia Mocha Testnet",
+      "domainId": 1297040200,
+      "gasPrice": {
+        "denom": "utia",
+        "amount": "0.005"
+      },
+      "isTestnet": true,
+      "name": "celestiatestnet",
+      "nativeToken": {
+        "decimals": 6,
+        "denom": "utia",
+        "name": "Celestia",
+        "symbol": "TIA"
+      },
+      "protocol": "cosmosnative",
+      "restUrls": [
+        {
+          "http": "https://api-mocha.pops.one"
+        }
+      ],
+      "rpcUrls": [
+        {
+          "http": "http://celestia-mocha-archive-rpc.mzonder.com:26657"
+        }
+      ],
+      "signer": {
+        "type": "cosmosKey",
+        "key": "",
+        "prefix": "celestia"
+      },
+      "mailbox": "0x68797065726c616e650000000000000000000000000000000000000000000000",
+      "merkleTreeHook": "0x726f757465725f706f73745f6469737061746368000000030000000000000000",
+      "validatorAnnounce": "0x68797065726c616e650000000000000000000000000000000000000000000000",
+      "interchainGasPaymaster": "0x726f757465725f706f73745f6469737061746368000000040000000000000003",
+      "slip44": 118,
+      "technicalStack": "other",
+      "grpcUrls": [
+        {
+          "http": "http://celestia-mocha-archive-rpc.mzonder.com:9090"
+        }
+      ],
+      "index": {
+        "from": 8417490,
+        "chunk": 10
+      }
+    }
+  },
+  "defaultRpcConsensusType": "fallback",
+  "defaultSigner": {
+    "type": "hexKey"
+  },
+  "relayChains": "edentestnet,celestiatestnet",
+  "db": "/tmp/relayer-db",
+  "metrics": "0.0.0.0:9090",
+  "tracing": {
+    "level": "info",
+    "fmt": "json"
+  }
+}
