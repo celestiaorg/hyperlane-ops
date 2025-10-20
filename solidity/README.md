@@ -66,3 +66,5 @@ forge script script/DeployHypNativeMinter.s.sol \
 ```
 
 Omit `--broadcast` to run a dry-run against a fork or local node.
+
+TODO: consider extending the deployment script to also call `enrollRemoteRouter(domain, addr)` with the TIA domain and collateral token address.
