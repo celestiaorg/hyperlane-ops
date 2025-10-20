@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.24;
 
-import {INativeMinter} from "./interfaces/precompile/INativeMinter.sol";
+import {INativeToken} from "./interfaces/precompile/INativeToken.sol";
 import {TokenRouter} from "@hyperlane-xyz/core/contracts/token/libs/TokenRouter.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract HypNativeMinter is TokenRouter, ReentrancyGuard {
     // solhint-disable
-    INativeMinter public immutable nativeMinter;
+    INativeToken public immutable nativeToken;
     uint256 public immutable scale;
     // solhint-enable
 
@@ -20,7 +20,7 @@ contract HypNativeMinter is TokenRouter, ReentrancyGuard {
         uint256 _scale,
         address _mailbox
     ) TokenRouter(_mailbox) {
-        nativeMinter = INativeMinter(_precompile);
+        nativeToken = INativeToken(_precompile);
         scale = _scale;
     }
     // solhint-enable no-unused-vars
@@ -55,7 +55,7 @@ contract HypNativeMinter is TokenRouter, ReentrancyGuard {
             _locked >= scaledAmount,
             "HypNativeMinter: amount exceeds locked"
         );
-        nativeMinter.burn(address(this), scaledAmount);
+        nativeToken.burn(address(this), scaledAmount);
         _locked -= scaledAmount;
         return bytes(""); // no metadata
     }
@@ -66,7 +66,7 @@ contract HypNativeMinter is TokenRouter, ReentrancyGuard {
         bytes calldata // no metadata
     ) internal virtual override nonReentrant {
         uint256 scaledAmount = _amount * scale;
-        nativeMinter.mint(address(this), scaledAmount);
+        nativeToken.mint(address(this), scaledAmount);
         _locked += scaledAmount;
         Address.sendValue(payable(_recipient), scaledAmount);
     }
