@@ -1,1 +1,5 @@
 .env
+solidity/lib/
+solidity/out/
+solidity/cache/
+solidity/broadcast/
