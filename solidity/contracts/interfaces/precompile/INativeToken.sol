@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.24;
 
-/// @notice Minimal interface for the NativeMinter precompile exposed by the host chain.
-interface INativeMinter {
+/// @notice Minimal interface for the NativeToken precompile exposed by the host chain.
+interface INativeToken {
     /// @notice Mints `amount` of native tokens into `account`.
     function mint(address account, uint256 amount) external;
 
