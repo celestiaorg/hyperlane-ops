@@ -1,0 +1,12 @@
+owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+defaultIsm:
+  type: trustedRelayerIsm
+  relayer: "0xc259e540167B7487A89b45343F4044d5951cf871"
+defaultHook:
+  type: merkleTreeHook
+requiredHook:
+  type: protocolFee
+  beneficiary: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  maxProtocolFee: "10000000000000000000000000000"
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  protocolFee: "0"

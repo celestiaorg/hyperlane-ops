@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../schema.json
+tokens:
+  - addressOrDenom: "0x8Fe2521c2DAbB53c176fFBb73C3083eC319454Ac"
+    chainName: xomarkettestnet
+    decimals: 18
+    name: XO
+    standard: EvmHypNative
+    symbol: XO
+  - addressOrDenom: "0x726f757465725f61707000000000000000000000000000020000000000000005"
+    chainName: celestiatestnet
+    decimals: 18
+    name: XO
+    standard: CwHypSynthetic
+    symbol: XO

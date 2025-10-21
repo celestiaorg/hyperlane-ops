@@ -1,1 +1,8 @@
 .env
+.secret
+deployment-*.log
+enrollment-*.log
+relayer.log
+.claude
+
+DEPLOYMENT_SUMMARY.md

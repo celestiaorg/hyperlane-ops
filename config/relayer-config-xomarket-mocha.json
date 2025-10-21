@@ -1,0 +1,99 @@
+{
+    "chains": {
+        "xomarkettestnet": {
+            "blocks": {
+                "confirmations": 1,
+                "estimateBlockTime": 12,
+                "reorgPeriod": 1
+            },
+            "chainId": 1000101,
+            "displayName": "XO Market Testnet",
+            "domainId": 1000101,
+            "index": {
+                "from": 158500,
+                "chunk": 100
+            },
+            "isTestnet": true,
+            "name": "xomarkettestnet",
+            "nativeToken": {
+                "decimals": 18,
+                "name": "XO",
+                "symbol": "XO"
+            },
+            "protocol": "ethereum",
+            "rpcUrls": [
+                {
+                    "http": "https://testnet-rpc-1.xo.market"
+                }
+            ],
+            "signer": null,
+            "mailbox": "0x8ED282d598296A4FCb460CBe6115446c0Dc3FD3E",
+            "merkleTreeHook": "0xb58a0742AA0986eC81D28356E07612Cf23bA95b9",
+            "proxyAdmin": "0x17Dc7Ff9592dCd3049B53B3558039EaCa56eFe2d",
+            "validatorAnnounce": "0xa542A7DD8BAE55f35614224eCF9E287c73656F00",
+            "interchainAccountRouter": "0x8218355F8F8d0057233dDc01DFD9E1Cb20b422A6",
+            "interchainGasPaymaster": "0x0000000000000000000000000000000000000000"
+        },
+        "celestiatestnet": {
+            "bech32Prefix": "celestia",
+            "blocks": {
+                "confirmations": 1,
+                "estimateBlockTime": 12,
+                "reorgPeriod": 1
+            },
+            "canonicalAsset": "utia",
+            "chainId": "mocha-4",
+            "contractAddressBytes": 32,
+            "displayName": "Celestia Mocha Testnet",
+            "domainId": 1297040200,
+            "gasPrice": {
+                "denom": "utia",
+                "amount": "0.005"
+            },
+            "index": {
+                "from": 8508130,
+                "chunk": 10
+            },
+            "isTestnet": true,
+            "name": "celestiatestnet",
+            "nativeToken": {
+                "decimals": 6,
+                "denom": "utia",
+                "name": "TIA",
+                "symbol": "TIA"
+            },
+            "protocol": "cosmosnative",
+            "restUrls": [
+                {
+                    "http": "https://api.celestia-mocha.com"
+                }
+            ],
+            "rpcUrls": [
+                {
+                    "http": "http://celestia-mocha-archive-rpc.mzonder.com:26657"
+                }
+            ],
+            "signer": {
+                "type": "cosmosKey",
+                "prefix": "celestia"
+            },
+            "slip44": 118,
+            "technicalStack": "other",
+            "mailbox": "0x68797065726c616e650000000000000000000000000000000000000000000003",
+            "merkleTreeHook": "0x726f757465725f706f73745f6469737061746368000000030000000000000005",
+            "validatorAnnounce": "0x68797065726c616e650000000000000000000000000000000000000000000003",
+            "interchainGasPaymaster": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "grpcUrls": [
+                {
+                    "http": "http://public-celestia-mocha4-consensus.numia.xyz:9090"
+                }
+            ]
+        }
+    },
+    "defaultRpcConsensusType": "fallback",
+    "relayChains": "xomarkettestnet,celestiatestnet",
+    "db": "/tmp/hyperlane-relayer-db",
+    "metrics": {
+        "port": 9090
+    }
+}

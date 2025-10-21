@@ -1,0 +1,13 @@
+# Warp route for XO token: XO Market (native) -> Celestia (synthetic)
+celestiatestnet:
+  type: synthetic
+  owner: "celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j"
+  mailbox: "0x68797065726c616e650000000000000000000000000000000000000000000003"
+  name: "XO"
+  symbol: "XO"
+  decimals: 18
+
+xomarkettestnet:
+  type: native
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  mailbox: "0x8ED282d598296A4FCb460CBe6115446c0Dc3FD3E"
