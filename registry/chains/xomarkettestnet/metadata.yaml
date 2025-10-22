@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=../schema.json
+chainId: 1000101
+displayName: XO Market Testnet
+domainId: 1000101
+isTestnet: true
+name: xomarkettestnet
+nativeToken:
+  decimals: 18
+  name: XO
+  symbol: XO
+protocol: ethereum
+rpcUrls:
+  - http: https://testnet-rpc-1.xo.market
+technicalStack: other
+blocks:
+  confirmations: 1
+  estimateBlockTime: 12
+  reorgPeriod: 1

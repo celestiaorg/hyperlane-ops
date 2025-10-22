@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../schema.json
+tokens:
+  - addressOrDenom: "0x1d853F9d19c1F93B32149e99bD0c3A45E681CBc3"
+    chainName: xomarkettestnet
+    decimals: 6
+    name: TIA
+    standard: EvmHypSynthetic
+    symbol: TIA

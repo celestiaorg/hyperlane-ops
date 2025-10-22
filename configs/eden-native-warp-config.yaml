@@ -1,0 +1,15 @@
+edentestnet:
+  type: native
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  mailbox: "0xBdEfA74aCf073Fc5c8961d76d5DdA87B1Be2C1b0"
+  name: "EDEN"
+  symbol: "EDEN"
+  decimals: 18
+
+celestiatestnet:
+  type: synthetic
+  owner: celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j
+  mailbox: "0x68797065726c616e650000000000000000000000000000000000000000000003"
+  name: "EDEN"
+  symbol: "EDEN"
+  decimals: 18
