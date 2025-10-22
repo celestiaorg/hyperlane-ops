@@ -39,6 +39,44 @@ This document tracks successful bridge transfers between Eden Testnet and Celest
 
 ## Transfer History
 
+### TIA Token Transfers
+
+#### Transfer #1: Celestia → Eden
+- **Date:** October 22, 2025
+- **Transaction Hash (Eden):** `0x61f8eec449a32d34f0a07a2b465efff2f2960a92d74935400acccc8d6f2f29a1`
+- **Block Number:** `7453328`
+- **Amount:** `1.0 TIA` (1000000 utia)
+- **To (Eden):** `0xc259e540167B7487A89b45343F4044d5951cf871`
+- **Status:** ✅ Success
+- **Type:** Mint (synthetic TIA on Eden)
+
+#### Transfer #2: Celestia → Eden
+- **Date:** October 22, 2025
+- **Transaction Hash (Eden):** `0x4fd1366ca93e8e5dd6520e4c4afa8209fdd1d988e0f53984b07ebdaf56b635f7`
+- **Block Number:** `7453330`
+- **Amount:** `0.5 TIA` (500000 utia)
+- **To (Eden):** `0xc259e540167B7487A89b45343F4044d5951cf871`
+- **Status:** ✅ Success
+- **Type:** Mint (synthetic TIA on Eden)
+
+#### Transfer #3: Celestia → Eden
+- **Date:** October 22, 2025
+- **Transaction Hash (Eden):** `0x02a54e8694457232551ac2c56619ebc45bc73f93a331efe866c203a7ffd049cb`
+- **Block Number:** `7453340`
+- **Amount:** `0.1 TIA` (100000 utia)
+- **To (Eden):** `0xc259e540167B7487A89b45343F4044d5951cf871`
+- **Status:** ✅ Success
+- **Type:** Mint (synthetic TIA on Eden)
+
+#### Transfer #4: Eden → Celestia
+- **Date:** October 22, 2025
+- **Transaction Hash (Eden):** `0x53279c8ab2f44960b66d537fa830ed4afcc33726b9617090bd01f0c2f9df14c5`
+- **Block Number:** `7453517`
+- **Amount:** `0.1 TIA` (100000 utia)
+- **From (Eden):** `0xc259e540167B7487A89b45343F4044d5951cf871`
+- **Status:** ✅ Success
+- **Type:** Burn (synthetic TIA on Eden, unlock on Celestia)
+
 ### EDEN Token Transfers
 
 #### Transfer #1: Eden → Celestia
@@ -128,9 +166,10 @@ This document tracks successful bridge transfers between Eden Testnet and Celest
 - **Gas Costs (Deployment):** 0.004483851031386957 EDEN (Eden side), 0.000000000000000381 TIA (Celestia side)
 
 ### TIA Bridge
-- **Total Transfers:** 0 (documented)
-- **Total Volume (Eden → Celestia):** 0 TIA
-- **Total Volume (Celestia → Eden):** 0 TIA
+- **Total Transfers:** 4
+- **Total Volume (Celestia → Eden):** 1.6 TIA
+- **Total Volume (Eden → Celestia):** 0.1 TIA
+- **Net Balance on Eden:** 1.5 TIA
 - **Gas Costs (Deployment):** 0.00464236003249652 ETH (Eden side)
 
 ---
