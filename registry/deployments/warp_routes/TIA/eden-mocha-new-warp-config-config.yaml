@@ -6,3 +6,13 @@ tokens:
     name: TIA
     standard: EvmHypSynthetic
     symbol: TIA
+    connections:
+      - token: "celestiatestnet|celestiatestnet|0x726f757465725f61707000000000000000000000000000010000000000000006"
+  - addressOrDenom: "0x726f757465725f61707000000000000000000000000000010000000000000006"
+    chainName: celestiatestnet
+    decimals: 6
+    name: TIA
+    standard: CwHypCollateral
+    symbol: TIA
+    connections:
+      - token: "edentestnet|edentestnet|0xcC79A8081D8cFd3da61dE7a25Bc06CCe00BbDa54"

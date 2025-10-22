@@ -5,3 +5,10 @@ edentestnet:
   name: "TIA"
   symbol: "TIA"
   decimals: 6
+
+celestiatestnet:
+  type: collateral
+  owner: celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j
+  mailbox: "0x68797065726c616e650000000000000000000000000000000000000000000003"
+  token: "0x726f757465725f61707000000000000000000000000000010000000000000006"
+  denom: "utia"
