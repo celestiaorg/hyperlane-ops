@@ -1,0 +1,7 @@
+edentestnet:
+  type: synthetic
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  mailbox: "0xBdEfA74aCf073Fc5c8961d76d5DdA87B1Be2C1b0"
+  name: "TIA"
+  symbol: "TIA"
+  decimals: 6

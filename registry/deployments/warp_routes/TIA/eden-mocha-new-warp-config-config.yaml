@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../schema.json
+tokens:
+  - addressOrDenom: "0xcC79A8081D8cFd3da61dE7a25Bc06CCe00BbDa54"
+    chainName: edentestnet
+    decimals: 6
+    name: TIA
+    standard: EvmHypSynthetic
+    symbol: TIA
