@@ -50,11 +50,14 @@ forge clean
 This removes `out/` and `cache/`.
 
 ## Deploy HypNativeMinter
+A forge deployment script is included to deploy the `HypNativeMinter` contract. 
+The script assumes that the `$PRIVATE_KEY` used for deployment is also the `mintAdmin` of the Evolve precompile.
+
 Configure the deployment parameters via environment variables:
 
-- `NATIVE_MINTER_PRECOMPILE` (optional, defaults to `0x000000000000000000000000000000000000F100`)
-- `HYP_NATIVE_SCALE`
 - `MAILBOX_ADDRESS`
+- `NATIVE_MINTER_PRECOMPILE` (optional, defaults to `0x000000000000000000000000000000000000F100`)
+- `HYP_NATIVE_SCALE` (optional, defaults to `1e12`)
 
 Then run the deployment script (replace `RPC_URL` and `PRIVATE_KEY` as needed):
 
@@ -67,4 +70,10 @@ forge script script/DeployHypNativeMinter.s.sol \
 
 Omit `--broadcast` to run a dry-run against a fork or local node.
 
-TODO: consider extending the deployment script to also call `enrollRemoteRouter(domain, addr)` with the TIA domain and collateral token address.
+Once the `HypNativeMinter` is deployed, add it to the allow list of the native minter precompile.
+
+```bash
+cast send --rpc-url http://localhost:8545 --private-key $ADMIN_KEY \
+  0x000000000000000000000000000000000000F100 \
+  "addToAllowList(address)" 0x...deadbeef
+```
