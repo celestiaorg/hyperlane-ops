@@ -11,8 +11,8 @@ deployer:
   name: Abacus Works
   url: https://www.hyperlane.xyz
 displayName: Celestia Mocha Testnet
-# Generated from: console.log(parseInt('0x'+Buffer.from('MOCH').toString('hex')) % 4_294_967_295)
-domainId: 1297530692
+# Celestia Mocha-4 testnet domain ID (from Hyperlane registry)
+domainId: 1297040200
 gasPrice:
   amount: "0.1"
   denom: utia
