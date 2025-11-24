@@ -1,0 +1,15 @@
+edentestnet:
+  interchainSecurityModule:
+    type: testIsm
+  isNft: false
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  type: native
+
+celestiadevnet:
+  interchainSecurityModule:
+    type: testIsm
+    address: 0x726f757465725f69736d00000000000000000000000000000000000000000000
+  type: synthetic
+  owner: celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j
+  isNft: false
+  symbol: edenETH

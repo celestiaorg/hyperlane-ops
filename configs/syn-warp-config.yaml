@@ -1,0 +1,36 @@
+celestiadevnet:
+  destinationGas:
+    "2147483647": "44000"
+  interchainSecurityModule:
+    address: "0x726f757465725f69736d00000000000000000000000000000000000000000004"
+    type: testIsm
+  mailbox: "0x68797065726c616e650000000000000000000000000000000000000000000000"
+  owner: celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j
+  remoteRouters:
+    "2147483647":
+      address: "0x000000000000000000000000eb5932f56d1045e339fc04e6b37a459b053b65bf"
+  token: "0x726f757465725f61707000000000000000000000000000020000000000000004"
+  type: synthetic
+edentestnet:
+  allowedRebalancers: []
+  allowedRebalancingBridges: {}
+  contractVersion: 9.0.10
+  decimals: 18
+  destinationGas:
+    "1095909698": "64000"
+  hook: "0x0000000000000000000000000000000000000000"
+  interchainSecurityModule:
+    address: "0x8DBE812170956cB1161a4294c0a664535cEc4F9a"
+    type: testIsm
+  isNft: false
+  mailbox: "0xBdEfA74aCf073Fc5c8961d76d5DdA87B1Be2C1b0"
+  name: Ether
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  proxyAdmin:
+    address: "0xe356cE344df666B4573CC415e245b2E9147D998F"
+    owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  remoteRouters:
+    "1095909698":
+      address: "0x726f757465725f61707000000000000000000000000000020000000000000004"
+  symbol: ETH
+  type: native

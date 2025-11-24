@@ -21,7 +21,7 @@
                 "amount": "0.1"
             },
             "index": {
-                "from": 8489809,
+                "from": 8511023,
                 "chunk": 10
             },
             "isTestnet": true,
@@ -73,15 +73,11 @@
             "displayName": "Eden Testnet",
             "domainId": 2147483647,
             "isTestnet": true,
-            "index": {
-                "from": 5361266,
-                "chunk": 10
-            },
             "name": "edentestnet",
             "nativeToken": {
                 "decimals": 18,
-                "name": "Eden",
-                "symbol": "EDEN"
+                "name": "EdenEthereum",
+                "symbol": "ETH"
             },
             "protocol": "ethereum",
             "rpcUrls": [
