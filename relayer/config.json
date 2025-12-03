@@ -1,6 +1,6 @@
 {
     "chains": {
-        "celestiadevnet": {
+        "celestiamocha": {
             "bech32Prefix": "celestia",
             "blocks": {
                 "confirmations": 1,
@@ -8,24 +8,20 @@
                 "reorgPeriod": 1
             },
             "canonicalAsset": "utia",
-            "chainId": "arabica-11",
+            "chainId": "mocha-4",
             "contractAddressBytes": 32,
-            "deployer": {
-                "name": "Abacus Works",
-                "url": "https://www.hyperlane.xyz"
-            },
-            "displayName": "Celestia Arabica Devnet",
-            "domainId": 1095909698,
+            "displayName": "Celestia Mocha",
+            "domainId": 1297040200,
             "gasPrice": {
                 "denom": "utia",
                 "amount": "0.1"
             },
             "index": {
-                "from": 8489809,
+                "from": 9056480,
                 "chunk": 10
             },
             "isTestnet": true,
-            "name": "celestiadevnet",
+            "name": "celestiamocha",
             "nativeToken": {
                 "decimals": 6,
                 "denom": "utia",
@@ -35,12 +31,12 @@
             "protocol": "cosmosnative",
             "restUrls": [
                 {
-                    "http": "https://api.celestia-arabica-11.com"
+                    "http": "https://api-1.testnet.celestia.nodes.guru"
                 }
             ],
             "rpcUrls": [
                 {
-                    "http": "https://rpc.celestia-arabica-11.com"
+                    "http": "https://rpc-1.testnet.celestia.nodes.guru"
                 }
             ],
             "signer": {
@@ -49,9 +45,9 @@
                 "prefix": "celestia"
             },
             "mailbox": "0x68797065726c616e650000000000000000000000000000000000000000000000",
-            "merkleTreeHook": "0x726f757465725f706f73745f6469737061746368000000030000000000000001",
+            "merkleTreeHook": "0x726f757465725f706f73745f6469737061746368000000030000000000000000",
             "validatorAnnounce": "0x68797065726c616e650000000000000000000000000000000000000000000000",
-            "interchainGasPaymaster": "0x726f757465725f706f73745f6469737061746368000000000000000000000000",
+            "interchainGasPaymaster": "0x726f757465725f706f73745f6469737061746368000000040000000000000003",
             "slip44": 118,
             "technicalStack": "other",
             "transactionOverrides": {
@@ -59,7 +55,13 @@
             },
             "grpcUrls": [
                 {
-                    "http": "https://grpc.celestia-arabica-11.com:443"
+                    "http": "http://grpc-1.testnet.celestia.nodes.guru:10790"
+                },
+                {
+                    "http": "http://grpc-mocha.pops.one"
+                },
+                {
+                    "http": "http://public-celestia-mocha4-consensus.numia.xyz:9090"
                 }
             ]
         },
@@ -74,8 +76,8 @@
             "domainId": 2147483647,
             "isTestnet": true,
             "index": {
-                "from": 5361266,
-                "chunk": 10
+                "from": 17205255,
+                "chunk": 10000
             },
             "name": "edentestnet",
             "nativeToken": {
@@ -110,5 +112,5 @@
         }
     },
     "defaultRpcConsensusType": "fallback",
-    "relayChains": "edentestnet,celestiadevnet"
+    "relayChains": "edentestnet,celestiamocha"
 }
