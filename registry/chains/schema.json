@@ -200,6 +200,10 @@
                     "type": "string",
                     "description": "The URL of the gnosis safe transaction service."
                 },
+                "gnosisSafeApiKey": {
+                    "type": "string",
+                    "description": "The API key for the gnosis safe transaction service."
+                },
                 "grpcUrls": {
                     "type": "array",
                     "items": {
@@ -329,7 +333,8 @@
                         "cosmos",
                         "cosmosnative",
                         "starknet",
-                        "radix"
+                        "radix",
+                        "aleo"
                     ],
                     "description": "The type of protocol used by this chain. See ProtocolType for valid values."
                 },

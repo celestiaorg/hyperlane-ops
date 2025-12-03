@@ -10,10 +10,6 @@
             "canonicalAsset": "utia",
             "chainId": "mocha-4",
             "contractAddressBytes": 32,
-            "deployer": {
-                "name": "Abacus Works",
-                "url": "https://www.hyperlane.xyz"
-            },
             "displayName": "Celestia Mocha",
             "domainId": 1297040200,
             "gasPrice": {
@@ -45,13 +41,13 @@
             ],
             "signer": {
                 "type": "cosmosKey",
-                "key": "0x7a245145223afefd658c037eb9d5b908dc8c2c5436e05f8710110af5d03be068",
+                "key": "",
                 "prefix": "celestia"
             },
-            "mailbox": "0x68797065726c616e650000000000000000000000000000000000000000000003",
-            "merkleTreeHook": "0x726f757465725f706f73745f6469737061746368000000030000000000000005",
+            "mailbox": "0x68797065726c616e650000000000000000000000000000000000000000000000",
+            "merkleTreeHook": "0x726f757465725f706f73745f6469737061746368000000030000000000000000",
             "validatorAnnounce": "0x68797065726c616e650000000000000000000000000000000000000000000000",
-            "interchainGasPaymaster": "0x726f757465725f706f73745f6469737061746368000000000000000000000000",
+            "interchainGasPaymaster": "0x726f757465725f706f73745f6469737061746368000000040000000000000003",
             "slip44": 118,
             "technicalStack": "other",
             "transactionOverrides": {
@@ -97,7 +93,7 @@
             ],
             "signer": {
                 "type": "hexKey",
-                "key": "0xd9ce878d8be4ec701b5c4922f8d38fcd849dae879bb2daad2b2781d097ee7cd1"
+                "key": ""
             },
             "staticMerkleRootMultisigIsmFactory": "0x032e1B988eB5Ac8F0C8617E09de92a664cABf37D",
             "staticMessageIdMultisigIsmFactory": "0x9246F10f27e411c04838F6b9773aaa76de51b222",

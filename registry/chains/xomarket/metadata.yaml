@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=../schema.json
+# TODO: This file needs to be updated to correctly reflect XO market.
+# i.e. rpc urls, chain id etc.. this was added in order to pull the core config from celestia mocha
+# Errors were being hit for unknown domain when the hyperlane CLI attempted to parse the IGP and RoutingIsm domains
+#
+# hyperlane core read --chain celestiamocha --config mocha-core.yaml --registry ./registry/
+# Hyperlane CLI
+# Hyperlane Core Read
+# ___________________
+# Unknown domain ID 84532, skipping domain configuration
+# Unknown domain ID 1196573006, skipping domain configuration
+# Unknown domain ID 1000101, skipping domain configuration
+# ❌ Failed to read core config for mailbox 0x68797065726c616e650000000000000000000000000000000000000000000000 on celestiamocha: Error: No chain metadata set for 1000101
+chainId: 3735928814
+displayName: XO Market
+domainId: 1000101
+isTestnet: true
+name: xomarket
+nativeToken:
+  decimals: 18
+  name: Ether
+  symbol: ETH
+protocol: ethereum
+rpcUrls:
+  - http: https://ev-reth-eden-testnet.binarybuilders.services:8545
+technicalStack: other
