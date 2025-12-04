@@ -9,7 +9,7 @@ TODO: Fill out prereqs for installing
 - Docker (link)
 - Hyperlane CLI (link)
 
-## Celestia Mocha Mailbox Config
+## Celestia Mocha Core Deployment
 
 See the local hyperlane registry in this repository for the `addresses.yaml` configuration file.
 
