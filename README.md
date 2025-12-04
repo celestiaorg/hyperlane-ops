@@ -9,9 +9,16 @@ TODO: Fill out prereqs for installing
 - Docker (link)
 - Hyperlane CLI (link)
 
+## Repository Structure
+
+Notes on repository structure...
+
 ## Celestia Mocha Core Deployment
 
-See the local hyperlane registry in this repository for the `addresses.yaml` configuration file.
+The following configuration file specifies the canonical addresses for the Celestia Mocha Hyperlane core deployment.
+A core deployment is composed of a `Mailbox`, configured with post-dispatch hooks for outbound message processing and an `InterchainSecurityModule (ISM)` for inbound message processing.
+
+See the [Hyperlane registry](./registry/) in this repository for the `addresses.yaml` configuration file.
 
 ```yaml
 interchainGasPaymaster: "0x726f757465725f706f73745f6469737061746368000000040000000000000003"
@@ -20,8 +27,6 @@ mailbox: "0x68797065726c616e650000000000000000000000000000000000000000000000"
 merkleTreeHook: "0x726f757465725f706f73745f6469737061746368000000030000000000000000"
 ```
 
-The above configuration file specifies the canonical addresses for the Celestia Mocha Hyperlane core deployment.
-This is composed of a `Mailbox` configured with post-disptach hooks for outbound message processing and an `InterchainSecurityModule (ISM)` for inbound message processing.
 
 ### Onboarding new connections
 
@@ -48,6 +53,7 @@ celestia-appd tx hyperlane ism set-routing-ism-domain 0x726f757465725f69736d0000
 
 ## Commands
 
+TODO: This section will likely be removed but for now is used for dumping useful commands.
 Currently a section to dump commands used to build up this repository.
 
 Reading a core config from Eden.
