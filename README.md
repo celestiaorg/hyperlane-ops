@@ -4,14 +4,15 @@ A repository that hosts Hyperlane deployment configurations and documentation fo
 
 ## Prerequisites
 
-TODO: Fill out prereqs for installing
-
-- Docker (link)
-- Hyperlane CLI (link)
+- Install [Docker](https://www.docker.com/get-started/) for running the Relayer [docker-compose.yml](./docker-compose.yml).
+- Install the official [Hyperlane CLI ](https://docs.hyperlane.xyz/docs/reference/developer-tools/cli).
+- Install the [`celestia-appd`](https://github.com/celestiaorg/celestia-app) CLI binary.
 
 ## Repository Structure
 
-Notes on repository structure...
+- `registry/` holds the local Hyperlane registry with chain configs and canonical addresses used by CLI commands.
+- `configs/` contains deployment YAMLs for core and warp routes.
+- `solidity/` contains contracts used for native asset minting via Hyperlane.
 
 ## Celestia Mocha Core Deployment
 
@@ -27,7 +28,6 @@ mailbox: "0x68797065726c616e650000000000000000000000000000000000000000000000"
 merkleTreeHook: "0x726f757465725f706f73745f6469737061746368000000030000000000000000"
 ```
 
-
 ### Onboarding new connections
 
 In order to create a new connnection (which is a prerequisite to Warp route deployment) the Hyperlane core deployment must be updated to support the remote chain's domain identifer. This is a two-step process:
@@ -38,9 +38,8 @@ In order to create a new connnection (which is a prerequisite to Warp route depl
 
 Note that this is a requirement for _sending_ messages to a remote (counterparty) chain.
 
-TODO: Update this...
 ```bash
-celestia-appd tx hyperlane hooks igp set-destination-gas-config [igp-id] [remote-domain] [token-exchange-rate] [gas-price] [gas-overhead] [flags]
+celestia-appd tx hyperlane hooks igp set-destination-gas-config [igp-id] [remote-domain] [token-exchange-rate] [gas-price] [gas-overhead] --from owner --fees 800utia
 ```
 
 #### Adding a new domain ism to the `RoutingISM`
@@ -48,7 +47,7 @@ celestia-appd tx hyperlane hooks igp set-destination-gas-config [igp-id] [remote
 Note that this is a requirement for _receiving_ messages from a remote (counterparty) chain.
 
 ```bash
-celestia-appd tx hyperlane ism set-routing-ism-domain 0x726f757465725f69736d00000000000000000000000000010000000000000000 [domain] [ism-id] --from owner-key --fees 800utia
+celestia-appd tx hyperlane ism set-routing-ism-domain [routing-ism-id] [domain] [ism-id] --from owner --fees 800utia
 ```
 
 ## Commands
@@ -70,4 +69,3 @@ Reading a warp config from Celestia.
 ```bash
 hyperlane warp read --registry ./registry --config mocha-warp.yaml --chain celestiamocha --address 0x726f757465725f61707000000000000000000000000000010000000000000006
 ```
-
