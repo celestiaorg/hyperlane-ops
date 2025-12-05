@@ -1,10 +1,10 @@
 # Testnet Deployments
 
+The following document contains testnet deployments for the Eden testnet. All assets are bridged via Celestia mocha testnet.
+
 ## Warp Routes
 
 It is important to familiarize yourself with the following [Warp Architecture](https://github.com/hyperlane-xyz/hyperlane-monorepo/tree/main/solidity/contracts/token#warp-route-architecture) document.
-
-In particular, the various token types used in the tables below. 
 
 `Native` - for warping native assets (e.g. ETH) from the canonical chain
 `Collateral` - for warping tokens, ERC20 or ERC721, from the canonical chain
@@ -16,7 +16,7 @@ Note, that in Hyperlane `cosmosnative` chains, only the `Collateral` and `Synthe
 
 TODO: This route needs to be deployed as soon as the upgrade is live.
 
-The native `utia` asset is deployed with a custom `TokenRouter` implementation. The `HypNativeMinter` contract is used in order to facilitate native `utia` collateral as the canonical chain asset on Eden. This contract is integrated directly with a custom precompile used for native asset minting which by default in EVM environments is counted in units of `wei` (18 decimals).
+> The `utia` asset is deployed with a custom `TokenRouter` implementation. The `HypNativeMinter` contract is used in order to facilitate native `utia` collateral as the canonical chain asset on Eden. This contract is integrated directly with a custom precompile used for native asset minting which by default in EVM environments is counted in units of `wei` (18 decimals).
 
 | Token Type | TokenID/Address                                                    | Chain (Domain)              | 
 | ---------- | ------------------------------------------------------------------ | --------------------------- |
