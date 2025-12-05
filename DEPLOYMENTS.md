@@ -25,8 +25,8 @@ TODO: This route needs to be deployed as soon as the upgrade is live.
 
 ### Noble USDC
 
-| Token Type | TokenID/Address                                                    | Chain (Domain)              | 
-| ---------- | ------------------------------------------------------------------ | --------------------------- |
-| Collateral | 0x726f757465725f61707000000000000000000000000000010000000000000008 | Noble Testnet (1196573006)  |
-| Synthetic  | 0x726f757465725f61707000000000000000000000000000020000000000000015 | Celestia Mocha (1297040200) |
-| Synthetic  | 0xe1141469cff3db185a0e1b9ebd1d31bb22a623ea                         | Eden Testnet (1297040200)   |
+| Token Type | TokenID/Address                                                      | Chain (Domain)                | 
+| ---------- | -------------------------------------------------------------------- | ----------------------------- |
+| Collateral | `0x726f757465725f61707000000000000000000000000000010000000000000008` | Noble Testnet (`1196573006`)  |
+| Synthetic  | `0x726f757465725f61707000000000000000000000000000020000000000000015` | Celestia Mocha (`1297040200`) |
+| Synthetic  | `0xe1141469cff3db185a0e1b9ebd1d31bb22a623ea`                         | Eden Testnet (`1297040200`)   |
