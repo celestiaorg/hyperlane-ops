@@ -11,16 +11,20 @@
 # Unknown domain ID 1196573006, skipping domain configuration
 # Unknown domain ID 1000101, skipping domain configuration
 # ❌ Failed to read core config for mailbox 0x68797065726c616e650000000000000000000000000000000000000000000000 on celestiamocha: Error: No chain metadata set for 1000101
-chainId: 3735928814
-displayName: XO Market
+chainId: 1000101
+displayName: XO Market Testnet
 domainId: 1000101
 isTestnet: true
-name: xomarket
+name: xomarkettestnet
 nativeToken:
   decimals: 18
-  name: Ether
-  symbol: ETH
+  name: XO
+  symbol: XO
 protocol: ethereum
 rpcUrls:
-  - http: https://ev-reth-eden-testnet.binarybuilders.services:8545
+  - http: https://testnet-rpc-1.xo.market
 technicalStack: other
+blocks:
+  confirmations: 1
+  estimateBlockTime: 12
+  reorgPeriod: 1
