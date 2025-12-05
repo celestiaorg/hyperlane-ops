@@ -1,0 +1,20 @@
+edentestnet:
+  contractVersion: 10.0.1
+  decimals: 6
+  destinationGas:
+    "1297040200": "64000"
+  hook: "0x0000000000000000000000000000000000000000"
+  interchainSecurityModule: "0x0000000000000000000000000000000000000000"
+  isNft: false
+  mailbox: "0xBdEfA74aCf073Fc5c8961d76d5DdA87B1Be2C1b0"
+  name: USDC
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  proxyAdmin:
+    address: "0x95b9C18AA8d820A88e655dC2220dFa25b3490a2e"
+    owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  remoteRouters:
+    "1297040200":
+      address: "0x726f757465725f61707000000000000000000000000000020000000000000015"
+  symbol: USDC
+  type: synthetic
+
