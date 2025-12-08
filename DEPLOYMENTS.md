@@ -30,3 +30,12 @@ TODO: This route needs to be deployed as soon as the upgrade is live.
 | Collateral | `0x726f757465725f61707000000000000000000000000000010000000000000008` | Noble Testnet (`1196573006`)  |
 | Synthetic  | `0x726f757465725f61707000000000000000000000000000020000000000000015` | Celestia Mocha (`1297040200`) |
 | Synthetic  | `0xe1141469cff3db185a0e1b9ebd1d31bb22a623ea`                         | Eden Testnet (`1297040200`)   |
+
+### Sepolia ETH
+
+| Token Type | TokenID/Address                                                      | Chain (Domain)                | 
+| ---------- | -------------------------------------------------------------------- | ----------------------------- |
+| Native     | `0xEEea7Edeb303A1D20F3742edfC66F188f805a28E`                         | Sepolia Testnet (`11155111`)  |
+| Synthetic  | `0x726f757465725f6170700000000000000000000000000002000000000000001d` | Celestia Mocha (`1297040200`) |
+| Synthetic  | TODO:``                         | Eden Testnet (`1297040200`)   |
+

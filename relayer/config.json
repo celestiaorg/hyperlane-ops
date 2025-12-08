@@ -111,6 +111,69 @@
             "interchainGasPaymaster": "0x0000000000000000000000000000000000000000"
         }
     },
+    "sepolia": {
+        "blockExplorers": [
+            {
+                "apiKey": "CYUPN3Q66JIMRGQWYUDXJKQH4SX8YIYZMW",
+                "apiUrl": "https://api-sepolia.etherscan.io/api",
+                "family": "etherscan",
+                "name": "Etherscan",
+                "url": "https://sepolia.etherscan.io"
+            }
+        ],
+        "blocks": {
+            "confirmations": 1,
+            "estimateBlockTime": 13,
+            "reorgPeriod": 2
+        },
+        "chainId": 11155111,
+        "displayName": "Sepolia",
+        "domainId": 11155111,
+        "isTestnet": true,
+        "index": {
+            "from": 9796008,
+            "chunk": 1000
+        },
+        "name": "sepolia",
+        "nativeToken": {
+            "decimals": 18,
+            "name": "Ether",
+            "symbol": "ETH"
+        },
+        "protocol": "ethereum",
+        "rpcUrls": [
+            {
+                "http": "https://gateway.tenderly.co/public/sepolia"
+            },
+            {
+                "http": "https://ethereum-sepolia.publicnode.com"
+            },
+            {
+                "http": "https://sepolia.drpc.org"
+            },
+            {
+                "http": "https://1rpc.io/sepolia"
+            }
+        ],
+        "signer": {
+            "type": "hexKey",
+            "key": ""
+        },
+        "staticMerkleRootMultisigIsmFactory": "0xF59dfF072AE330794e2E00d2B9869C8a93d2B500",
+        "staticMessageIdMultisigIsmFactory": "0x5dfCBEE965850899e3c51bc51Dadf0080090F9Fc",
+        "staticAggregationIsmFactory": "0x02C885FFb8b59992D35Ae88b9Cb897d3e61c471e",
+        "staticAggregationHookFactory": "0xa73728f00687559AD38ACd58573EC4B1f9d78a78",
+        "domainRoutingIsmFactory": "0x7B8Fb7632D2D35454335CBCaaC1EA4aB289Ba74B",
+        "staticMerkleRootWeightedMultisigIsmFactory": "0x17Dc7Ff9592dCd3049B53B3558039EaCa56eFe2d",
+        "staticMessageIdWeightedMultisigIsmFactory": "0x1Dd32fFD9C0D5D7C117Cc05034400F69981fDD8b",
+        "proxyAdmin": "0x8ED282d598296A4FCb460CBe6115446c0Dc3FD3E",
+        "mailbox": "0xb58a0742AA0986eC81D28356E07612Cf23bA95b9",
+        "interchainAccountRouter": "0x5AbCd6D85dFAb4E2B77acDA579C9C63DbAE9523e",
+        "validatorAnnounce": "0x0873408a4A16f53A8C2D31d5D3961F9402cB7C15",
+        "testRecipient": "0x8fa8A3c658C6dfaf276DFc9b26b4E9A3B527FBa8",
+        "merkleTreeHook": "0x8218355F8F8d0057233dDc01DFD9E1Cb20b422A6",
+        "interchainGasPaymaster": "0x0000000000000000000000000000000000000000"
+    },
     "defaultRpcConsensusType": "fallback",
-    "relayChains": "edentestnet,celestiamocha"
+    "relayChains": "edentestnet,celestiamocha,sepolia"
 }
