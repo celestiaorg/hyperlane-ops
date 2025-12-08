@@ -131,8 +131,8 @@
         "domainId": 11155111,
         "isTestnet": true,
         "index": {
-            "from": 9796008,
-            "chunk": 1000
+            "from": 9796135,
+            "chunk": 10000
         },
         "name": "sepolia",
         "nativeToken": {
