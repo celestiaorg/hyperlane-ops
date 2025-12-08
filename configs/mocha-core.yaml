@@ -1,21 +1,7 @@
 defaultHook:
-  address: "0x726f757465725f706f73745f6469737061746368000000040000000000000003"
-  beneficiary: celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j
-  oracleConfig:
-    edentestnet:
-      gasPrice: "1000000000"
-      tokenDecimals: 18
-      tokenExchangeRate: "1"
-    xomarket:
-      gasPrice: "1000"
-      tokenDecimals: 18
-      tokenExchangeRate: "1"
-  oracleKey: celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j
-  overhead:
-    edentestnet: 300000
-    xomarket: 100000
+  address: "0x726f757465725f706f73745f6469737061746368000000000000000000000004"
   owner: celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j
-  type: interchainGasPaymaster
+  type: noopHook # Unsupported by the CLI, currently errors when trying to read this configuration from on-chain state
 defaultIsm:
   address: "0x726f757465725f69736d00000000000000000000000000010000000000000000"
   domains:
@@ -28,4 +14,3 @@ owner: celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j
 requiredHook:
   address: "0x726f757465725f706f73745f6469737061746368000000030000000000000000"
   type: merkleTreeHook
-
