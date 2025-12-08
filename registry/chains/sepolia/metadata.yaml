@@ -21,6 +21,9 @@ nativeToken:
   name: Ether
   symbol: ETH
 protocol: ethereum
+transactionOverrides:
+  maxFeePerGas: 60000000000 # 60 gwei
+  maxPriorityFeePerGas: 2000000000 # 2 gwei
 rpcUrls:
   - http: https://gateway.tenderly.co/public/sepolia
   - http: https://ethereum-sepolia.publicnode.com
