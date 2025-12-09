@@ -205,5 +205,5 @@
         "interchainGasPaymaster": "0x0000000000000000000000000000000000000000"
     },
     "defaultRpcConsensusType": "fallback",
-    "relayChains": "edentestnet,celestiatestnet"
+    "relayChains": "edentestnet,celestiatestnet,sepolia"
 }
