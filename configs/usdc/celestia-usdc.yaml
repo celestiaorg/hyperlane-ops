@@ -1,4 +1,4 @@
-celestiamocha:
+celestiatestnet:
   decimals: 0
   destinationGas:
     "1196573006": "68000"
@@ -15,4 +15,3 @@ celestiamocha:
       address: "0x000000000000000000000000e1141469cff3db185a0e1b9ebd1d31bb22a623ea"
   symbol: ""
   type: synthetic
-

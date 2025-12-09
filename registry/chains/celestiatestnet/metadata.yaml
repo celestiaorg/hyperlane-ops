@@ -15,7 +15,7 @@ gasPrice:
 grpcUrls:
   - http: http://grpc-1.testnet.celestia.nodes.guru:10790
 isTestnet: true
-name: celestiamocha
+name: celestiatestnet
 nativeToken:
   decimals: 6
   denom: utia

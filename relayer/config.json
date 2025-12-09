@@ -1,6 +1,6 @@
 {
     "chains": {
-        "celestiamocha": {
+        "celestiatestnet": {
             "bech32Prefix": "celestia",
             "blocks": {
                 "confirmations": 1,
@@ -21,7 +21,7 @@
                 "chunk": 10
             },
             "isTestnet": true,
-            "name": "celestiamocha",
+            "name": "celestiatestnet",
             "nativeToken": {
                 "decimals": 6,
                 "denom": "utia",
@@ -32,11 +32,35 @@
             "restUrls": [
                 {
                     "http": "https://api-1.testnet.celestia.nodes.guru"
+                },
+                {
+                    "http": "https://api-2.testnet.celestia.nodes.guru"
+                },
+                {
+                    "http": "https://celestia-testnet-api.itrocket.net"
+                },
+                {
+                    "http": "https://celestia-t-api.noders.services"
+                },
+                {
+                    "http": "https://api-mocha.pops.one"
                 }
             ],
             "rpcUrls": [
                 {
                     "http": "https://rpc-1.testnet.celestia.nodes.guru"
+                },
+                {
+                    "http": "https://rpc-2.testnet.celestia.nodes.guru"
+                },
+                {
+                    "http": "https://celestia-testnet-rpc.itrocket.net:443"
+                },
+                {
+                    "http": "https:rpc-celestia-testnet.mzonder.com:443"
+                },
+                {
+                    "http": "http://public-celestia-mocha4-consensus.numia.xyz:26657"
                 }
             ],
             "signer": {
@@ -62,6 +86,12 @@
                 },
                 {
                     "http": "http://public-celestia-mocha4-consensus.numia.xyz:9090"
+                },
+                {
+                    "http": "http://grpc-1.testnet.celestia.nodes.guru:10790"
+                },
+                {
+                    "http": "http://grpc-2.testnet.celestia.nodes.guru:10790"
                 }
             ]
         },
@@ -146,7 +176,7 @@
                 "http": "https://gateway.tenderly.co/public/sepolia"
             },
             {
-                "http": "https://ethereum-sepolia.publicnode.com"
+                "http": "https://ethereum-sepolia-rpc.publicnode.com/012c682dcee987b1254219f43bfa300496085c564aee313482f10a8b90c68ec7"
             },
             {
                 "http": "https://sepolia.drpc.org"
@@ -175,5 +205,5 @@
         "interchainGasPaymaster": "0x0000000000000000000000000000000000000000"
     },
     "defaultRpcConsensusType": "fallback",
-    "relayChains": "edentestnet,celestiamocha,sepolia"
+    "relayChains": "edentestnet,celestiatestnet,sepolia"
 }
