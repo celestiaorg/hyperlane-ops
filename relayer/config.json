@@ -82,7 +82,7 @@
                     "http": "http://grpc-1.testnet.celestia.nodes.guru:10790"
                 },
                 {
-                    "http": "http://grpc-mocha.pops.one"
+                    "http": "http://grpc-mocha.pops.one:9090"
                 },
                 {
                     "http": "http://public-celestia-mocha4-consensus.numia.xyz:9090"

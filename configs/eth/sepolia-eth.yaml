@@ -1,0 +1,22 @@
+sepolia:
+  allowedRebalancers: []
+  allowedRebalancingBridges: {}
+  contractVersion: 10.0.5
+  decimals: 18
+  destinationGas:
+    "1297040200": "64000"
+  hook: "0x0000000000000000000000000000000000000000"
+  interchainSecurityModule: "0x0000000000000000000000000000000000000000"
+  isNft: false
+  mailbox: "0xb58a0742AA0986eC81D28356E07612Cf23bA95b9"
+  name: Ether
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  proxyAdmin:
+    address: "0x1e6f4bf469461C33732bbA6C496E6F8878B5635e"
+    owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  remoteRouters:
+    "1297040200":
+      address: "0x726f757465725f6170700000000000000000000000000002000000000000001d"
+  symbol: ETH
+  type: native
+

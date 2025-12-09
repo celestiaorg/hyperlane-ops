@@ -1,0 +1,20 @@
+edentestnet:
+  contractVersion: 10.0.5
+  decimals: 6
+  destinationGas:
+    "1297040200": "68000"
+  hook: "0x0000000000000000000000000000000000000000"
+  interchainSecurityModule: "0x0000000000000000000000000000000000000000"
+  isNft: false
+  mailbox: "0xBdEfA74aCf073Fc5c8961d76d5DdA87B1Be2C1b0"
+  name: TIA
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  proxyAdmin:
+    address: "0xd69cA022732D4EEc00B5944E7a5317e2EBB22622"
+    owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  remoteRouters:
+    "1297040200":
+      address: "0x726f757465725f6170700000000000000000000000000001000000000000001e"
+  symbol: TIA
+  type: synthetic
+
