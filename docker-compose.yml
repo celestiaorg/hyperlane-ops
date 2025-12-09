@@ -3,13 +3,15 @@ services:
     image: gcr.io/abacus-labs-dev/hyperlane-agent:agents-v1.7.0
     platform: linux/amd64
     container_name: hyperlane-relayer
+    user: "0:0"
     volumes:
       - ./relayer/config.json:/app/config/config.json:ro
-      - relayer-db:/app/relayer-db
+      - relayer-db:/app/hyperlane_db
     environment:
       - CONFIG_FILES=/app/config/config.json
       - HYP_CHAINS_CELESTIATESTNET_SIGNER_KEY=${HYP_CHAINS_CELESTIATESTNET_SIGNER_KEY}
       - HYP_CHAINS_EDENTESTNET_SIGNER_KEY=${HYP_CHAINS_EDENTESTNET_SIGNER_KEY}
+      - HYP_CHAINS_SEPOLIA_SIGNER_KEY=${HYP_CHAINS_SEPOLIA_SIGNER_KEY}
     ports:
       - "9090:9090"
     command: "/app/relayer"
