@@ -62,10 +62,10 @@ hyperlane core read --chain edentestnet --config configs/eden-core.yaml --regist
 
 Reading a core config from Celestia.
 ```bash
-hyperlane core read --chain celestiamocha --config configs/mocha-core.yaml --registry registry
+hyperlane core read --chain celestiatestnet --config configs/mocha-core.yaml --registry registry
 ```
 
 Reading a warp config from Celestia.
 ```bash
-hyperlane warp read --registry ./registry --config mocha-warp.yaml --chain celestiamocha --address 0x726f757465725f61707000000000000000000000000000010000000000000006
+hyperlane warp read --registry ./registry --config mocha-warp.yaml --chain celestiatestnet --address 0x726f757465725f61707000000000000000000000000000010000000000000006
 ```

@@ -4,7 +4,7 @@ sepolia:
   owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
   symbol: ETH
   type: native
-celestiamocha:
+celestiatestnet:
   decimals: 6
   scale: 1000000000000 # 10^12
   name: ETH

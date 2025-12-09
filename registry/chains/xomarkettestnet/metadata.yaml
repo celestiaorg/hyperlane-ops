@@ -3,14 +3,14 @@
 # i.e. rpc urls, chain id etc.. this was added in order to pull the core config from celestia mocha
 # Errors were being hit for unknown domain when the hyperlane CLI attempted to parse the IGP and RoutingIsm domains
 #
-# hyperlane core read --chain celestiamocha --config mocha-core.yaml --registry ./registry/
+# hyperlane core read --chain celestiatestnet --config mocha-core.yaml --registry ./registry/
 # Hyperlane CLI
 # Hyperlane Core Read
 # ___________________
 # Unknown domain ID 84532, skipping domain configuration
 # Unknown domain ID 1196573006, skipping domain configuration
 # Unknown domain ID 1000101, skipping domain configuration
-# ❌ Failed to read core config for mailbox 0x68797065726c616e650000000000000000000000000000000000000000000000 on celestiamocha: Error: No chain metadata set for 1000101
+# ❌ Failed to read core config for mailbox 0x68797065726c616e650000000000000000000000000000000000000000000000 on celestiatestnet: Error: No chain metadata set for 1000101
 chainId: 1000101
 displayName: XO Market Testnet
 domainId: 1000101
