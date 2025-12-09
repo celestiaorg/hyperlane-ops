@@ -1,0 +1,15 @@
+celestiatestnet:
+  decimals: 0
+  destinationGas:
+    "11155111": "44000"
+  hook: "0x0000000000000000000000000000000000000000"
+  interchainSecurityModule: "0x0000000000000000000000000000000000000000"
+  mailbox: "0x68797065726c616e650000000000000000000000000000000000000000000000"
+  name: ""
+  owner: celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j
+  remoteRouters:
+    "11155111":
+      address: "0x000000000000000000000000eeea7edeb303a1d20f3742edfc66f188f805a28e"
+  symbol: ""
+  type: synthetic
+
