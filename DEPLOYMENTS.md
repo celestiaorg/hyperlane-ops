@@ -35,6 +35,8 @@ The following is a `HypERC20` synthetic token deployment on the Edentest. See be
 
 ### Noble USDC
 
+A USDC faucet is available on Eden Testnet at the following [link](http://51.159.182.223:8080/).
+
 | Token Type | TokenID/Address                                                      | Chain (Domain)                | 
 | ---------- | -------------------------------------------------------------------- | ----------------------------- |
 | Collateral | `0x726f757465725f61707000000000000000000000000000010000000000000008` | Noble Testnet (`1196573006`)  |
