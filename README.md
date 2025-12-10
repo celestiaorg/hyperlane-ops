@@ -35,13 +35,13 @@ For basic testnet deployments we will use the following:
 - RequiredHook: a `merkleTree` hook which inserts messages into an incremental merkle tree.
 
 ```bash
-hyperlane core init --registry ./registry --advanced
+hyperlane core init --advanced --config ./configs/arbitrum-core.yaml --registry ./registry
 ```
 
 2. Deploy the Hyperlane core contracts. This example uses `arbitrumsepolia` from the local chain registry.
 
 ```bash
-hyperlane core deploy --registry ./registry --chain arbitrumsepolia
+hyperlane core deploy --chain arbitrumsepolia --config ./configs/arbitrum-core.yaml --registry ./registry
 ```
 
 3. Read the core config on-chain artifacts and write them to the config file.

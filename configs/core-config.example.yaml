@@ -1,3 +1,7 @@
+# The following is an example Hyperlane core config generated from the following command:
+# hyperlane core init --advanced --config ./configs/core-config.example.yaml --registry ./registry
+#
+# Use the --config flag to rename the config output file.
 defaultHook:
   beneficiary: "0xc259e540167B7487A89b45343F4044d5951cf871"
   maxProtocolFee: "0"
@@ -11,4 +15,3 @@ proxyAdmin:
   owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
 requiredHook:
   type: merkleTreeHook
-
