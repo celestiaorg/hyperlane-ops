@@ -14,19 +14,9 @@ A repository that hosts Hyperlane deployment configurations and documentation fo
 - `configs/` contains deployment YAMLs for core and warp routes.
 - `solidity/` contains contracts used for native asset minting via Hyperlane.
 
-## Celestia Mocha Core Deployment
+## Testnet Deployments
 
-The following configuration file specifies the canonical addresses for the Celestia Mocha Hyperlane core deployment.
-A core deployment is composed of a `Mailbox`, configured with post-dispatch hooks for outbound message processing and an `InterchainSecurityModule (ISM)` for inbound message processing.
-
-See the [Hyperlane registry](./registry/) in this repository for the `addresses.yaml` configuration file.
-
-```yaml
-interchainGasPaymaster: "0x726f757465725f706f73745f6469737061746368000000040000000000000003"
-interchainSecurityModule: "0x726f757465725f69736d00000000000000000000000000040000000000000000"
-mailbox: "0x68797065726c616e650000000000000000000000000000000000000000000000"
-merkleTreeHook: "0x726f757465725f706f73745f6469737061746368000000030000000000000000"
-```
+Please refer to the [DEPLOYMENTS.md](./DEPLOYMENTS.md) file for detailed information about testnet Warp route deployments.
 
 ## EVM Core Deployment
 
@@ -59,6 +49,24 @@ hyperlane core deploy --registry ./registry --chain arbitrumsepolia
 ```bash
 hyperlane core read --chain arbitrumsepolia --config ./configs/arbitrum-core.yaml --registry ./registry
 ```
+
+## Celestia Mocha Core Deployment
+
+The following configuration file specifies the canonical addresses for the Celestia Mocha Hyperlane core deployment.
+A core deployment is composed of a `Mailbox`, configured with post-dispatch hooks for outbound message processing and an `InterchainSecurityModule (ISM)` for inbound message processing.
+
+Using a single canonical deployment for the Hyperlane core stack on Celestia Mocha minimises operational overhead as maintaining multiple mailboxes and their associated post-dispatch hooks and ism configurations can become cumbersome.
+
+See the [Hyperlane registry](./registry/) in this repository for the `addresses.yaml` configuration file.
+
+```yaml
+interchainGasPaymaster: "0x726f757465725f706f73745f6469737061746368000000040000000000000003"
+interchainSecurityModule: "0x726f757465725f69736d00000000000000000000000000040000000000000000"
+mailbox: "0x68797065726c616e650000000000000000000000000000000000000000000000"
+merkleTreeHook: "0x726f757465725f706f73745f6469737061746368000000030000000000000000"
+```
+
+If you are running a local celestia chain setup for testing purposes, a new Hyperlane core stack can be deployed using the `celestia-appd` binary.
 
 ### Onboarding new connections
 
