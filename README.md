@@ -27,6 +27,12 @@ A prerequisite step required for deployments is to include a chain `metadata.yam
 By default the `hyperlane` CLI uses the official Hyperlane registry but this can be overridden using a command line flag with a local registry.
 Existing chain metadata for a wide range of networks is availabe in the official registry at https://github.com/hyperlane-xyz/hyperlane-registry.
 
+A new custom chain registry entry can be initialised using the following command.
+
+```bash
+hyperlane registry init --registry ./registry
+```
+
 1. Run the following command to initialise a deployment config. Using the `--advanced` flag allows more fine-grained control over the deployment setup.
 
 For basic testnet deployments we will use the following:
