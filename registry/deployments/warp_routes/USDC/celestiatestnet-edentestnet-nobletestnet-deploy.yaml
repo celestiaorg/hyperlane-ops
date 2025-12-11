@@ -1,0 +1,20 @@
+celestiatestnet:
+  decimals: 6
+  name: USDC
+  owner: "celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j"
+  symbol: USDC
+  token: USDC
+  type: synthetic
+edentestnet:
+  decimals: 6
+  name: USDC
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  symbol: USDC
+  token: USDC
+  type: synthetic
+nobletestnet:
+  decimals: 6
+  name: USDC
+  owner: "noble1lg0e9n4pt29lpq2k4ptue4ckw09dx0autk9ph3"
+  symbol: USDC
+  type: collateral
