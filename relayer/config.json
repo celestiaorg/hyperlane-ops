@@ -159,6 +159,7 @@
         "chainId": 11155111,
         "displayName": "Sepolia",
         "domainId": 11155111,
+        "gnosisSafeTransactionServiceUrl": "https://safe-transaction-sepolia.safe.global",
         "isTestnet": true,
         "index": {
             "from": 9796135,
