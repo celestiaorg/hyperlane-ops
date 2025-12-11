@@ -1,6 +1,6 @@
 sepolia:
   decimals: 18
-  name: TIA
+  name: ETH
   owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
   symbol: ETH
   type: native
@@ -9,6 +9,13 @@ celestiatestnet:
   scale: 1000000000000 # 10^12
   name: ETH
   owner: "celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j"
+  symbol: ETH
+  token: ETH
+  type: synthetic
+edentestnet:
+  decimals: 18
+  name: ETH
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
   symbol: ETH
   token: ETH
   type: synthetic

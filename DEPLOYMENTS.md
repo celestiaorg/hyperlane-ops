@@ -49,5 +49,5 @@ A USDC faucet is available on Eden Testnet at the following [link](http://51.159
 | ---------- | -------------------------------------------------------------------- | ----------------------------- |
 | Native     | `0xEEea7Edeb303A1D20F3742edfC66F188f805a28E`                         | Sepolia Testnet (`11155111`)  |
 | Synthetic  | `0x726f757465725f6170700000000000000000000000000002000000000000001d` | Celestia Mocha (`1297040200`) |
-| Synthetic  | TODO:``                         | Eden Testnet (`2147483647`)   |
+| Synthetic  | `0xf8e7A4608AE1e77743FD83549b36E605213760b6`                         | Eden Testnet (`2147483647`)   |
 

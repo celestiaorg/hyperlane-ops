@@ -4,6 +4,7 @@ tokens:
     chainName: sepolia
     connections:
       - token: cosmosnative|celestiatestnet|0x726f757465725f6170700000000000000000000000000002000000000000001d
+      - token: ethereum|edentestnet|0xf8e7A4608AE1e77743FD83549b36E605213760b6
     decimals: 18
     name: Ether
     standard: EvmHypNative
@@ -12,7 +13,17 @@ tokens:
     chainName: celestiatestnet
     connections:
       - token: ethereum|sepolia|0xEEea7Edeb303A1D20F3742edfC66F188f805a28E
+      - token: ethereum|edentestnet|0xf8e7A4608AE1e77743FD83549b36E605213760b6
     decimals: 6
     name: ETH
     standard: CosmosNativeHypSynthetic
+    symbol: ETH
+  - addressOrDenom: "0xf8e7A4608AE1e77743FD83549b36E605213760b6"
+    chainName: edentestnet
+    connections:
+      - token: ethereum|sepolia|0xEEea7Edeb303A1D20F3742edfC66F188f805a28E
+      - token: cosmosnative|celestiatestnet|0x726f757465725f6170700000000000000000000000000002000000000000001d
+    decimals: 18
+    name: ETH
+    standard: EvmHypSynthetic
     symbol: ETH
