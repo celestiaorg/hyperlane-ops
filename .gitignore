@@ -1,6 +1,7 @@
 .DS_STORE
 .debug/
 .env
+generated/
 solidity/lib/
 solidity/out/
 solidity/cache/
