@@ -1,25 +1,23 @@
-sepolia:
-  allowedRebalancers: []
-  allowedRebalancingBridges: {}
+edentestnet:
   contractVersion: 10.0.5
   decimals: 18
   destinationGas:
+    "11155111": "44000"
     "1297040200": "64000"
-    "2147483647": "64000"
   hook: "0x0000000000000000000000000000000000000000"
   interchainSecurityModule: "0x0000000000000000000000000000000000000000"
   isNft: false
-  mailbox: "0xb58a0742AA0986eC81D28356E07612Cf23bA95b9"
-  name: Ether
+  mailbox: "0xBdEfA74aCf073Fc5c8961d76d5DdA87B1Be2C1b0"
+  name: ETH
   owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
   proxyAdmin:
-    address: "0x1e6f4bf469461C33732bbA6C496E6F8878B5635e"
+    address: "0xD715e358d9bd27A5A0426fEfD1A1224Ea15c5e6f"
     owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
   remoteRouters:
+    "11155111":
+      address: "0x000000000000000000000000eeea7edeb303a1d20f3742edfc66f188f805a28e"
     "1297040200":
       address: "0x726f757465725f6170700000000000000000000000000002000000000000001d"
-    "2147483647":
-      address: "0x000000000000000000000000f8e7a4608ae1e77743fd83549b36e605213760b6"
   symbol: ETH
-  type: native
+  type: synthetic
 
