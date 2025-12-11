@@ -118,9 +118,11 @@ hyperlane warp read --registry ./registry --config mocha-warp.yaml --chain celes
 
 ## Warp Routes
 
-TODO: more documentation to be added for this.
+### Extending an existing Warp Route to add a new chain
 
-Adding edentestnet as a new synthetic on an existing warp route between celestiatestnet and sepolia.
+Adding Eden testnet as a new synthetic on an existing warp route between Celestia Mocha and Sepolia.
+Please note, the following set of steps will automatically enroll a remote router on Eden for connecting directly back to Sepolia.
+In order to enforce that users go back to Sepolia via Celestia Mocha that remote router mapping must be unenrolled. This can be done manually using `cast` with the associated owner account.
 
 1. Extend the deploy config file to add edentestnet.
 
