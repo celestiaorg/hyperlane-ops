@@ -4,7 +4,7 @@ tokens:
     chainName: celestiatestnet
     collateralAddressOrDenom: utia
     connections:
-      - token: ethereum|edentestnet|0xb1F7Bf7E4765CAcc93Fe32A48754314F8B66152e
+      - token: ethereum|edentestnet|0x43505da95A74Fa577FB9bB0Ce29E293FdF575011
     decimals: 6
     name: TIA
     standard: CosmosNativeHypCollateral
