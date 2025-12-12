@@ -14,7 +14,7 @@ edentestnet:
     owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
   remoteRouters:
     "1297040200":
-      address: "0x726f757465725f6170700000000000000000000000000001000000000000001e"
+      address: "0x726f757465725f6170700000000000000000000000000001000000000000001a"
   symbol: TIA
-  type: synthetic
-
+  # HypNativeMinter (note: this config file was edited by hand as the hyperlane CLI does not support custom token types)
+  type: custom

@@ -1,7 +1,7 @@
 celestiatestnet:
   decimals: 0
   destinationGas:
-    "2147483647": "64000"
+    "2147483647": "0"
   hook: "0x0000000000000000000000000000000000000000"
   interchainSecurityModule: "0x0000000000000000000000000000000000000000"
   mailbox: "0x68797065726c616e650000000000000000000000000000000000000000000000"
@@ -9,7 +9,7 @@ celestiatestnet:
   owner: celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j
   remoteRouters:
     "2147483647":
-      address: "0x000000000000000000000000b1f7bf7e4765cacc93fe32a48754314f8b66152e"
+      address: "0x00000000000000000000000043505da95A74Fa577FB9bB0Ce29E293FdF575011"
   symbol: ""
   token: utia
   type: collateral
