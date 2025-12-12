@@ -1,6 +1,6 @@
 edentestnet:
   contractVersion: 10.0.5
-  decimals: 6
+  decimals: 18
   destinationGas:
     "1297040200": "68000"
   hook: "0x0000000000000000000000000000000000000000"

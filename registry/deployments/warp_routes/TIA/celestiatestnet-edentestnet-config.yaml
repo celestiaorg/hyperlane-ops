@@ -13,7 +13,7 @@ tokens:
     chainName: edentestnet
     connections:
       - token: cosmosnative|celestiatestnet|0x726f757465725f6170700000000000000000000000000001000000000000001a
-    decimals: 6
+    decimals: 18
     name: TIA
     standard: EvmNative
     symbol: TIA

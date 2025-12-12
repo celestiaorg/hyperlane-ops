@@ -6,7 +6,7 @@ celestiatestnet:
   token: utia
   type: collateral
 edentestnet:
-  decimals: 6
+  decimals: 18
   name: TIA
   owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
   symbol: TIA
