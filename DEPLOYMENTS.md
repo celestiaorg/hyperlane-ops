@@ -12,7 +12,19 @@ It is important to familiarize yourself with the following [Warp Architecture](h
 
 Note, that in Hyperlane `cosmosnative` chains, only the `Collateral` and `Synthetic` token types are supported.
 
-### TIA
+### Native TIA
+
+The `utia` asset is deployed with a custom `TokenRouter` implementation. The `HypNativeMinter` contract is used in order to facilitate native `utia` collateral as the canonical chain asset on Eden. This contract is integrated directly with a custom precompile used for native asset minting which by default in EVM environments is counted in units of `wei` (18 decimals).
+
+| Token Type      | TokenID/Address                                                      | Chain (Domain)                | 
+| --------------- | -------------------------------------------------------------------- | ----------------------------- |
+| Collateral      | `0x726f757465725f6170700000000000000000000000000001000000000000001a` | Celestia Mocha (`1297040200`) |
+| HypNativeMinter | `0x43505da95A74Fa577FB9bB0Ce29E293FdF575011`                         | Eden Testnet (`2147483647`)   |
+
+### ERC20 TIA
+
+> [!WARNING]  
+> Deprecated: Please use the canonical native TIA route specified above.
 
 The following is a `HypERC20` synthetic token deployment on the Edentest. See below for details on native `utia` route.
 
@@ -21,17 +33,6 @@ The following is a `HypERC20` synthetic token deployment on the Edentest. See be
 | Collateral | `0x726f757465725f6170700000000000000000000000000001000000000000001e` | Celestia Mocha (`1297040200`) |
 | Synthetic  | `0xb1F7Bf7E4765CAcc93Fe32A48754314F8B66152e`                         | Eden Testnet (`2147483647`)   |
 
-### Native TIA
-
-> [!WARNING]  
-> This route is not live yet as it requires a testnet upgrade as a prerequisite.
-
-> The `utia` asset is deployed with a custom `TokenRouter` implementation. The `HypNativeMinter` contract is used in order to facilitate native `utia` collateral as the canonical chain asset on Eden. This contract is integrated directly with a custom precompile used for native asset minting which by default in EVM environments is counted in units of `wei` (18 decimals).
-
-| Token Type | TokenID/Address                                                    | Chain (Domain)              | 
-| ---------- | ------------------------------------------------------------------ | --------------------------- |
-| Collateral  | TODO | Celestia Mocha (1297040200) |
-| HypNativeMinter | TODO | Eden Testnet (`2147483647`)   |
 
 ### Noble USDC
 
