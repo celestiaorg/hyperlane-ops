@@ -1,0 +1,23 @@
+edentestnet:
+  contractVersion: 10.0.5
+  decimals: 8
+  destinationGas:
+    "11155111": "68000"
+    "1297040200": "64000"
+  hook: "0x0000000000000000000000000000000000000000"
+  interchainSecurityModule: "0x0000000000000000000000000000000000000000"
+  isNft: false
+  mailbox: "0xBdEfA74aCf073Fc5c8961d76d5DdA87B1Be2C1b0"
+  name: Lombard BTC
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  proxyAdmin:
+    address: "0x6F39A16c768A2DC8E0b19f3eEA8F6378C6C3ED85"
+    owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  remoteRouters:
+    "11155111":
+      address: "0x000000000000000000000000101612e45d8d1ebe8e2eb90373b7ccecb6f52f5c"
+    "1297040200":
+      address: "0x726f757465725f6170700000000000000000000000000002000000000000001f"
+  symbol: LBTC
+  type: synthetic
+

@@ -1,0 +1,26 @@
+sepolia:
+  allowedRebalancers: []
+  allowedRebalancingBridges: {}
+  contractVersion: 10.0.5
+  decimals: 8
+  destinationGas:
+    "1297040200": "64000"
+    "2147483647": "64000"
+  hook: "0x0000000000000000000000000000000000000000"
+  interchainSecurityModule: "0x0000000000000000000000000000000000000000"
+  isNft: false
+  mailbox: "0xb58a0742AA0986eC81D28356E07612Cf23bA95b9"
+  name: Lombard BTC
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  proxyAdmin:
+    address: "0x557424C94f975F84f64ec785Ca45C5d6541Ec8C9"
+    owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  remoteRouters:
+    "1297040200":
+      address: "0x726f757465725f6170700000000000000000000000000002000000000000001f"
+    "2147483647":
+      address: "0x0000000000000000000000004d46424a8aa50e7c585f218338bcce4a9a992c0f"
+  symbol: LBTC
+  token: "0x0A3eC97CA4082e83FeB77Fa69F127F0eAABD016E"
+  type: collateral
+

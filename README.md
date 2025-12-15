@@ -118,6 +118,46 @@ hyperlane warp read --registry ./registry --config mocha-warp.yaml --chain celes
 
 ## Warp Routes
 
+### Creating an ERC20 collateral token using three chains
+
+Run the following the commands and follow the interactive instructions on screen.
+
+```bash
+hyperlane warp init --registry ./registry
+```
+
+- Select three chains for example: `celestiatestnet,edentestnet,sepolia`.
+- Enter the owner address for each deployment and choose either synthetic or collateral token. The suggested address will be derived from the key set in `HYP_KEY`, however when interacting with a `cosmosnative` module such as with Celestia mocha, we must explicitly override the account address suggested.
+- Choose synthetic token types for both Celestia testnet and Eden testnet.
+- Choose collateral token for the Sepolia Ethereum testnet and provide the token address of your ECR20.
+
+A yaml deployment file will be created similar to the following. Note, if your ERC20 uses custom decimals, you must configure this manually in the generated yaml file.
+
+```diff
+celestiatestnet:
++  decimals: 6
++  scale: 100
+  isNft: false
+  owner: "celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j"
+  type: synthetic
+edentestnet:
++  decimals: 8
+  isNft: false
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  type: synthetic
+sepolia:
++  decimals: 8
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  token: "0x0A3eC97CA4082e83FeB77Fa69F127F0eAABD016E"
+  type: collateral
+```
+
+Using the Hyperlane CLI, deploy the the warp route.
+
+```bash
+hyperlane warp deploy --wd ./registry/deployments/warp_routes/LBTC/celestiatestnet-edentestnet-sepolia-deploy.yaml --wc ./registry/deployments/warp_routes/ETH/celestiatestnet-edentestnet-sepolia-config.yaml --registry ./registry
+```
+
 ### Extending an existing Warp Route to add a new chain
 
 Adding Eden testnet as a new synthetic on an existing warp route between Celestia Mocha and Sepolia.

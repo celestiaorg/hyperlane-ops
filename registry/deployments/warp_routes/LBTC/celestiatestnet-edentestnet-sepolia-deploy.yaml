@@ -1,0 +1,16 @@
+celestiatestnet:
+  decimals: 6
+  scale: 100 # 10^2
+  isNft: false
+  owner: "celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j"
+  type: synthetic
+edentestnet:
+  decimals: 8
+  isNft: false
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  type: synthetic
+sepolia:
+  decimals: 8
+  owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
+  token: "0x0A3eC97CA4082e83FeB77Fa69F127F0eAABD016E"
+  type: collateral
