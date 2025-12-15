@@ -122,7 +122,7 @@ hyperlane warp read --registry ./registry --config mocha-warp.yaml --chain celes
 
 Run the following the commands and follow the interactive instructions on screen.
 
-```
+```bash
 hyperlane warp init --registry ./registry
 ```
 
@@ -150,6 +150,12 @@ sepolia:
   owner: "0xc259e540167B7487A89b45343F4044d5951cf871"
   token: "0x0A3eC97CA4082e83FeB77Fa69F127F0eAABD016E"
   type: collateral
+```
+
+Using the Hyperlane CLI, deploy the the warp route.
+
+```bash
+hyperlane warp deploy --wd ./registry/deployments/warp_routes/LBTC/celestiatestnet-edentestnet-sepolia-deploy.yaml --wc ./registry/deployments/warp_routes/ETH/celestiatestnet-edentestnet-sepolia-config.yaml --registry ./registry
 ```
 
 ### Extending an existing Warp Route to add a new chain

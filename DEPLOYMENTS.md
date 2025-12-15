@@ -58,6 +58,6 @@ The `LTBC` ERC20 token contract address is: `0x0A3eC97CA4082e83FeB77Fa69F127F0eA
 
 | Token Type | TokenID/Address                                                      | Chain (Domain)                | 
 | ---------- | -------------------------------------------------------------------- | ----------------------------- |
-| Colateral  | `TODO`                         | Sepolia Testnet (`11155111`)  |
-| Synthetic  | `TODO` | Celestia Mocha (`1297040200`) |
-| Synthetic  | `TODO`                         | Eden Testnet (`2147483647`)   |
+| Colateral  | `0x101612E45d8D1ebE8e2EB90373b7cCecB6F52F5C`                         | Sepolia Testnet (`11155111`)  |
+| Synthetic  | `0x726f757465725f6170700000000000000000000000000002000000000000001f` | Celestia Mocha (`1297040200`) |
+| Synthetic  | `0x4d46424A8AA50e7c585F218338BCCE4a9a992c0F`                         | Eden Testnet (`2147483647`)   |
