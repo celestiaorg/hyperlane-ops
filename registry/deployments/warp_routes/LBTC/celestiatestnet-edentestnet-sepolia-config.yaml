@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=../schema.json
+tokens:
+  - addressOrDenom: "0x726f757465725f6170700000000000000000000000000002000000000000001f"
+    chainName: celestiatestnet
+    connections:
+      - token: ethereum|edentestnet|0x4d46424A8AA50e7c585F218338BCCE4a9a992c0F
+      - token: ethereum|sepolia|0x101612E45d8D1ebE8e2EB90373b7cCecB6F52F5C
+    decimals: 8
+    name: Lombard BTC
+    standard: CosmosNativeHypSynthetic
+    symbol: LBTC
+  - addressOrDenom: "0x4d46424A8AA50e7c585F218338BCCE4a9a992c0F"
+    chainName: edentestnet
+    connections:
+      - token: cosmosnative|celestiatestnet|0x726f757465725f6170700000000000000000000000000002000000000000001f
+      - token: ethereum|sepolia|0x101612E45d8D1ebE8e2EB90373b7cCecB6F52F5C
+    decimals: 8
+    name: Lombard BTC
+    standard: EvmHypSynthetic
+    symbol: LBTC
+  - addressOrDenom: "0x101612E45d8D1ebE8e2EB90373b7cCecB6F52F5C"
+    chainName: sepolia
+    collateralAddressOrDenom: "0x0A3eC97CA4082e83FeB77Fa69F127F0eAABD016E"
+    connections:
+      - token: cosmosnative|celestiatestnet|0x726f757465725f6170700000000000000000000000000002000000000000001f
+      - token: ethereum|edentestnet|0x4d46424A8AA50e7c585F218338BCCE4a9a992c0F
+    decimals: 8
+    name: Lombard BTC
+    standard: EvmHypCollateral
+    symbol: LBTC

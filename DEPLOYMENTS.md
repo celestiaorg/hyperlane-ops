@@ -52,3 +52,12 @@ A USDC faucet is available on Eden Testnet at the following [link](http://51.159
 | Synthetic  | `0x726f757465725f6170700000000000000000000000000002000000000000001d` | Celestia Mocha (`1297040200`) |
 | Synthetic  | `0xf8e7A4608AE1e77743FD83549b36E605213760b6`                         | Eden Testnet (`2147483647`)   |
 
+### Seplia LBTC
+
+The `LTBC` ERC20 token contract address is: `0x0A3eC97CA4082e83FeB77Fa69F127F0eAABD016E`.
+
+| Token Type | TokenID/Address                                                      | Chain (Domain)                | 
+| ---------- | -------------------------------------------------------------------- | ----------------------------- |
+| Colateral  | `TODO`                         | Sepolia Testnet (`11155111`)  |
+| Synthetic  | `TODO` | Celestia Mocha (`1297040200`) |
+| Synthetic  | `TODO`                         | Eden Testnet (`2147483647`)   |
