@@ -71,7 +71,7 @@ edentestnet:
     symbol: ETH
   protocol: ethereum
   rpcUrls:
-    - http: https://ev-reth-eden-testnet.binarybuilders.services:8545
+    - http: https://eden-rpc-proxy-production.up.railway.app/rpc
   technicalStack: other
 nobletestnet:
   bech32Prefix: noble
