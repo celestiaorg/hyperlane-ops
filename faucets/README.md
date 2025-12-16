@@ -7,10 +7,10 @@ The docker compose stack launches **four independent faucet instances**, each se
 
 The Docker Compose stack deploys the following faucets:
 
-- **TIA (native token)**
-- **ETH (ERC-20)**
-- **LBTC (ERC-20)**
-- **USDC (ERC-20)**
+- [**TIA (native token)**](http://51.159.182.223:8082/)
+- [**ETH (ERC-20)**](http://51.159.182.223:8083/)
+- [**LBTC (ERC-20)**](http://51.159.182.223:8081/)
+- [**USDC (ERC-20)**](http://51.159.182.223:8080/)
 
 Each faucet runs as its own service with isolated configuration and state.
 
