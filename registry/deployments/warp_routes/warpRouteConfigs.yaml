@@ -1,0 +1,105 @@
+ETH/celestiatestnet-edentestnet-sepolia:
+  tokens:
+    - addressOrDenom: "0xEEea7Edeb303A1D20F3742edfC66F188f805a28E"
+      chainName: sepolia
+      connections:
+        - token: cosmosnative|celestiatestnet|0x726f757465725f6170700000000000000000000000000002000000000000001d
+        - token: ethereum|edentestnet|0xf8e7A4608AE1e77743FD83549b36E605213760b6
+      decimals: 18
+      name: Ether
+      standard: EvmHypNative
+      symbol: ETH
+    - addressOrDenom: "0x726f757465725f6170700000000000000000000000000002000000000000001d"
+      chainName: celestiatestnet
+      connections:
+        - token: ethereum|sepolia|0xEEea7Edeb303A1D20F3742edfC66F188f805a28E
+        - token: ethereum|edentestnet|0xf8e7A4608AE1e77743FD83549b36E605213760b6
+      decimals: 6
+      name: ETH
+      standard: CosmosNativeHypSynthetic
+      symbol: ETH
+    - addressOrDenom: "0xf8e7A4608AE1e77743FD83549b36E605213760b6"
+      chainName: edentestnet
+      connections:
+        - token: ethereum|sepolia|0xEEea7Edeb303A1D20F3742edfC66F188f805a28E
+        - token: cosmosnative|celestiatestnet|0x726f757465725f6170700000000000000000000000000002000000000000001d
+      decimals: 18
+      name: ETH
+      standard: EvmHypSynthetic
+      symbol: ETH
+LBTC/celestiatestnet-edentestnet-sepolia:
+  tokens:
+    - addressOrDenom: "0x726f757465725f6170700000000000000000000000000002000000000000001f"
+      chainName: celestiatestnet
+      connections:
+        - token: ethereum|edentestnet|0x4d46424A8AA50e7c585F218338BCCE4a9a992c0F
+        - token: ethereum|sepolia|0x101612E45d8D1ebE8e2EB90373b7cCecB6F52F5C
+      decimals: 8
+      name: Lombard BTC
+      standard: CosmosNativeHypSynthetic
+      symbol: LBTC
+    - addressOrDenom: "0x4d46424A8AA50e7c585F218338BCCE4a9a992c0F"
+      chainName: edentestnet
+      connections:
+        - token: cosmosnative|celestiatestnet|0x726f757465725f6170700000000000000000000000000002000000000000001f
+        - token: ethereum|sepolia|0x101612E45d8D1ebE8e2EB90373b7cCecB6F52F5C
+      decimals: 8
+      name: Lombard BTC
+      standard: EvmHypSynthetic
+      symbol: LBTC
+    - addressOrDenom: "0x101612E45d8D1ebE8e2EB90373b7cCecB6F52F5C"
+      chainName: sepolia
+      collateralAddressOrDenom: "0x0A3eC97CA4082e83FeB77Fa69F127F0eAABD016E"
+      connections:
+        - token: cosmosnative|celestiatestnet|0x726f757465725f6170700000000000000000000000000002000000000000001f
+        - token: ethereum|edentestnet|0x4d46424A8AA50e7c585F218338BCCE4a9a992c0F
+      decimals: 8
+      name: Lombard BTC
+      standard: EvmHypCollateral
+      symbol: LBTC
+TIA/celestiatestnet-edentestnet:
+  tokens:
+    - addressOrDenom: "0x726f757465725f6170700000000000000000000000000001000000000000001a"
+      chainName: celestiatestnet
+      collateralAddressOrDenom: utia
+      connections:
+        - token: ethereum|edentestnet|0x43505da95A74Fa577FB9bB0Ce29E293FdF575011
+      decimals: 6
+      name: TIA
+      standard: CosmosNativeHypCollateral
+      symbol: TIA
+    - addressOrDenom: "0x43505da95A74Fa577FB9bB0Ce29E293FdF575011"
+      chainName: edentestnet
+      connections:
+        - token: cosmosnative|celestiatestnet|0x726f757465725f6170700000000000000000000000000001000000000000001a
+      decimals: 18
+      name: TIA
+      standard: EvmNative
+      symbol: TIA
+USDC/celestiatestnet-edentestnet-nobletestnet:
+  tokens:
+    - addressOrDenom: "0x726f757465725f61707000000000000000000000000000020000000000000015"
+      chainName: celestiatestnet
+      connections:
+        - token: cosmosnative|nobletestnet|0x726f757465725f61707000000000000000000000000000010000000000000008
+        - token: ethereum|edentestnet|0xe1141469cff3db185a0e1b9ebd1d31bb22a623ea
+      decimals: 6
+      name: USDC
+      standard: CosmosNativeHypSynthetic
+      symbol: USDC
+    - addressOrDenom: "0xe1141469cff3db185a0e1b9ebd1d31bb22a623ea"
+      chainName: edentestnet
+      connections:
+        - token: cosmosnative|celestiatestnet|0x726f757465725f61707000000000000000000000000000020000000000000015
+      decimals: 6
+      name: USDC
+      standard: EvmHypSynthetic
+      symbol: USDC
+    - addressOrDenom: "0x726f757465725f61707000000000000000000000000000010000000000000008"
+      chainName: nobletestnet
+      connections:
+        - token: cosmosnative|celestiatestnet|0x726f757465725f61707000000000000000000000000000020000000000000015
+      decimals: 6
+      name: USDC
+      standard: CosmosNativeHypCollateral
+      symbol: USDC
