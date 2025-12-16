@@ -85,7 +85,7 @@ services:
     container_name: eth-powfaucet
     command: --datadir=/data
     ports:
-      - "8082:8080"
+      - "8083:8080"
     volumes:
       - ./eden/eth:/data
     environment:

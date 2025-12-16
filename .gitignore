@@ -1,8 +1,14 @@
 .DS_STORE
 .debug/
 .env
+
 generated/
 solidity/lib/
 solidity/out/
 solidity/cache/
 solidity/broadcast/
+
+**/faucet-events.log
+**/faucet-pid.txt
+**/faucet-stats.log
+**/faucet-store.db
