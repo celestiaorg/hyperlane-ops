@@ -36,7 +36,7 @@ The following is a `HypERC20` synthetic token deployment on the Edentest. See be
 
 ### Noble USDC
 
-A USDC faucet is available on Eden Testnet at the following [link](http://51.159.182.223:8080/).
+A `USDC` faucet is available on Eden Testnet at the following [link](http://51.159.182.223:8080/).
 
 | Token Type | TokenID/Address                                                      | Chain (Domain)                | 
 | ---------- | -------------------------------------------------------------------- | ----------------------------- |
@@ -54,7 +54,8 @@ A USDC faucet is available on Eden Testnet at the following [link](http://51.159
 
 ### Seplia LBTC
 
-The `LTBC` ERC20 token contract address is: `0x0A3eC97CA4082e83FeB77Fa69F127F0eAABD016E`.
+The `LBTC` ERC20 token contract on Ethereum Sepolia address is: `0x0A3eC97CA4082e83FeB77Fa69F127F0eAABD016E`.
+A `LBTC` faucet is available on Eden Testnet at the following [link](http://51.159.182.223:8081/).
 
 | Token Type | TokenID/Address                                                      | Chain (Domain)                | 
 | ---------- | -------------------------------------------------------------------- | ----------------------------- |
