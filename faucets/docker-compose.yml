@@ -1,0 +1,108 @@
+services:
+  usdc-powfaucet:
+    image: pk910/powfaucet:v2-stable
+    container_name: usdc-powfaucet
+    command: --datadir=/data
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./USDC:/data
+    environment:
+      - NODE_ENV=production
+      - NODE_TLS_REJECT_UNAUTHORIZED=0 # Disable SSL verification for self-signed certs
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/api/getFaucetConfig",
+        ]
+      interval: "10s"
+      timeout: "5s"
+      retries: 3
+      start_period: "20s"
+
+  lbtc-powfaucet:
+    image: pk910/powfaucet:v2-stable
+    container_name: lbtc-powfaucet
+    command: --datadir=/data
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./LBTC:/data
+    environment:
+      - NODE_ENV=production
+      - NODE_TLS_REJECT_UNAUTHORIZED=0 # Disable SSL verification for self-signed certs
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/api/getFaucetConfig",
+        ]
+      interval: "10s"
+      timeout: "5s"
+      retries: 3
+      start_period: "20s"
+
+  tia-powfaucet:
+    image: pk910/powfaucet:v2-stable
+    container_name: tia-powfaucet
+    command: --datadir=/data
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./TIA:/data
+    environment:
+      - NODE_ENV=production
+      - NODE_TLS_REJECT_UNAUTHORIZED=0 # Disable SSL verification for self-signed certs
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/api/getFaucetConfig",
+        ]
+      interval: "10s"
+      timeout: "5s"
+      retries: 3
+      start_period: "20s"
+
+  eth-powfaucet:
+    image: pk910/powfaucet:v2-stable
+    container_name: eth-powfaucet
+    command: --datadir=/data
+    ports:
+      - "8083:8080"
+    volumes:
+      - ./ETH:/data
+    environment:
+      - NODE_ENV=production
+      - NODE_TLS_REJECT_UNAUTHORIZED=0 # Disable SSL verification for self-signed certs
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8080/api/getFaucetConfig",
+        ]
+      interval: "10s"
+      timeout: "5s"
+      retries: 3
+      start_period: "20s"

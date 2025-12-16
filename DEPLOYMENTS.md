@@ -16,6 +16,8 @@ Note, that in Hyperlane `cosmosnative` chains, only the `Collateral` and `Synthe
 
 The `utia` asset is deployed with a custom `TokenRouter` implementation. The `HypNativeMinter` contract is used in order to facilitate native `utia` collateral as the canonical chain asset on Eden. This contract is integrated directly with a custom precompile used for native asset minting which by default in EVM environments is counted in units of `wei` (18 decimals).
 
+A native `TIA` faucet is available on Eden Testnet at the following [link](http://51.159.182.223:8083/).
+
 | Token Type      | TokenID/Address                                                      | Chain (Domain)                | 
 | --------------- | -------------------------------------------------------------------- | ----------------------------- |
 | Collateral      | `0x726f757465725f6170700000000000000000000000000001000000000000001a` | Celestia Mocha (`1297040200`) |
@@ -45,6 +47,8 @@ A `USDC` faucet is available on Eden Testnet at the following [link](http://51.1
 | Synthetic  | `0xe1141469cff3db185a0e1b9ebd1d31bb22a623ea`                         | Eden Testnet (`2147483647`)   |
 
 ### Sepolia ETH
+
+A `ETH` faucet is available on Eden Testnet at the following [link](http://51.159.182.223:8083/).
 
 | Token Type | TokenID/Address                                                      | Chain (Domain)                | 
 | ---------- | -------------------------------------------------------------------- | ----------------------------- |
