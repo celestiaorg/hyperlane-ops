@@ -1,5 +1,5 @@
 # The following is an example Hyperlane core config generated from the following command:
-# hyperlane core init --advanced --config ./configs/core-config.example.yaml --registry ./registry
+# hyperlane core init --advanced --config ./configs/core-config.example.yaml --registry .
 #
 # Use the --config flag to rename the config output file.
 defaultHook:

@@ -3,7 +3,7 @@
 # i.e. rpc urls, chain id etc.. this was added in order to pull the core config from celestia mocha
 # Errors were being hit for unknown domain when the hyperlane CLI attempted to parse the IGP and RoutingIsm domains
 #
-# hyperlane core read --chain celestiatestnet --config mocha-core.yaml --registry ./registry/
+# hyperlane core read --chain celestiatestnet --config mocha-core.yaml --registry ./
 # Hyperlane CLI
 # Hyperlane Core Read
 # ___________________
