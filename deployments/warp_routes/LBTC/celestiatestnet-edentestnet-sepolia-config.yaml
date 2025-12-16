@@ -6,6 +6,7 @@ tokens:
       - token: ethereum|edentestnet|0x4d46424A8AA50e7c585F218338BCCE4a9a992c0F
       - token: ethereum|sepolia|0x101612E45d8D1ebE8e2EB90373b7cCecB6F52F5C
     decimals: 8
+    logoURI: /deployments/warp_routes/LBTC/logo.svg
     name: Lombard BTC
     standard: CosmosNativeHypSynthetic
     symbol: LBTC
@@ -15,6 +16,7 @@ tokens:
       - token: cosmosnative|celestiatestnet|0x726f757465725f6170700000000000000000000000000002000000000000001f
       - token: ethereum|sepolia|0x101612E45d8D1ebE8e2EB90373b7cCecB6F52F5C
     decimals: 8
+    logoURI: /deployments/warp_routes/LBTC/logo.svg
     name: Lombard BTC
     standard: EvmHypSynthetic
     symbol: LBTC
@@ -25,6 +27,7 @@ tokens:
       - token: cosmosnative|celestiatestnet|0x726f757465725f6170700000000000000000000000000002000000000000001f
       - token: ethereum|edentestnet|0x4d46424A8AA50e7c585F218338BCCE4a9a992c0F
     decimals: 8
+    logoURI: /deployments/warp_routes/LBTC/logo.svg
     name: Lombard BTC
     standard: EvmHypCollateral
     symbol: LBTC
