@@ -10,8 +10,12 @@ A repository that hosts Hyperlane deployment configurations and documentation fo
 
 ## Repository Structure
 
-- `registry/` holds the local Hyperlane registry with chain configs and canonical addresses used by CLI commands.
-- `configs/` contains deployment YAMLs for core and warp routes.
+- This repository holds the local Hyperlane registry with chain configs and canonical addresses used by CLI commands.
+  - `chains/` contains chain metadata configuration files and addresses for operating on Hyperlane chains.
+  - `deployments/warp_routes` contains Hyperlane warp route deployment configurations.
+- `configs/` contains deployment YAMLs for core and warp routes, these are artifacts read from on-chain data.
+- `faucets/` contains pow-faucet deployments for the Eden testnet.
+- `relayer/` contains a Hyperlane agent configuration used for operating an off-chain message relayer.
 - `solidity/` contains contracts used for native asset minting via Hyperlane.
 
 ## Testnet Deployments
