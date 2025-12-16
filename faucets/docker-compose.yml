@@ -6,7 +6,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./eden/usdc:/data
+      - ./eden/USDC:/data
     environment:
       - NODE_ENV=production
       - NODE_TLS_REJECT_UNAUTHORIZED=0 # Disable SSL verification for self-signed certs
@@ -33,7 +33,7 @@ services:
     ports:
       - "8081:8080"
     volumes:
-      - ./eden/lbtc:/data
+      - ./eden/LBTC:/data
     environment:
       - NODE_ENV=production
       - NODE_TLS_REJECT_UNAUTHORIZED=0 # Disable SSL verification for self-signed certs
@@ -60,7 +60,7 @@ services:
     ports:
       - "8082:8080"
     volumes:
-      - ./eden/tia:/data
+      - ./eden/TIA:/data
     environment:
       - NODE_ENV=production
       - NODE_TLS_REJECT_UNAUTHORIZED=0 # Disable SSL verification for self-signed certs
@@ -87,7 +87,7 @@ services:
     ports:
       - "8083:8080"
     volumes:
-      - ./eden/eth:/data
+      - ./eden/ETH:/data
     environment:
       - NODE_ENV=production
       - NODE_TLS_REJECT_UNAUTHORIZED=0 # Disable SSL verification for self-signed certs
