@@ -97,8 +97,8 @@ ethQueueNoFunds: true
 ethTxExplorerLink: "https://eden-testnet.blockscout.com/tx/{txid}"
 
 # min/max drop amount (max is the default if no module lowers it)
-maxDropAmount: 1000000000000000000 # 1 ETH
-minDropAmount: 10000000000000000 # 0.01 ETH
+maxDropAmount: 10000000000000000000 # 10 TIA
+minDropAmount: 100000000000000000 # 0.1 TIA
 
 # maximum session time (from start till payout)
 # only relevant if one of the enabled protection mechanisms introduces a session delay (eg. mining)
@@ -556,5 +556,5 @@ resultSharing:
   caption: "Or support this faucet by sharing your result with a "
 
   # result sharing buttons
-  twitter: "Boom! Just got {amount} Holesky ETH from {url} (Mining for {duration} with {hashrate} H/s) #holesky #faucet"
-  mastodon: "Boom! Just got {amount} Holesky ETH from {url} (Mining for {duration} with {hashrate} H/s)"
+  twitter: "Boom! Just got {amount} Eden TIA from {url} (Mining for {duration} with {hashrate} H/s) #eden #faucet"
+  mastodon: "Boom! Just got {amount} Eden TIA from {url} (Mining for {duration} with {hashrate} H/s)"
