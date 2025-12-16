@@ -15,5 +15,5 @@ tokens:
       - token: cosmosnative|celestiatestnet|0x726f757465725f6170700000000000000000000000000001000000000000001a
     decimals: 18
     name: TIA
-    standard: EvmNative
+    standard: EvmHypNative # TODO: Determine appropriate token standard for sdk integration
     symbol: TIA
