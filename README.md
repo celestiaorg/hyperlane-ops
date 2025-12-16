@@ -30,7 +30,7 @@ Existing chain metadata for a wide range of networks is availabe in the official
 A new custom chain registry entry can be initialised using the following command.
 
 ```bash
-hyperlane registry init --registry ./registry
+hyperlane registry init --registry .
 ```
 
 1. Run the following command to initialise a deployment config. Using the `--advanced` flag allows more fine-grained control over the deployment setup.
@@ -41,19 +41,19 @@ For basic testnet deployments we will use the following:
 - RequiredHook: a `merkleTree` hook which inserts messages into an incremental merkle tree.
 
 ```bash
-hyperlane core init --advanced --config ./configs/arbitrum-core.yaml --registry ./registry
+hyperlane core init --advanced --config ./configs/arbitrum-core.yaml --registry .
 ```
 
 2. Deploy the Hyperlane core contracts. This example uses `arbitrumsepolia` from the local chain registry.
 
 ```bash
-hyperlane core deploy --chain arbitrumsepolia --config ./configs/arbitrum-core.yaml --registry ./registry
+hyperlane core deploy --chain arbitrumsepolia --config ./configs/arbitrum-core.yaml --registry .
 ```
 
 3. Read the core config on-chain artifacts and write them to the config file.
 
 ```bash
-hyperlane core read --chain arbitrumsepolia --config ./configs/arbitrum-core.yaml --registry ./registry
+hyperlane core read --chain arbitrumsepolia --config ./configs/arbitrum-core.yaml --registry .
 ```
 
 ## Celestia Mocha Core Deployment
@@ -113,7 +113,7 @@ hyperlane core read --chain celestiatestnet --config configs/mocha-core.yaml --r
 
 Reading a warp config from Celestia.
 ```bash
-hyperlane warp read --registry ./registry --config mocha-warp.yaml --chain celestiatestnet --address 0x726f757465725f61707000000000000000000000000000010000000000000006
+hyperlane warp read --registry . --config mocha-warp.yaml --chain celestiatestnet --address 0x726f757465725f61707000000000000000000000000000010000000000000006
 ```
 
 ## Warp Routes
@@ -123,7 +123,7 @@ hyperlane warp read --registry ./registry --config mocha-warp.yaml --chain celes
 Run the following the commands and follow the interactive instructions on screen.
 
 ```bash
-hyperlane warp init --registry ./registry
+hyperlane warp init --registry .
 ```
 
 - Select three chains for example: `celestiatestnet,edentestnet,sepolia`.
@@ -155,7 +155,7 @@ sepolia:
 Using the Hyperlane CLI, deploy the the warp route.
 
 ```bash
-hyperlane warp deploy --wd ./registry/deployments/warp_routes/LBTC/celestiatestnet-edentestnet-sepolia-deploy.yaml --wc ./registry/deployments/warp_routes/ETH/celestiatestnet-edentestnet-sepolia-config.yaml --registry ./registry
+hyperlane warp deploy --wd ./registry/deployments/warp_routes/LBTC/celestiatestnet-edentestnet-sepolia-deploy.yaml --wc ./registry/deployments/warp_routes/ETH/celestiatestnet-edentestnet-sepolia-config.yaml --registry .
 ```
 
 ### Extending an existing Warp Route to add a new chain
@@ -193,7 +193,7 @@ celestiatestnet:
 2. Run the `hyperlane warp apply` command providing the deploy conifg and the output config file paths as well as the local registry.
 
 ```bash
-hyperlane warp apply --config ./registry/deployments/warp_routes/ETH/sepolia-mocha-deploy.yaml --wc ./registry/deployments/warp_routes/ETH/sepolia-mocha-config.yaml --registry ./registry
+hyperlane warp apply --config ./registry/deployments/warp_routes/ETH/sepolia-mocha-deploy.yaml --wc ./registry/deployments/warp_routes/ETH/sepolia-mocha-config.yaml --registry .
 ```
 
 > [!IMPORTANT]  
