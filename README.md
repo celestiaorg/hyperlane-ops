@@ -204,3 +204,8 @@ hyperlane warp apply --config ./registry/deployments/warp_routes/ETH/sepolia-moc
 ```bash
 celestia-appd tx warp enroll-remote-router 0x726f757465725f6170700000000000000000000000000002000000000000001d 2147483647 0x000000000000000000000000f8e7A4608AE1e77743FD83549b36E605213760b6 0 --from hyp-owner --fees 800utia
 ```
+
+## References
+
+- [Hyperlane Cosmos Runbook](https://hyperlanexyz.notion.site/Runbook-Hyperlane-Cosmos-SDK-2b06d35200d681f2a3c0e481a45b9275)
+- [Hyperlane Docs](https://docs.hyperlane.xyz/)
