@@ -1,0 +1,170 @@
+arbitrumsepolia:
+  blockExplorers:
+    - apiKey: QAI5SWBNHJSFAN6KMS9RC5JGFKV2IYD2Z5
+      apiUrl: https://api-sepolia.arbiscan.io/api
+      family: etherscan
+      name: Arbiscan
+      url: https://sepolia.arbiscan.io
+  blocks:
+    confirmations: 1
+    estimateBlockTime: 3
+    reorgPeriod: 0
+  chainId: 421614
+  displayName: Arbitrum Sepolia
+  domainId: 421614
+  gasCurrencyCoinGeckoId: ethereum
+  index:
+    from: 49690504 # Index of Mailbox deployment, nitro specific
+  isTestnet: true
+  name: arbitrumsepolia
+  nativeToken:
+    decimals: 18
+    name: Ether
+    symbol: ETH
+  protocol: ethereum
+  rpcUrls:
+    - http: https://arbitrum-sepolia.drpc.org
+    - http: https://arbitrum-sepolia.gateway.tenderly.co
+    - http: https://sepolia-rollup.arbitrum.io/rpc
+  technicalStack: arbitrumnitro
+celestiatestnet:
+  bech32Prefix: celestia
+  blocks:
+    confirmations: 1
+    estimateBlockTime: 6
+    reorgPeriod: 1
+  canonicalAsset: utia
+  chainId: mocha-4
+  contractAddressBytes: 32
+  displayName: Celestia Mocha
+  domainId: 1297040200
+  gasPrice:
+    amount: "0.1"
+    denom: utia
+  grpcUrls:
+    - http: http://grpc-1.testnet.celestia.nodes.guru:10790
+  isTestnet: true
+  name: celestiatestnet
+  nativeToken:
+    decimals: 6
+    denom: utia
+    name: Celestia
+    symbol: TIA
+  protocol: cosmosnative
+  restUrls:
+    - http: https://api-1.testnet.celestia.nodes.guru
+  rpcUrls:
+    - http: https://rpc-1.testnet.celestia.nodes.guru
+  slip44: 118
+  technicalStack: other
+  transactionOverrides:
+    gasPrice: "0.0"
+edentestnet:
+  chainId: 3735928814
+  displayName: Eden Testnet
+  domainId: 2147483647
+  isTestnet: true
+  name: edentestnet
+  nativeToken:
+    decimals: 18
+    name: Ether
+    symbol: ETH
+  protocol: ethereum
+  rpcUrls:
+    - http: https://ev-reth-eden-testnet.binarybuilders.services:8545
+  technicalStack: other
+nobletestnet:
+  bech32Prefix: noble
+  blockExplorers:
+    - apiUrl: https://www.mintscan.io/noble-testnet
+      family: other
+      name: Mintscan
+      url: https://www.mintscan.io/noble-testnet
+  blocks:
+    confirmations: 1
+    estimateBlockTime: 1.5
+    reorgPeriod: 1
+  canonicalAsset: uusdn
+  chainId: grand-1
+  contractAddressBytes: 32
+  deployer:
+    name: Noble
+    url: https://noble.xyz
+  displayName: Noble Testnet
+  # Generated from: console.log(parseInt('0x'+Buffer.from('GRAN').toString('hex')))
+  domainId: 1196573006
+  gasPrice:
+    amount: "0.1"
+    denom: uusdn
+  grpcUrls:
+    - http: http://noble-testnet-grpc.polkachu.com:21590
+  index:
+    chunk: 10
+    from: 29035000
+  isTestnet: true
+  name: nobletestnet
+  nativeToken:
+    decimals: 6
+    denom: uusdn
+    name: Noble Dollar
+    symbol: USDN
+  protocol: cosmosnative
+  restUrls:
+    - http: https://noble-testnet-api.polkachu.com:443
+    - http: https://api.testnet.noble.xyz:443
+  rpcUrls:
+    - http: https://noble-testnet-rpc.polkachu.com:443
+    - http: https://rpc.testnet.noble.xyz:443
+  slip44: 118
+  technicalStack: other
+  transactionOverrides:
+    gasPrice: 0.1
+sepolia:
+  blockExplorers:
+    - apiKey: CYUPN3Q66JIMRGQWYUDXJKQH4SX8YIYZMW
+      apiUrl: https://api-sepolia.etherscan.io/api
+      family: etherscan
+      name: Etherscan
+      url: https://sepolia.etherscan.io
+  blocks:
+    confirmations: 1
+    estimateBlockTime: 13
+    reorgPeriod: 2
+  chainId: 11155111
+  displayName: Sepolia
+  domainId: 11155111
+  gasCurrencyCoinGeckoId: ethereum
+  gnosisSafeTransactionServiceUrl: https://safe-transaction-sepolia.safe.global
+  isTestnet: true
+  name: sepolia
+  nativeToken:
+    decimals: 18
+    name: Ether
+    symbol: ETH
+  protocol: ethereum
+  transactionOverrides:
+    maxFeePerGas: 60000000000 # 60 gwei
+    maxPriorityFeePerGas: 2000000000 # 2 gwei
+  rpcUrls:
+    - http: https://gateway.tenderly.co/public/sepolia
+    - http: https://ethereum-sepolia.publicnode.com
+    - http: https://sepolia.drpc.org
+    - http: https://1rpc.io/sepolia
+xomarkettestnet:
+  chainId: 1000101
+  displayName: XO Market Testnet
+  domainId: 1000101
+  isTestnet: true
+  name: xomarkettestnet
+  nativeToken:
+    decimals: 18
+    name: XO
+    symbol: XO
+  protocol: ethereum
+  rpcUrls:
+    - http: https://testnet-rpc-1.xo.market
+  technicalStack: other
+  blocks:
+    confirmations: 1
+    estimateBlockTime: 12
+    reorgPeriod: 1
