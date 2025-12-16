@@ -6,6 +6,7 @@ tokens:
     connections:
       - token: ethereum|edentestnet|0x43505da95A74Fa577FB9bB0Ce29E293FdF575011
     decimals: 6
+    logoURI: /deployments/warp_routes/TIA/logo.svg
     name: TIA
     standard: CosmosNativeHypCollateral
     symbol: TIA
@@ -14,6 +15,7 @@ tokens:
     connections:
       - token: cosmosnative|celestiatestnet|0x726f757465725f6170700000000000000000000000000001000000000000001a
     decimals: 18
+    logoURI: /deployments/warp_routes/TIA/logo.svg
     name: TIA
     standard: EvmHypNative # TODO: Determine appropriate token standard for sdk integration
     symbol: TIA
