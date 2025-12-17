@@ -24,7 +24,7 @@ httpProxyCount: 0
 faucetTitle: "Eden ETH PoW Faucet"
 
 # url to image displayed on the startpage
-faucetImage: "/images/fauceth_420.jpg"
+faucetImage: "/images/mnt/eden-faucet.png"
 
 # some additional html to show on the startpage
 faucetHomeHtml: |

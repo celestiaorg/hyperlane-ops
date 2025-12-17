@@ -7,6 +7,7 @@ services:
       - "8080:8080"
     volumes:
       - ./USDC:/data
+      - ./assets:/images/mnt
     environment:
       - NODE_ENV=production
       - NODE_TLS_REJECT_UNAUTHORIZED=0 # Disable SSL verification for self-signed certs
@@ -32,6 +33,7 @@ services:
       - "8081:8080"
     volumes:
       - ./LBTC:/data
+      - ./assets:/images/mnt
     environment:
       - NODE_ENV=production
       - NODE_TLS_REJECT_UNAUTHORIZED=0 # Disable SSL verification for self-signed certs
@@ -57,6 +59,7 @@ services:
       - "8082:8080"
     volumes:
       - ./TIA:/data
+      - ./assets:/images/mnt
     environment:
       - NODE_ENV=production
       - NODE_TLS_REJECT_UNAUTHORIZED=0 # Disable SSL verification for self-signed certs
@@ -82,6 +85,7 @@ services:
       - "8083:8080"
     volumes:
       - ./ETH:/data
+      - ./assets:/images/mnt
     environment:
       - NODE_ENV=production
       - NODE_TLS_REJECT_UNAUTHORIZED=0 # Disable SSL verification for self-signed certs
