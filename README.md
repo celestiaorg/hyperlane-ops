@@ -67,7 +67,7 @@ A core deployment is composed of a `Mailbox`, configured with post-dispatch hook
 
 Using a single canonical deployment for the Hyperlane core stack on Celestia Mocha minimises operational overhead as maintaining multiple mailboxes and their associated post-dispatch hooks and ism configurations can become cumbersome.
 
-See the [Hyperlane registry](./registry/) in this repository for the `addresses.yaml` configuration file.
+See the [Celestia Hyperlane registry entry](./chains/celestiatestnet/addresses.yaml) in this repository for the `addresses.yaml` configuration file.
 
 ```yaml
 interchainGasPaymaster: "0x726f757465725f706f73745f6469737061746368000000040000000000000003"
@@ -159,7 +159,7 @@ sepolia:
 Using the Hyperlane CLI, deploy the the warp route.
 
 ```bash
-hyperlane warp deploy --wd ./registry/deployments/warp_routes/LBTC/celestiatestnet-edentestnet-sepolia-deploy.yaml --wc ./registry/deployments/warp_routes/ETH/celestiatestnet-edentestnet-sepolia-config.yaml --registry .
+hyperlane warp deploy --wd ./deployments/warp_routes/LBTC/celestiatestnet-edentestnet-sepolia-deploy.yaml --wc ./deployments/warp_routes/ETH/celestiatestnet-edentestnet-sepolia-config.yaml --registry .
 ```
 
 ### Extending an existing Warp Route to add a new chain
@@ -197,7 +197,7 @@ celestiatestnet:
 2. Run the `hyperlane warp apply` command providing the deploy conifg and the output config file paths as well as the local registry.
 
 ```bash
-hyperlane warp apply --config ./registry/deployments/warp_routes/ETH/sepolia-mocha-deploy.yaml --wc ./registry/deployments/warp_routes/ETH/sepolia-mocha-config.yaml --registry .
+hyperlane warp apply --config ./deployments/warp_routes/ETH/sepolia-mocha-deploy.yaml --wc ./deployments/warp_routes/ETH/sepolia-mocha-config.yaml --registry .
 ```
 
 > [!IMPORTANT]  
