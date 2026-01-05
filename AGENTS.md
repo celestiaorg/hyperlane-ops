@@ -63,6 +63,23 @@ Run Foundry commands inside solidity/ (`forge build`, `forge test`, `forge scrip
 - Do not commit private keys (HYP_KEY, HYP_CHAINS_*_SIGNER_KEY, faucet ethWalletKey).
 - Use environment variables or a secret manager for runtime values.
 
+## Environment Variables
+Export the keys needed for CLI operations before running commands:
+
+- EVM deployer key for Hyperlane CLI: `HYP_KEY`
+- Celestia key material for `celestia-appd` (recover or import into the local keyring)
+
+Example setup:
+```bash
+export HYP_KEY=0x...
+export HYP_MNEMONIC="word1 word2 ... word24"
+
+# Recover or import the Celestia key into the local keyring
+celestia-appd keys add owner --recover "$HYP_MNEMONIC"
+# or
+celestia-appd keys import owner <key-file>
+```
+
 ## Validation
 - `forge test` for solidity changes.
 - `hyperlane core read` / `hyperlane warp read` after updating deployments.
