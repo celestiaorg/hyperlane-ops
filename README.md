@@ -78,7 +78,7 @@ merkleTreeHook: "0x726f757465725f706f73745f6469737061746368000000030000000000000
 
 If you are running a local celestia chain setup for testing purposes, a new Hyperlane core stack can be deployed using the `celestia-appd` binary.
 
-### Onboarding new connections
+### Onboarding new connections to Celestia Mocha
 
 In order to create a new connnection (which is a prerequisite to Warp route deployment) the Hyperlane core deployment must be updated to support the remote chain's domain identifer. This is a two-step process:
 - Register the domain identifier with a gas config in the `InterchainGasPaymaster (IGP)` destination gas configs .
@@ -107,12 +107,12 @@ Currently a section to dump commands used to build up this repository.
 
 Reading a core config from Eden.
 ```bash
-hyperlane core read --chain edentestnet --config configs/eden-core.yaml --registry registry
+hyperlane core read --chain edentestnet --config configs/eden-core.yaml --registry .
 ```
 
 Reading a core config from Celestia.
 ```bash
-hyperlane core read --chain celestiatestnet --config configs/mocha-core.yaml --registry registry
+hyperlane core read --chain celestiatestnet --config configs/mocha-core.yaml --registry .
 ```
 
 Reading a warp config from Celestia.
@@ -206,7 +206,7 @@ hyperlane warp apply --config ./deployments/warp_routes/ETH/sepolia-mocha-deploy
 3. Manually enroll the remote router on celestiatestnet.
 
 ```bash
-celestia-appd tx warp enroll-remote-router 0x726f757465725f6170700000000000000000000000000002000000000000001d 2147483647 0x000000000000000000000000f8e7A4608AE1e77743FD83549b36E605213760b6 0 --from hyp-owner --fees 800utia
+celestia-appd tx warp enroll-remote-router 0x726f757465725f6170700000000000000000000000000002000000000000001d 2147483647 0x000000000000000000000000f8e7A4608AE1e77743FD83549b36E605213760b6 0 --from owner --fees 800utia
 ```
 
 ## Operating a relayer
