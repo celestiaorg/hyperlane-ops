@@ -9,7 +9,7 @@ This repo is a local Hyperlane registry plus ops configs for Celestia Mocha and 
 - faucets/README.md for Eden faucet stack details.
 - solidity/README.md for Foundry workflows and HypNativeMinter deployment.
 
-## Repository Map
+## Repository Structure
 - chains/
   - chains/<chain>/metadata.yaml and chains/<chain>/addresses.yaml are the per-chain registry entries.
   - chains/metadata.yaml and chains/addresses.yaml are aggregated views; keep them in sync with per-chain files.
@@ -60,14 +60,20 @@ Run `docker compose up -d` in faucets/. Config lives in faucets/*/faucet-config.
 Run Foundry commands inside solidity/ (`forge build`, `forge test`, `forge script`).
 
 ## Secrets and Safety
+The repository contains a `.env.example` file at the root of the repository. This can copied to `.env` and provided with values for sensitive data.
+The `.env` file is git ignored and should not be commited to source control.
 - Do not commit private keys (HYP_KEY, HYP_CHAINS_*_SIGNER_KEY, faucet ethWalletKey).
 - Use environment variables or a secret manager for runtime values.
 
-## Environment Variables
+## Deployment and operations automation
+### Environment Variables
+The user must configure private keys if they wish to allow the agent to operate CLIs on their behalf.
+
 Export the keys needed for CLI operations before running commands:
 
 - EVM deployer key for Hyperlane CLI: `HYP_KEY`
-- Celestia key material for `celestia-appd` (recover or import into the local keyring)
+- Celestia mnenomic for key recover using `celestia-appd`: `HYP_MENONIC`
+  - Alternatively a Celestia key file can be used.
 
 Example setup:
 ```bash
@@ -75,10 +81,15 @@ export HYP_KEY=0x...
 export HYP_MNEMONIC="word1 word2 ... word24"
 
 # Recover or import the Celestia key into the local keyring
-celestia-appd keys add owner --recover "$HYP_MNEMONIC"
+echo $HYP_MNEMONIC | celestia-appd keys add owner --recover
 # or
 celestia-appd keys import owner <key-file>
 ```
+
+### Debugging
+Useful resources for debugging errors when operating the CLI tools.
+- [Hyperlane Cosmos Runbook](https://hyperlanexyz.notion.site/Runbook-Hyperlane-Cosmos-SDK-2b06d35200d681f2a3c0e481a45b9275)
+- [Hyperlane Docs](https://docs.hyperlane.xyz/)
 
 ## Validation
 - `forge test` for solidity changes.
