@@ -3,6 +3,9 @@
 ## Purpose
 This repo is a local Hyperlane registry plus ops configs for Celestia Mocha and Eden testnets. It tracks chain metadata and core addresses, warp route deployments, relayer and faucet configs, and Solidity tooling for HypNativeMinter.
 
+## Authorization
+The user must provide access and approval to the agent to run CLI tooling on their behalf.
+
 ## Start Here
 - README.md for repo overview, Hyperlane CLI usage, and relayer ops.
 - DEPLOYMENTS.md for testnet warp routes and token addresses.
