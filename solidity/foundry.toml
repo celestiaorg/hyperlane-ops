@@ -9,5 +9,11 @@ remappings = [
     "@hyperlane-xyz/core/=lib/hyperlane-monorepo/solidity/",
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
     "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
-    "forge-std/=lib/forge-std/src/"
+    "forge-std/=lib/forge-std/src/",
 ]
+
+[dependencies]
+openzeppelin-contracts = "openzeppelin/openzeppelin-contracts@v4.9.6"
+openzeppelin-contracts-upgradeable = "openzeppelin/openzeppelin-contracts-upgradeable@v4.9.6"
+hyperlane-monorepo = "hyperlane-xyz/hyperlane-monorepo@rev=3c2df10421169fca364f6e4fd3a8dfba70039d0f"
+forge-std = "foundry-rs/forge-std@v1.11.0"
