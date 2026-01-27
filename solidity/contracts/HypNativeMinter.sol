@@ -2,9 +2,13 @@
 pragma solidity ^0.8.24;
 
 import {INativeToken} from "./interfaces/precompile/INativeToken.sol";
-import {TokenRouter} from "@hyperlane-xyz/core/contracts/token/libs/TokenRouter.sol";
+import {
+    TokenRouter
+} from "@hyperlane-xyz/core/contracts/token/libs/TokenRouter.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {
+    ReentrancyGuard
+} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract HypNativeMinter is TokenRouter, ReentrancyGuard {
     // INativeToken interface for native mint precompile.
@@ -92,7 +96,6 @@ contract HypNativeMinter is TokenRouter, ReentrancyGuard {
         } catch (bytes memory reason) {
             revert BurnFailed(reason);
         }
-
         return bytes(""); // no metadata
     }
 
