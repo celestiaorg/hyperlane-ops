@@ -1,13 +1,19 @@
 [profile.default]
 src = "contracts"
 out = "out"
-libs = ["lib"]
+libs = ["dependencies"]
 solc = "0.8.24"
 evm_version = "paris"
 
 remappings = [
-    "@hyperlane-xyz/core/=lib/hyperlane-monorepo/solidity/",
-    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
-    "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
-    "forge-std/=lib/forge-std/src/"
+    "@hyperlane-xyz/core/=dependencies/hyperlane-monorepo-1.0.0/solidity/",
+    "@openzeppelin/contracts/=dependencies/openzeppelin-contracts-4.9.6/contracts/",
+    "@openzeppelin/contracts-upgradeable/=dependencies/openzeppelin-contracts-upgradeable-4.9.6/contracts/",
+    "forge-std/=dependencies/forge-std-1.11.0/src/",
 ]
+
+[dependencies]
+openzeppelin-contracts = { version = "4.9.6", git = "https://github.com/OpenZeppelin/openzeppelin-contracts", tag = "v4.9.6" }
+openzeppelin-contracts-upgradeable = { version = "4.9.6", git = "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable", tag = "v4.9.6" }
+hyperlane-monorepo = { version = "1.0.0", git = "https://github.com/hyperlane-xyz/hyperlane-monorepo", rev = "3c2df10421169fca364f6e4fd3a8dfba70039d0f" }
+forge-std = { version = "1.11.0", git = "https://github.com/foundry-rs/forge-std", tag = "v1.11.0" }
