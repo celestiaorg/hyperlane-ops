@@ -3,10 +3,12 @@
 .env
 
 generated/
+solidity/dependencies/
 solidity/lib/
 solidity/out/
 solidity/cache/
 solidity/broadcast/
+solidity/remappings.txt
 
 **/faucet-events.log
 **/faucet-pid.txt
