@@ -1,4 +1,4 @@
-# Cosmos Multisig ISM + IGP Setup (Notes from Slack)
+# Cosmos Multisig ISM + IGP Setup
 
 This page captures the current (partial) guidance for setting up a Cosmos multisig ISM and IGP destination gas config on Celestia. This document is an initial draft and work-in-progress which needs iteration. It should not be considered a full playbook yet.
 
