@@ -20,9 +20,11 @@ A repository that hosts Hyperlane deployment configurations and documentation fo
 
 ## Testnet Deployments
 
-Please refer to the [DEPLOYMENTS.md](./DEPLOYMENTS.md) file for detailed information about testnet Warp route deployments.
+Please refer to the [MOCHA.md](./MOCHA.md) file for detailed information about testnet Warp route deployments.
 
 ## EVM Core Deployment
+
+<!--TODO: Move this section to separate markdown document to prepare for docs page -->
 
 The following outlines how to deploy a basic Hyperlane core contract stack on an EVM based blockchain network.
 Note the `hyperlane` CLI binary expected an environment variable `HYP_KEY` containing the private key of the deployer account.
@@ -61,6 +63,8 @@ hyperlane core read --chain arbitrumsepolia --config ./configs/arbitrum-core.yam
 ```
 
 ## Celestia Mocha Core Deployment
+
+<!--TODO: Move this section to separate markdown document to prepare for docs page -->
 
 The following configuration file specifies the canonical addresses for the Celestia Mocha Hyperlane core deployment.
 A core deployment is composed of a `Mailbox`, configured with post-dispatch hooks for outbound message processing and an `InterchainSecurityModule (ISM)` for inbound message processing.
@@ -121,6 +125,8 @@ hyperlane warp read --registry . --config mocha-warp.yaml --chain celestiatestne
 ```
 
 ## Warp Routes
+
+<!--TODO: Move this section to separate markdown document to prepare for docs page -->
 
 ### Creating an ERC20 collateral token using three chains
 
@@ -211,6 +217,8 @@ celestia-appd tx warp enroll-remote-router 0x726f757465725f617070000000000000000
 
 ## Operating a relayer
 
+<!--TODO: Move this section to separate markdown document to prepare for docs page -->
+
 This repository contains a `docker-compose.yml` file with a Hyperlane relayer agent configuration maintained and mounted for the container from the `relayer/config.json` file.
 
 This relayer agent may deployed on a server for supporting Hyperlane connection and warp route liveness.
@@ -251,6 +259,12 @@ sudo du -sh /var/lib/docker/containers/*/*-json.log 2>/dev/null | sort -h | tail
 ```bash
 sudo truncate -s 0 /var/lib/docker/containers/<container-id>/<container-id>-json.log
 ```
+
+## Multisig ISM setup process
+
+<!--TODO: Move this section to separate markdown document to prepare for docs page -->
+
+Please refer to (WORK IN PROGRESS) [MULTISIG.md](./MULTISIG.md).
 
 ## References
 
