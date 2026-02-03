@@ -8,7 +8,7 @@ The user must provide access and approval to the agent to run CLI tooling on the
 
 ## Start Here
 - README.md for repo overview, Hyperlane CLI usage, and relayer ops.
-- DEPLOYMENTS.md for testnet warp routes and token addresses.
+- MOCHA.md for testnet warp routes and token addresses.
 - faucets/README.md for Eden faucet stack details.
 - solidity/README.md for Foundry workflows and HypNativeMinter deployment.
 
