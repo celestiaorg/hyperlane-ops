@@ -1,0 +1,37 @@
+site_name: hyperlane-ops
+site_description: Hyperlane setup and deployment guides for Celestia Mocha and Eden testnets
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.tracking
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+
+plugins:
+  - search
+
+nav:
+  - Overview: index.md
+  - Getting Started: getting-started.md
+  - CLI Commands: cli-commands.md
+  - Core Deployments:
+      - EVM Core Deployment: core-deployment-evm.md
+      - Celestia Mocha Core Deployment: core-deployment-celestia-mocha.md
+      - Onboarding New Connections: onboarding-new-connections.md
+  - Warp Routes: warp-routes.md
+  - Testnet Deployments: testnet-deployments.md
+  - Multisig ISM: multisig-ism.md
+  - Relayer: relayer.md
+  - Faucets: faucets.md
+  - Solidity Tooling: solidity-hypnativeminter.md
