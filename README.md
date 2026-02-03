@@ -7,6 +7,18 @@ A repository that hosts Hyperlane deployment configurations and documentation fo
 - Install [Docker](https://www.docker.com/get-started/) for running the Relayer [docker-compose.yml](./docker-compose.yml).
 - Install the official [Hyperlane CLI ](https://docs.hyperlane.xyz/docs/reference/developer-tools/cli).
 - Install the [`celestia-appd`](https://github.com/celestiaorg/celestia-app) CLI binary.
+- Install Python 3 and `mkdocs-material` for local docs preview.
+
+## Run Docs Locally
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install mkdocs-material
+mkdocs serve
+```
+
+Open `http://127.0.0.1:8000/` in your browser.
 
 ## Repository Structure
 
