@@ -33,9 +33,9 @@ nav:
   - Overview: index.md
   - Getting Started: getting-started.md
   - Core Deployments:
-      - EVM Core Deployment: core-deployment-evm.md
-      - Celestia Deployment: core-deployment-celestia.md
-      - Celestia Connection Onboarding: celestia-connection-onboarding.md
+      - EVM: core-deployment-evm.md
+      - Celestia: core-deployment-celestia.md
+      - New chain Onboarding: celestia-connection-onboarding.md
       - Multisig ISM: multisig-ism.md
   - Warp Routes: warp-routes.md
   - Mocha:
