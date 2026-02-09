@@ -4,10 +4,13 @@ This site contains setup, deployment, operational guides with testnet examples f
 
 ## Quick Links
 - [Getting started](getting-started.md) prerequisites and local registry usage
-- [Core deployments](core-deployment-evm.md) (EVM) and [Celestia Mocha core](core-deployment-celestia-mocha.md)
-- [Onboarding new connections](onboarding-new-connections.md) (IGP + Routing ISM)
-- [Warp routes](warp-routes.md) and [testnet deployments](testnet-deployments.md)
-- [Cosmos multisig ISM notes](multisig-ism.md)
+- Core deployments guides
+    - [EVM Core](core-deployment-evm.md)
+    - [Celestia Core](core-deployment-celestia.md)
+    - [Onboarding for a existing Celestia deployment](celestia-connection-onboarding.md)
+    - [Multisig ISM](multisig-ism.md)
+- [Warp routes](warp-routes.md) 
+- [Mocha testnet](testnet-deployments.md)
 - [Relayer](relayer.md) and [faucet ops](faucets.md)
 - [Solidity tooling for HypNativeMinter](solidity-hypnativeminter.md)
 
