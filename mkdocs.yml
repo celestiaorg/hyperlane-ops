@@ -5,10 +5,12 @@ repo_name: celestiaorg/hyperlane-ops
 repo_url: https://github.com/celestiaorg/hyperlane-ops
 
 theme:
+  palette:
+    primary: deep purple
   icon:
     repo: fontawesome/brands/git-alt
   name: material
-  palette:
+  theme:
     - scheme: default
       toggle:
         icon: material/brightness-7
