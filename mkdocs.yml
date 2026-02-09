@@ -5,20 +5,12 @@ repo_name: celestiaorg/hyperlane-ops
 repo_url: https://github.com/celestiaorg/hyperlane-ops
 
 theme:
+  name: material
   palette:
+    scheme: slate
     primary: deep purple
   icon:
     repo: fontawesome/brands/git-alt
-  name: material
-  theme:
-    - scheme: default
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    - scheme: slate
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
   features:
     - navigation.sections
     - navigation.tracking
