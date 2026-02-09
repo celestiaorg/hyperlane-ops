@@ -1,6 +1,6 @@
-# hyperlane-ops
+# Hyperlane Celestia
 
-Local Hyperlane registry plus ops configurations for Celestia Mocha and Eden testnets. This site collects setup, deployment, and operational guides with concrete CLI examples.
+This site contains setup, deployment, operational guides with testnet examples for Celestia Mocha and more.
 
 ## Quick Links
 - [Getting started](getting-started.md) prerequisites and local registry usage
@@ -12,6 +12,6 @@ Local Hyperlane registry plus ops configurations for Celestia Mocha and Eden tes
 - [Solidity tooling for HypNativeMinter](solidity-hypnativeminter.md)
 
 ## Scope
-- Hyperlane registry data for Mocha and Eden
+- Hyperlane registry data
 - CLI-driven deployment workflows
 - Operational runbooks and configurations
