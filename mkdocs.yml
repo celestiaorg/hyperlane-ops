@@ -1,8 +1,17 @@
 site_name: hyperlane-ops
-site_description: Hyperlane setup and deployment guides for Celestia Mocha and Eden testnets
+site_description: Hyperlane architecture and deployment guides for Celestia
 
 theme:
   name: material
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
   features:
     - navigation.sections
     - navigation.tracking
@@ -24,14 +33,14 @@ plugins:
 nav:
   - Overview: index.md
   - Getting Started: getting-started.md
-  - CLI Commands: cli-commands.md
   - Core Deployments:
       - EVM Core Deployment: core-deployment-evm.md
-      - Celestia Mocha Core Deployment: core-deployment-celestia-mocha.md
-      - Onboarding New Connections: onboarding-new-connections.md
+      - Celestia Deployment: core-deployment-celestia.md
+      - Celestia Connection Onboarding: celestia-connection-onboarding.md
+      - Multisig ISM: multisig-ism.md
   - Warp Routes: warp-routes.md
-  - Testnet Deployments: testnet-deployments.md
-  - Multisig ISM: multisig-ism.md
+  - Mocha:
+      - Testnet Deployments: testnet-deployments.md
   - Relayer: relayer.md
-  - Faucets: faucets.md
-  - Solidity Tooling: solidity-hypnativeminter.md
+  - Solidity Tooling:
+      - HypNativeMinter: solidity-hypnativeminter.md
