@@ -1,11 +1,5 @@
 # Getting Started
 
-## Prerequisites
-
-- [Install Docker](https://www.docker.com/get-started/).
-- [Install the Hyperlane CLI](https://docs.hyperlane.xyz/docs/reference/developer-tools/cli).
-- [Install the `celestia-appd` CLI binary](https://github.com/celestiaorg/celestia-app/releases).
-
 ## Hyperlane Architecture Overview
 Hyperlane is a modular cross-chain messaging protocol. It is structured around on-chain components that produce and verify messages, plus off-chain agents that transport messages and attest to their correctness.
 

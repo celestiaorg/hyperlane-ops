@@ -14,7 +14,17 @@ This site contains setup, deployment, operational guides with testnet examples f
 - [Relayer](relayer.md)
 - [Solidity tooling for HypNativeMinter](solidity-hypnativeminter.md)
 
+## Prerequisites
+
+- [Install Docker](https://www.docker.com/get-started/).
+- [Install the Hyperlane CLI](https://docs.hyperlane.xyz/docs/reference/developer-tools/cli).
+- [Install the `celestia-appd` CLI binary](https://github.com/celestiaorg/celestia-app/releases).
+
 ## Scope
-- Hyperlane registry data
-- CLI-driven deployment workflows
+
+The scope of this documentation is primarily to cover the following items:
+
+- Hyperlane protocol architecture documentation
+- Hyperlane guides
+    - Both from scratch deployments and integration with existing deployments.
 - Operational runbooks and configurations

@@ -1,5 +1,8 @@
 # Hyperlane Solidity Tooling
 
+> [!WARNING]  
+> The following page is work-in-progress and must be updated to include valuable content.
+
 This directory contains the Foundry setup for `HypNativeMinter` and its Hyperlane and OpenZeppelin dependencies.
 
 ## Prerequisites

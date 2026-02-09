@@ -1,5 +1,8 @@
 # Relayer
 
+> [!WARNING]  
+> The following page is work-in-progress and must be updated to include valuable content.
+
 The relayer runs as a Docker container using the repository root `docker-compose.yml`.
 
 ## Configuration

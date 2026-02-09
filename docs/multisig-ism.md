@@ -13,6 +13,35 @@ This page captures the guidance for setting up a Merkle root multisig ISM with v
 6. Relayers fetch signatures, build ISM metadata, and submit it with messages to Celestia.
 7. On-chain logic uses `ecrecover` to validate signatures against the ISM’s validator list. If threshold is met, the message is accepted.
 
+```mermaid
+flowchart TB
+  subgraph Origin["Origin Chain"]
+    OM[Mailbox]
+    MTH["Post-Dispatch Hooks<br/>Merkle Tree Hook"]
+    VA[ValidatorAnnounce]
+    OM --> MTH
+  end
+
+  subgraph Offchain["Off-Chain Services"]
+    V[Validator Agent]
+    S["Signature Storage<br/>S3/GCS/FS"]
+    R[Relayer]
+    V --> S
+    R --> S
+  end
+
+  subgraph Destination["Destination Chain"]
+    DM[Mailbox]
+    ISM[Merkle Root Multisig ISM]
+    DM --> ISM
+  end
+
+  OM -- checkpoint/root --> V
+  V -- announce location --> VA
+  R -- message + metadata --> DM
+  ISM -- verify signatures --> DM
+```
+
 ## Merkle Root Multisig ISM Integration (Details)
 - Origin chain components:
 - `Mailbox` emits new dispatches and calls the Merkle Tree Hook.
