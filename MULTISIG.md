@@ -1,13 +1,6 @@
-# Cosmos Multisig ISM + IGP Setup
+# Merkle Root Multisig ISM + Validator Setup
 
-This page captures the current (partial) guidance for setting up a Cosmos multisig ISM and IGP destination gas config on Celestia. This document is an initial draft and work-in-progress which needs iteration. It should not be considered a full playbook yet.
-
-## References
-```
-https://docs.hyperlane.xyz/docs/alt-vm-implementations/cosmos-sdk
-https://hyperlanexyz.notion.site/Runbook-Hyperlane-Cosmos-SDK-2b06d35200d681f2a3c0e481a45b9275#2b06d35200d68177a982c87a8d4586cf
-https://github.com/bcp-innovations/hyperlane-cosmos/tree/main
-```
+This page captures the guidance for setting up a Merkle root multisig ISM with validator agents and IGP destination gas config on Celestia.
 
 ## High-Level Flow
 1. Create a new Merkle root multisig ISM on Celestia that defines:
@@ -15,78 +8,67 @@ https://github.com/bcp-innovations/hyperlane-cosmos/tree/main
    - threshold
 2. Set the routing ISM domain mapping to point to the Eden ISM.
 3. Set the IGP destination gas config for Eden.
-4. Validators sign roots from the Eden mailbox; signatures are submitted to Celestia.
-5. On-chain logic uses `ecrecover` to validate signatures against the ISM’s validator list. If threshold is met, the message is accepted.
+4. Validators announce their signature storage location on the origin chain’s `ValidatorAnnounce` contract.
+5. Validators sign roots from the Eden mailbox and publish signatures to off-chain storage.
+6. Relayers fetch signatures, build ISM metadata, and submit it with messages to Celestia.
+7. On-chain logic uses `ecrecover` to validate signatures against the ISM’s validator list. If threshold is met, the message is accepted.
 
-## Step 0: Create Merkle Root Multisig ISM
-Create the multisig ISM on Celestia with the validator addresses and threshold.
+## Merkle Root Multisig ISM Integration (Details)
+- Origin chain components:
+- `Mailbox` emits new dispatches and calls the Merkle Tree Hook.
+- `MerkleTreeHook.latestCheckpoint()` exposes the latest root/checkpoint for validators to sign.
+- `ValidatorAnnounce` stores validator storage locations on-chain so relayers can discover signatures.
+- Validator agent components:
+- Indexer watches `InsertedIntoTree` events and builds the local merkle tree.
+- Checkpoint signer signs the latest checkpoint with an ECDSA key.
+- Checkpoint submitter publishes signatures to a public storage location (S3/GCS or local filesystem for dev).
+- Destination chain components:
+- Merkle root multisig ISM is deployed with validator addresses and a threshold.
+- Relayer submits metadata containing validator signatures with `Mailbox.process()`.
+- ISM `verify()` checks that signatures match the configured validator set and threshold.
 
+## Validator Agent Setup (Multisig Bridge)
+This is required for any origin chain that uses a Merkle root multisig ISM on the destination side.
+
+### Prerequisites
+- Origin-chain RPC access (validators only read from the origin chain).
+- An ECDSA key for signing checkpoints (this is the validator identity used by the ISM).
+- Public storage for signatures (S3/GCS or a public filesystem path).
+- Optional: an origin-chain key funded for the validator announcement transaction.
+
+### Key Concepts
+- Validators are configured per origin chain. Run one validator instance per origin chain *per validator key*.
+  - To meet an `m-of-n` multisig threshold for a given origin chain, you need `n` distinct validator keys (often operated by different parties), and at least `m` actively publishing signatures.
+- The validator announcement happens on the origin chain (the chain whose roots are being signed).
+- The validator announcement is the only on-chain transaction a validator needs to make.
+- Announcements can be made by anyone, but the validator binary can auto-announce if provided a chain key.
+- The relayer is not trusted and can be run by anyone; signatures are public and permissionless to use.
+- An origin-chain account is required to publish the (one-time or occasional) `ValidatorAnnounce` transaction. All checkpoint signing uses the validator ECDSA key and happens off-chain.
+  - The announce tx key can be the same as the validator signing key, but it does not need to be - as the `ValidatorAnnounce` contract mandates that the storage location is signed by the validator key.
+
+### Minimal Setup Checklist
+1. Choose a validator ECDSA signing key and include its address in the destination chain’s Merkle root multisig ISM validator set.
+2. Configure a public signature storage location (S3/GCS or a public filesystem path).
+3. Configure the validator with:
+- Origin chain RPC URL(s).
+- Mailbox and Merkle Tree Hook addresses for the origin chain.
+- The ECDSA signing key.
+- The signature storage location.
+4. Announce the validator storage location on the origin chain’s `ValidatorAnnounce` contract.
+5. Verify that new signature files are being written for each dispatched message.
+6. Confirm the destination chain ISM validator list matches the checkpoint signing keys (static sets are configured at deploy time).
+
+## Notes
+- Validators can announce at any time, but relayers cannot fetch signatures until announcements exist.
+- The multisig ISM validator list must match the ECDSA checkpoint signing keys used by the validator agents.
+
+## References
 ```
-celestia-appd tx hyperlane ism create-merkle-root-multisig [validators] [threshold] [flags]
-```
-
-Example:
-
-```
-celestia-appd tx hyperlane ism create-merkle-root-multisig 0xdead..beef,0xabec..fe32,0xabee...00dd 2 --signer [signer] --fees 800utia
-```
-
-Notes:
-- `validators` is a comma-separated list of 0x addresses.
-
-Reference:
-```
+https://docs.hyperlane.xyz/docs/alt-vm-implementations/cosmos-sdk
+https://hyperlanexyz.notion.site/Runbook-Hyperlane-Cosmos-SDK-2b06d35200d681f2a3c0e481a45b9275#2b06d35200d68177a982c87a8d4586cf
+https://github.com/bcp-innovations/hyperlane-cosmos/tree/main
+https://docs.hyperlane.xyz/docs/protocol/agents/validators
+https://docs.hyperlane.xyz/docs/operate/validators/run-validators
+https://docs.hyperlane.xyz/docs/alt-vm-implementations/implementation-guide
 https://github.com/bcp-innovations/hyperlane-cosmos/blob/main/x/core/01_interchain_security/client/cli/tx.go#L114-L143
 ```
-
-## Step 1: Set Routing ISM Domain
-Use `celestia-appd` help docs to confirm flags.
-
-```
-celestia-appd tx hyperlane ism set-routing-ism-domain [routing-ism-id] [domain] [ism-id] [flags]
-```
-
-Example (Eden domain 714):
-```
-celestia-appd tx hyperlane ism set-routing-ism-domain \
-  0x726f757465725f69736d000000000000000000000000000100000000000001c1 \
-  714 \
-  [THE_ISM_ID_FOR_EDEN_WHICH_HAS_TO_BE_SETUP] \
-  --signer [signer] \
-  --fees 800utia
-```
-
-## Step 2: Set IGP Destination Gas Config
-Use `celestia-appd` help docs to confirm flags.
-
-```
-celestia-appd tx hyperlane hooks igp set-destination-gas-config \
-  [igp-id] \
-  [remote-domain] \
-  [token-exchange-rate] \
-  [gas-price] \
-  [gas-overhead] \
-  [flags]
-```
-
-Known values:
-```
-igp-id = 0x726f757465725f706f73745f6469737061746368000000040000000000000001
-remote-domain = 714  # Eden
-```
-
-Unknown values:
-- `token-exchange-rate`
-- `gas-price`
-- `gas-overhead`
-
-## Required Inputs (Still Missing)
-- ISM ID for Eden (created on Celestia).
-- Validator 0x addresses for multisig participants.
-- Threshold for multisig ISM.
-- IGP gas config values (token exchange rate, gas price, gas overhead).
-
-## Notes / Gaps
-- Validators do not need to announce themselves before Step 1, but their 0x addresses are required to create the ISM.
-- There is an additional command to create the multisig ISM itself; it needs to be located (likely in `celestia-appd` or module docs).
-- The only current doc for step-by-step CLI usage is the `celestia-appd` help output.
