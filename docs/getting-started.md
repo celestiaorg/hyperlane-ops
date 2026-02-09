@@ -1,45 +1,45 @@
 # Getting Started
 
 ## Prerequisites
-- Install Docker for running the relayer `docker-compose.yml` at the repo root.
-- Install the Hyperlane CLI.
-- Install the `celestia-appd` CLI binary.
+- [Install Docker](https://www.docker.com/get-started/).
+- [Install the Hyperlane CLI](https://docs.hyperlane.xyz/docs/reference/developer-tools/cli).
+- [Install the `celestia-appd` CLI binary](https://github.com/celestiaorg/celestia-app/releases).
 
-Reference links:
-- https://www.docker.com/get-started/
-- https://docs.hyperlane.xyz/docs/reference/developer-tools/cli
-- https://github.com/celestiaorg/celestia-app
+## Hyperlane Architecture Overview
+Hyperlane is a modular cross-chain messaging protocol. It is structured around on-chain components that produce and verify messages, plus off-chain agents that transport messages and attest to their correctness.
 
-## Use the Local Registry
-Pass `--registry .` to Hyperlane CLI commands to use the local registry contained in this repository.
+Core on-chain components:
+- The `Mailbox` is central in the Hyperlane protocl architecture, it is used for dispatching and processing interchain messages on each chain.
+- The `Post-dispatch hooks` are contracts (or modules) invoked on message dispatch to handle tasks like fee payment (IGP hook) and merkle tree insertion (Merkle Tree Hook).
+- The `ISM (Interchain Security Module)` is the verification layer on the destination chain; it decides the security model and ultimately whether a message can be processed based.
 
-Example:
-```bash
-hyperlane core read --chain edentestnet --config configs/eden-core.yaml --registry .
+Core off-chain services:
+- For multisig bridges Validator agents index origin-chain messages, sign checkpoints (roots), and publish signatures to public storage.
+- Relayers fetch messages and validator signatures, build ISM metadata, and submit `Mailbox.process()` on the destination chain.
+
+Message flow (high level):
+- A message is dispatched to the origin `Mailbox`, which runs post-dispatch hooks (e.g., Merkle Tree Hook + IGP).
+- Validators sign the latest checkpoint and publish signatures off-chain.
+- A relayer gathers signatures, packages ISM metadata, and delivers the message to the destination `Mailbox`.
+- The destination `Mailbox` calls the configured ISM to verify the message before executing it.
+
 ```
+Origin Chain                                           Destination Chain
++---------------------+                                +---------------------+
+|  Warp Token Router  |                                |  Warp Token Router  |
+|  (Token Logic)      |                                |  (Token Logic)      |
++----------+----------+                                +----------+----------+
+           | dispatch()                                           ^ handle()
+           v                                                      |
++---------------------+      message + metadata        +---------------------+
+|       Mailbox       |------------------------------->|       Mailbox       |
++----------+----------+                                +----------+----------+
+           | post-dispatch hooks                                  |
+           v                                                      | verify()
++---------------------+                                           v
+| Post Dispatch Hooks |                                +----------+----------+
+|  - IGP (fees)       |                                |         ISM         |
+|  - Merkle Hook      |                                |  (Verification)     |
++---------------------+                                +---------------------+
 
-## Environment Variables
-To operate CLIs on your behalf, configure private keys in the environment:
-- `HYP_KEY` for Hyperlane CLI EVM deployments
-- `HYP_MNEMONIC` for Celestia key recovery/import
-
-Example:
-```bash
-export HYP_KEY=0x...
-export HYP_MNEMONIC="word1 word2 ... word24"
-
-# Recover or import the Celestia key into the local keyring
-echo $HYP_MNEMONIC | celestia-appd keys add owner --recover
-# or
-celestia-appd keys import owner <key-file>
 ```
-
-## Secrets and Safety
-- Do not commit private keys (`HYP_KEY`, `HYP_CHAINS_*_SIGNER_KEY`, faucet `ethWalletKey`).
-- Use environment variables or a secret manager for runtime values.
-- `.env` is git ignored; use `.env.example` as the template.
-
-## Validation Shortlist
-- `forge test` for solidity changes
-- `hyperlane core read` / `hyperlane warp read` after updating deployments
-- `docker compose ps` and `docker compose logs` for relayer and faucet health checks

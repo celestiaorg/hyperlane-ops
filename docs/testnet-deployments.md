@@ -4,8 +4,7 @@ The following document contains testnet deployments for the Eden testnet. All as
 
 ## Warp Routes
 
-It is important to familiarize yourself with the Warp Architecture document:
-https://github.com/hyperlane-xyz/hyperlane-monorepo/tree/main/solidity/contracts/token#warp-route-architecture
+It is important to familiarize yourself with the [Warp Architecture document](https://github.com/hyperlane-xyz/hyperlane-monorepo/tree/main/solidity/contracts/token#warp-route-architecture).
 
 Token types:
 - `Native` for warping native assets (e.g. ETH) from the canonical chain
@@ -18,8 +17,7 @@ Note: In Hyperlane `cosmosnative` chains, only `Collateral` and `Synthetic` toke
 
 The `utia` asset is deployed with a custom `TokenRouter` implementation. The `HypNativeMinter` contract is used to facilitate native `utia` collateral as the canonical chain asset on Eden. This contract integrates with a custom precompile used for native asset minting which defaults to 18 decimals in EVM environments.
 
-A native TIA faucet is available on Eden Testnet at:
-http://51.159.182.223:8083/
+A native TIA faucet is available on Eden Testnet [here](http://51.159.182.223:8083/).
 
 | Token Type      | TokenID/Address                                                      | Chain (Domain)                |
 | --------------- | -------------------------------------------------------------------- | ----------------------------- |
@@ -40,8 +38,7 @@ The following is a `HypERC20` synthetic token deployment on Edentest. See above 
 
 ## Noble USDC
 
-A USDC faucet is available on Eden Testnet at:
-http://51.159.182.223:8080/
+A USDC faucet is available on Eden Testnet [here](http://51.159.182.223:8080/).
 
 | Token Type | TokenID/Address                                                      | Chain (Domain)                |
 | ---------- | -------------------------------------------------------------------- | ----------------------------- |
@@ -51,8 +48,7 @@ http://51.159.182.223:8080/
 
 ## Sepolia ETH
 
-An ETH faucet is available on Eden Testnet at:
-http://51.159.182.223:8083/
+An ETH faucet is available on Eden Testnet [here](http://51.159.182.223:8083/).
 
 | Token Type | TokenID/Address                                                      | Chain (Domain)                |
 | ---------- | -------------------------------------------------------------------- | ----------------------------- |
@@ -65,8 +61,7 @@ http://51.159.182.223:8083/
 The LBTC ERC20 token contract on Ethereum Sepolia is:
 `0x0A3eC97CA4082e83FeB77Fa69F127F0eAABD016E`
 
-An LBTC faucet is available on Eden Testnet at:
-http://51.159.182.223:8081/
+An LBTC faucet is available on Eden Testnet [here](http://51.159.182.223:8081/).
 
 | Token Type | TokenID/Address                                                      | Chain (Domain)                |
 | ---------- | -------------------------------------------------------------------- | ----------------------------- |
