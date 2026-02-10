@@ -1,6 +1,17 @@
 # Testnet Deployments
 
-The following document contains testnet deployments for the Eden testnet. All assets are bridged via Celestia Mocha testnet.
+The following document contains testnet deployments for the Mocha and Eden testnet. All assets are bridged via Celestia Mocha testnet.
+
+## Canonical Deployment (Mocha)
+The canonical Celestia Mocha core deployment addresses are tracked in the [celestia registry](https://github.com/celestiaorg/hyperlane-ops):
+- `chains/celestiatestnet/addresses.yaml`
+
+```yaml
+interchainGasPaymaster: "0x726f757465725f706f73745f6469737061746368000000040000000000000003"
+interchainSecurityModule: "0x726f757465725f69736d00000000000000000000000000040000000000000000"
+mailbox: "0x68797065726c616e650000000000000000000000000000000000000000000000"
+merkleTreeHook: "0x726f757465725f706f73745f6469737061746368000000030000000000000000"
+```
 
 ## Warp Routes
 

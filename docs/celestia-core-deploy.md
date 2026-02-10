@@ -1,20 +1,9 @@
-# Celestia (Cosmosnative) Core Deployment
+# Celestia Core Deployment
 
-This guide covers deploying Hyperlane core on Celestia using the cosmosnative module and Hyperlane CLI. It also notes the canonical Mocha deployment tracked in this repo.
-
-## Canonical Deployment (Mocha)
-The canonical Celestia Mocha core deployment addresses are tracked in the local registry:
-- `chains/celestiatestnet/addresses.yaml`
-
-```yaml
-interchainGasPaymaster: "0x726f757465725f706f73745f6469737061746368000000040000000000000003"
-interchainSecurityModule: "0x726f757465725f69736d00000000000000000000000000040000000000000000"
-mailbox: "0x68797065726c616e650000000000000000000000000000000000000000000000"
-merkleTreeHook: "0x726f757465725f706f73745f6469737061746368000000030000000000000000"
-```
+This guide covers deploying Hyperlane core on Celestia using the `cosmosnative` module and Hyperlane CLI. It also notes the canonical Mocha deployment tracked in this repo.
 
 ## Prerequisites
-- A funded cosmosnative deployer key exported as `HYP_KEY_COSMOSNATIVE`.
+- A funded Celestia deployer key exported as `HYP_KEY_COSMOSNATIVE`.
 - A chain registry entry for the target Celestia chain.
 
 ```bash
