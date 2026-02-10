@@ -3,13 +3,10 @@
 This page captures the guidance for setting up a Merkle root multisig ISM with validator agents and IGP destination gas config on Celestia.
 
 ## High-Level Flow
-1. Create a new Merkle root multisig ISM on Celestia that defines:
-   - validator 0x addresses
-   - threshold
-2. Set the routing ISM domain mapping to point to the Eden ISM.
-3. Set the IGP destination gas config for Eden.
-4. Validators announce their signature storage location on the origin chain’s `ValidatorAnnounce` contract.
-5. Validators sign roots from the Eden mailbox and publish signatures to off-chain storage.
+1. Create a new Merkle root multisig ISM on Celestia that defines the validator agents and threshold.
+2. Set the routing ISM domain mapping to point to that ISM.
+3. Validators announce their signature storage location on the origin chain’s `ValidatorAnnounce` contract.
+4. Validators sign roots from the origin mailbox and publish signatures to off-chain storage.
 6. Relayers fetch signatures, build ISM metadata, and submit it with messages to Celestia.
 7. On-chain logic uses `ecrecover` to validate signatures against the ISM’s validator list. If threshold is met, the message is accepted.
 
