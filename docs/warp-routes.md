@@ -25,11 +25,13 @@ hyperlane warp init --registry .
 ```
 
 The CLI will prompt for network type, chains to connect, token type, and other options. It produces a YAML config that maps each chain to a per-chain deployment config. For EVM routes, the `type` field typically includes:
+
 - `collateral` for an ERC20/ERC721 token on the canonical chain
 - `native` for a native token (e.g., ETH)
 - `collateralVault` for ERC4626 vault-backed collateral
 
 Optional fields (if not provided) can be auto-filled from registry/chain metadata or on-chain token details:
+
 - `symbol`, `name`, `decimals`
 - `mailbox`
 - `interchainSecurityModule`
@@ -38,6 +40,7 @@ For `cosmosnative` chains, make sure to include `decimals` and `scale` where req
 
 ## Deploy the Warp Route
 Run the deployment using the generated config. This repo tracks configs under `deployments/warp_routes/<TOKEN>/`:
+
 ```bash
 hyperlane warp deploy \
   --wd ./deployments/warp_routes/<TOKEN>/<route>-deploy.yaml \
@@ -46,10 +49,12 @@ hyperlane warp deploy \
 ```
 
 Notes:
-- If `--wd`/`--wc` are omitted, the CLI writes artifacts to `$HOME/.hyperlane/deployments/warp_routes/`.
-- The deployer will prompt for the private key if `HYP_KEY` is not set.
+!!! note
+    - If `--wd`/`--wc` are omitted, the CLI writes artifacts to `$HOME/.hyperlane/deployments/warp_routes/`.
+    - The deployer will prompt for the private key if `HYP_KEY` or `HYP_KEY_COSMOSNATIVE` is not set.
 
 After deployment:
+
 - Ensure the output `*-config.yaml` is committed.
 - Update `deployments/warp_routes/warpRouteConfigs.yaml` with the new route entry.
 - Add or update `deployments/warp_routes/<TOKEN>/logo.svg` if needed.

@@ -9,6 +9,7 @@ hyperlane warp init --registry .
 ```
 
 Selections used in this example:
+
 - Three chains: `celestiatestnet`, `edentestnet`, `sepolia`
 - Synthetic token type for both Celestia testnet and Eden testnet
 - Collateral token for Sepolia Ethereum testnet with ERC20 token address
