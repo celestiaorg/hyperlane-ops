@@ -1,6 +1,6 @@
 # Hyperlane Celestia
 
-This site contains setup, deployment, operational guides with testnet examples for Celestia Mocha and more.
+This site contains setup, deployment, operational guides for Hyperlane with testnet examples for Celestia Mocha and more.
 
 ## Quick Links
 
@@ -24,7 +24,8 @@ This site contains setup, deployment, operational guides with testnet examples f
 
 The scope of this documentation is primarily to cover the following items:
 
-- Hyperlane protocol architecture documentation
-- Hyperlane guides
-    - Both from scratch deployments and integration with existing deployments.
-- Operational runbooks and configurations
+- High level protocol architecture and documentation.
+- Guides:
+    - Hyperlane core and warp route deployment.
+    - Integration with existing mainnet deployments.
+- Operational runbooks and configurations.
