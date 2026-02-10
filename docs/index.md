@@ -5,9 +5,9 @@ This site contains setup, deployment, operational guides with testnet examples f
 ## Quick Links
 
 - [Getting started](getting-started.md)
-- [Onboarding for a existing Celestia deployment](celestia-connection-onboarding.md)
-- [Celestia Core Deployment](core-deployment-celestia.md)
-- [EVM Core Deployment](core-deployment-evm.md)
+- [Onboarding new chains to Celestia](celestia-connection-onboarding.md)
+- [Celestia Core Deployment](celestia-core-deploy.md)
+- [EVM Core Deployment](evm-core-deploy.md)
 - [Multisig ISM](multisig-ism.md)
 - [Warp Routes](warp-routes.md) 
 - [Mocha Testnet](testnet-deployments.md)
