@@ -1,6 +1,7 @@
 # Celestia Core Deployment
 
-This guide covers deploying Hyperlane core on Celestia using the `cosmosnative` module and Hyperlane CLI. It also notes the canonical Mocha deployment tracked in this repo.
+This guide covers deploying Hyperlane core on Celestia using the `cosmosnative` module and Hyperlane CLI.
+Please note that existing deployments already exist for mainnet and testnets. However, this guide may be useful development environments and debugging. For onboarding new chains to existing deployments please see [Onboarding new chains to Celestia](./celestia-connection-onboarding.md).
 
 ## Prerequisites
 - A funded Celestia deployer key exported as `HYP_KEY_COSMOSNATIVE`.
@@ -10,7 +11,8 @@ This guide covers deploying Hyperlane core on Celestia using the `cosmosnative` 
 export HYP_KEY_COSMOSNATIVE=0x...
 ```
 
-For cosmosnative chains (e.g., Celestia), it is recommended to copy chain metadata from the official Hyperlane registry rather than relying on the interactive `hyperlane registry init` prompt.
+!!! note
+    For cosmosnative chains (e.g., Celestia), it is recommended to copy chain metadata from the official Hyperlane registry rather than relying on the interactive `hyperlane registry init` prompt.
 
 ## Core Deployment Workflow
 1. Create a deployment config file (example below). This defines the default hooks and ISM.
@@ -42,16 +44,19 @@ requiredHook:
 
 2. Deploy the core infrastructure:
 ```bash
-hyperlane core deploy --registry . --chain celestiadev --config configs/celestia-core.yaml
+hyperlane core deploy --chain celestiadev --config configs/celestia-core.yaml --registry .
 ```
 
-3. Sync core configuration with the deployment:
+3. Read core config on-chain artifacts back into the config file.
 ```bash
-hyperlane core read --registry . --chain celestiadev --config configs/celestia-core.yaml
+hyperlane core read --chain celestiadev --config configs/celestia-core.yaml --registry .
 ```
 
 ## Updating a Core Deployment
 You can update the core configuration (e.g., add a new domain to the `DomainRoutingIsm` or `IGP`). This requires the new chain to exist in the registry.
+
+!!! warning
+    Since the mainnet deployments are owned by a multisig account, the following cannot be done using the CLI tooling and requires a transaction to submitted signed by the multisig participants.
 
 Example diff adding a `mockchain` entry:
 ```diff
@@ -89,9 +94,13 @@ requiredHook:
   type: merkleTreeHook
 ```
 
-Apply updates and re-sync:
+1. Apply the updates to the deployment spec.
 ```bash
-hyperlane core apply --registry . --chain celestiadev --config configs/celestia-core.yaml --key.cosmosnative=$HYP_KEY_COSMOSNATIVE
+hyperlane core apply --registry . --chain celestiadev --config configs/celestia-core.yaml
+```
+
+2. Read core config on-chain artifacts back into the config file.
+```bash
 hyperlane core read --registry . --chain celestiadev --config configs/celestia-core.yaml
 ```
 

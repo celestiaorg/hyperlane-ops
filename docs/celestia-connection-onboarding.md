@@ -1,4 +1,4 @@
-# Celestia Connection Onboarding
+# Onboarding new chains to Celestia
 
 To create a new connection (a prerequisite for warp route deployment), update the Hyperlane core deployment to support the remote chain's domain identifier.
 This is a three-step process:

@@ -57,7 +57,6 @@ flowchart LR
     R[Messages + metadata]
   end
 
-
   subgraph Destination["Destination Chain"]
     direction TB
     DM[Mailbox]

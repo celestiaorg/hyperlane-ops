@@ -18,7 +18,7 @@ This site contains setup, deployment, operational guides with testnet examples f
 
 - [Install Docker](https://www.docker.com/get-started/).
 - [Install the Hyperlane CLI](https://docs.hyperlane.xyz/docs/reference/developer-tools/cli).
-- [Install the `celestia-appd` CLI binary](https://github.com/celestiaorg/celestia-app/releases).
+- [Install the `celestia-appd` CLI](https://github.com/celestiaorg/celestia-app/releases).
 
 ## Scope
 
