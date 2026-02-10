@@ -90,11 +90,3 @@ This is required for any origin chain that uses a Merkle root multisig ISM on th
 ## Notes
 - Validators can announce at any time, but relayers cannot fetch signatures until announcements exist.
 - The multisig ISM validator list must match the ECDSA checkpoint signing keys used by the validator agents.
-
-## References
-```
-https://hyperlanexyz.notion.site/Runbook-Hyperlane-Cosmos-SDK-2b06d35200d681f2a3c0e481a45b9275#2b06d35200d68177a982c87a8d4586cf
-https://docs.hyperlane.xyz/docs/protocol/agents/validators
-https://docs.hyperlane.xyz/docs/operate/validators/run-validators
-https://docs.hyperlane.xyz/docs/alt-vm-implementations/implementation-guide
-```

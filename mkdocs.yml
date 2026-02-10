@@ -26,7 +26,6 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.highlight
   - pymdownx.inlinehilite
 
@@ -44,7 +43,7 @@ nav:
   - Overview: index.md
   - Getting Started: getting-started.md
   - Core Deployments:
-      - New chain Onboarding: celestia-connection-onboarding.md
+      - New chain Onboarding: new-chain-onboarding.md
       - Celestia: celestia-core-deploy.md
       - EVM: evm-core-deploy.md
       - Multisig ISM: multisig-ism.md

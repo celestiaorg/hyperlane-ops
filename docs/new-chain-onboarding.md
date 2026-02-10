@@ -1,10 +1,17 @@
 # Onboarding new chains to Celestia
 
-To create a new connection (a prerequisite for warp route deployment), update the Hyperlane core deployment to support the remote chain's domain identifier.
-This is a three-step process:
-1. Create a new ism for processing messages from a remote chain.
-2. Register the domain identifier in the Interchain Security Module (ISM) domain routing config.
-3. Register the domain identifier with a gas config in the Interchain Gas Paymaster (IGP) destination gas configs.
+This step-by-step guide serves as a walkthrough for onboarding a new Hyperlane chain to Celestia.
+This assumes that all of the infrastructure has already been setup on the counterparty remote chain.
+
+Generally, a three-step process is required on Celestia to fully onboard a new chain:
+
+1. Create a new ism for verifying messages from a remote chain.
+2. Register the new ism using the remote chain domain identifier in the Interchain Security Module (ISM) domain routing config.
+3. Register a gas config using the remote chain domain identifier in the Interchain Gas Paymaster (IGP) destination gas configs.
+
+!!! important
+    This guide assumes operational knowledge of Celestia multisig accounts and transaction generation.
+    Each of the transactions below can be output to JSON format using `--generate-only` and imported to <a>https://multisig.keplr.app/</a>.
 
 ## Step 1: Create Merkle Root Multisig ISM
 Create the multisig ISM on Celestia with the validator addresses and threshold.
@@ -36,7 +43,7 @@ Example (Eden domain 714):
 celestia-appd tx hyperlane ism set-routing-ism-domain \
   0x726f757465725f69736d000000000000000000000000000100000000000001c1 \
   714 \
-  [0x726f757465725f69736d0000000000000000000000000004000000000000000a] \
+  0x726f757465725f69736d0000000000000000000000000004000000000000000a \
   --from owner --fees 800utia
 ```
 

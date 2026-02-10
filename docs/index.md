@@ -5,7 +5,7 @@ This site contains setup, deployment, operational guides with testnet examples f
 ## Quick Links
 
 - [Getting started](getting-started.md)
-- [Onboarding new chains to Celestia](celestia-connection-onboarding.md)
+- [Onboarding new chains to Celestia](new-chain-onboarding.md)
 - [Celestia Core Deployment](celestia-core-deploy.md)
 - [EVM Core Deployment](evm-core-deploy.md)
 - [Multisig ISM](multisig-ism.md)

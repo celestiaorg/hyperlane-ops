@@ -1,7 +1,7 @@
 # Celestia Core Deployment
 
 This guide covers deploying Hyperlane core on Celestia using the `cosmosnative` module and Hyperlane CLI.
-Please note that existing deployments already exist for mainnet and testnets. However, this guide may be useful development environments and debugging. For onboarding new chains to existing deployments please see [Onboarding new chains to Celestia](./celestia-connection-onboarding.md).
+Please note that existing deployments already exist for mainnet and testnets. However, this guide may be useful development environments and debugging. For onboarding new chains to existing deployments please see [Onboarding new chains to Celestia](./new-chain-onboarding.md).
 
 ## Prerequisites
 - A funded Celestia deployer key exported as `HYP_KEY_COSMOSNATIVE`.
@@ -56,7 +56,7 @@ hyperlane core read --chain celestiadev --config configs/celestia-core.yaml --re
 You can update the core configuration (e.g., add a new domain to the `DomainRoutingIsm` or `IGP`). This requires the new chain to exist in the registry.
 
 !!! warning
-    Since the mainnet deployments are owned by a multisig account, the following cannot be done using the CLI tooling and requires a transaction to submitted signed by the multisig participants.
+    Since the mainnet deployments are owned by a multisig account, the following cannot be done using the CLI tooling and requires a transaction to be signed by the multisig participants. However this is appropriate to use for testnets and developer environments.
 
 Example diff adding a `mockchain` entry:
 ```diff
