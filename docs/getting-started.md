@@ -40,7 +40,7 @@ The `ISM (Interchain Security Module)` is the verification layer on the destinat
 
 ### Message flow:
 
-The following describes a high level end-to-end message flow. This illustrates the lifecycle of a message from source to destination via the off-chain relayer.
+The following describes a high level end-to-end message flow. This illustrates the lifecycle of a message from source chain to destination chain.
 
 ```mermaid
 flowchart LR

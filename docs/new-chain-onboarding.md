@@ -61,7 +61,8 @@ This supports advance payments for gas fees on the destination.
 This is required for sending messages to a remote counterparty chain.
 
 !!! important
-    It may be that the IGP gas configs are updated by a trusted EOA to reduce friction when updating gas prices. TODO: This needs to be clarified!
+    The IGP is currently owned by the Abacus Works Relayer EOA.
+    This is to reduce friction for maintenence of gas configs on-chain, thus the authority for setting gas configs on-chain resides with that account.
 
 ```bash
 celestia-appd tx hyperlane hooks igp set-destination-gas-config [igp-id] [remote-domain] [token-exchange-rate] [gas-price] [gas-overhead] [flags]
