@@ -37,6 +37,9 @@ extra_javascript:
   - https://unpkg.com/beautiful-mermaid@0.1.3/dist/beautiful-mermaid.browser.global.js
   - js/beautiful-mermaid-init.js
 
+extra_css:
+  - stylesheets/extra.css
+
 nav:
   - Overview: index.md
   - Getting Started: getting-started.md

@@ -1,0 +1,10 @@
+/* Center Mermaid diagrams rendered as SVG */
+.mermaid {
+  display: flex;
+  justify-content: center;
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
