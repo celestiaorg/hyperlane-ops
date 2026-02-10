@@ -3,6 +3,7 @@
 This guide covers deploying Hyperlane core contracts on an EVM-based chain using the Hyperlane CLI. It assumes you are using the local registry in this repo.
 
 ## Prerequisites
+- Hyperlane CLI installed.
 - A funded EVM account private key exported as `HYP_KEY`.
 - A chain registry entry in `chains/<chain>/metadata.yaml`.
 

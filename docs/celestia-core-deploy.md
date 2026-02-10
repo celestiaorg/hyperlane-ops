@@ -4,6 +4,7 @@ This guide covers deploying Hyperlane core on Celestia using the `cosmosnative` 
 Please note that existing deployments already exist for mainnet and testnets. However, this guide may be useful development environments and debugging. For onboarding new chains to existing deployments please see [Onboarding new chains to Celestia](./new-chain-onboarding.md).
 
 ## Prerequisites
+- Hyperlane CLI installed.
 - A funded Celestia deployer key exported as `HYP_KEY_COSMOSNATIVE`.
 - A chain registry entry for the target Celestia chain.
 

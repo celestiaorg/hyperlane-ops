@@ -47,7 +47,9 @@ nav:
       - Celestia: celestia-core-deploy.md
       - EVM: evm-core-deploy.md
       - Multisig ISM: multisig-ism.md
-  - Warp Routes: warp-routes.md
+  - Warp Routes:
+      - Warp Routes Guide: warp-routes.md
+      - Warp Routes Multichain: warp-route-multichain.md
   - Mocha:
       - Testnet Deployments: testnet-deployments.md
   - Relayer: relayer.md
