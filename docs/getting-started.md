@@ -24,14 +24,7 @@ Hyperlane is a modular cross-chain messaging protocol. It is structured around o
 
 ### Message flow:
 
-The following describes a high level end-to-end message flow:
-
-- A message is dispatched to the origin `Mailbox`, which runs post-dispatch hooks (e.g., Merkle Tree Hook + IGP).
-- Validators sign the latest checkpoint and publish signatures off-chain.
-- A relayer gathers signatures, packages ISM metadata, and delivers the message to the destination `Mailbox`.
-- The destination `Mailbox` calls the configured ISM to verify the message before executing it.
-
-### End-to-end flow (origin → relayer → destination)
+The following describes a high level end-to-end message flow. This illustrates the lifecycle of a message from source to destination via the off-chain relayer.
 
 ```mermaid
 flowchart LR
@@ -60,3 +53,8 @@ flowchart LR
 
   OM --> R --> DM
 ```
+
+- A message is dispatched to the origin `Mailbox`, which runs post-dispatch hooks (e.g., Merkle Tree Hook + IGP).
+- Validators sign the latest checkpoint and publish signatures off-chain.
+- A relayer gathers signatures, packages ISM metadata, and delivers the message to the destination `Mailbox`.
+- The destination `Mailbox` calls the configured ISM to verify the message before executing it.
