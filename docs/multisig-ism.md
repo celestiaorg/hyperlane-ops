@@ -1,15 +1,12 @@
 # Merkle Root Multisig ISM + Validator Setup
 
-This page captures the guidance for setting up a Merkle root multisig ISM with validator agents and IGP destination gas config on Celestia.
+This page captures the guidance for setting up a Merkle root multisig ISM with validator agents Celestia.
 
 ## High-Level Flow
-1. Create a new Merkle root multisig ISM on Celestia that defines:
-   - validator 0x addresses
-   - threshold
-2. Set the routing ISM domain mapping to point to the Eden ISM.
-3. Set the IGP destination gas config for Eden.
-4. Validators announce their signature storage location on the origin chain’s `ValidatorAnnounce` contract.
-5. Validators sign roots from the Eden mailbox and publish signatures to off-chain storage.
+1. Create a new Merkle root multisig ISM on Celestia that defines the validator agents and threshold.
+2. Set the routing ISM domain mapping to point to that ISM.
+3. Validators announce their signature storage location on the origin chain’s `ValidatorAnnounce` contract.
+4. Validators sign roots from the origin mailbox and publish signatures to off-chain storage.
 6. Relayers fetch signatures, build ISM metadata, and submit it with messages to Celestia.
 7. On-chain logic uses `ecrecover` to validate signatures against the ISM’s validator list. If threshold is met, the message is accepted.
 
@@ -42,16 +39,19 @@ flowchart TB
   ISM -- verify signatures --> DM
 ```
 
-## Merkle Root Multisig ISM Integration (Details)
-- Origin chain components:
+## Merkle Root Multisig ISM Integration
+
+#### Origin chain components:
 - `Mailbox` emits new dispatches and calls the Merkle Tree Hook.
 - `MerkleTreeHook.latestCheckpoint()` exposes the latest root/checkpoint for validators to sign.
 - `ValidatorAnnounce` stores validator storage locations on-chain so relayers can discover signatures.
-- Validator agent components:
+
+#### Validator agent components:
 - Indexer watches `InsertedIntoTree` events and builds the local merkle tree.
 - Checkpoint signer signs the latest checkpoint with an ECDSA key.
 - Checkpoint submitter publishes signatures to a public storage location (S3/GCS or local filesystem for dev).
-- Destination chain components:
+
+#### Destination chain components:
 - Merkle root multisig ISM is deployed with validator addresses and a threshold.
 - Relayer submits metadata containing validator signatures with `Mailbox.process()`.
 - ISM `verify()` checks that signatures match the configured validator set and threshold.
