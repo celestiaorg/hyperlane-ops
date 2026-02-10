@@ -15,11 +15,10 @@ This page captures the guidance for setting up a Merkle root multisig ISM with v
 
 ```mermaid
 flowchart TB
-  subgraph Origin["Origin Chain"]
-    OM[Mailbox]
-    MTH["Post-Dispatch Hooks<br/>Merkle Tree Hook"]
-    VA[ValidatorAnnounce]
-    OM --> MTH
+  subgraph Destination["Destination Chain"]
+    DM[Mailbox]
+    ISM[Merkle Root Multisig ISM]
+    DM --> ISM
   end
 
   subgraph Offchain["Off-Chain Services"]
@@ -30,10 +29,11 @@ flowchart TB
     R --> S
   end
 
-  subgraph Destination["Destination Chain"]
-    DM[Mailbox]
-    ISM[Merkle Root Multisig ISM]
-    DM --> ISM
+  subgraph Origin["Origin Chain"]
+    OM[Mailbox]
+    MTH["Post-Dispatch Hooks<br/>Merkle Tree Hook"]
+    VA[ValidatorAnnounce]
+    OM --> MTH
   end
 
   OM -- checkpoint/root --> V
