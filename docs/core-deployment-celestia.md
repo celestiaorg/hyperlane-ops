@@ -108,6 +108,7 @@ hyperlane core read --registry . --chain celestiadev --config configs/celestia-c
 
 ## Outputs
 Deployed contract addresses are written to:
+
 - `chains/<chain>/addresses.yaml`
 
 The deployment config is updated by `hyperlane core read` to include deployed addresses.

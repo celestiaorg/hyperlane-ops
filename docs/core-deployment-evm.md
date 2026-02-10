@@ -22,6 +22,7 @@ hyperlane registry init --registry .
 1. Initialize a deployment config. Use `--advanced` for fine-grained control.
 
 For basic testnet deployments, the recommended defaults are:
+
 - DefaultISM: `testIsm` (no security guarantees)
 - DefaultHook: `protocolFee` (can be set to 0)
 - RequiredHook: `merkleTreeHook` (inserts messages into an incremental merkle tree)
@@ -42,6 +43,7 @@ hyperlane core read --registry . --chain evolve --config configs/evolve-core.yam
 
 ## Outputs
 Deployed contract addresses are written to:
+
 - `chains/<chain>/addresses.yaml`
 
 The deployment config is updated by `hyperlane core read` to include deployed addresses.
