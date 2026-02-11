@@ -19,7 +19,9 @@ flowchart TB
 
 - Routes can be configured as native, collateral-backed ERC20, or synthetic ERC20 flows (e.g., lock native or ERC20 collateral on the origin chain and mint synthetic tokens on the destination).
 - Each route is implemented with `TokenRouter` contracts that encode/dispatch messages via the `Mailbox` and handle inbound transfer messages on the destination chain.
-    - On Celestia, the counterpart of a `TokenRouter` is a `Token` instance created by the `x/warp` module.
+
+!!! tip
+    On Celestia, the counterpart of a `TokenRouter` is a `Token` instance created by the `x/warp` module.
 
 #### Core messaging layer:
 
