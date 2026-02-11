@@ -61,7 +61,7 @@ This supports advance payments for gas fees on the destination.
 This is required for sending messages to a remote counterparty chain.
 
 !!! important
-    The IGP is currently owned by the Abacus Works Relayer EOA.
+    The Celestia mainnet IGP is currently owned and operated by the Abacus Works Relayer EOA.
     This is to reduce maintenence friction for periodic updates of gas configs, thus the authority for setting gas configs on-chain resides with that account.
 
 ```bash
