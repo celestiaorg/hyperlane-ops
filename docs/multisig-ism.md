@@ -55,16 +55,16 @@ This is required for any origin chain that uses a Merkle root multisig ISM on th
 - Origin-chain RPC access (validators only read from the origin chain).
 - An ECDSA key for signing checkpoints (this is the validator identity used by the ISM).
 - Public storage for signatures (S3/GCS or a public filesystem path).
-- Optional: an origin-chain key funded for the validator announcement transaction.
+- An origin-chain account key funded for the validator announcement transaction.
 
-### Minimal Setup Checklist
-1. Choose a validator ECDSA signing key and include its address in the destination chain’s Merkle root multisig ISM validator set.
+### Validator Setup Checklist
+
+!!! tip
+    Please refer to the official [Hyperlane validator operator guide](https://docs.hyperlane.xyz/docs/operate/validators/run-validators) for more details.
+
+1. Create a validator ECDSA signing key and include its address in the destination chain’s Merkle root multisig ISM validator set.
 2. Configure a public signature storage location (S3/GCS or a public filesystem path).
-3. Configure the validator with:
-- Origin chain RPC URL(s).
-- Mailbox and Merkle Tree Hook addresses for the origin chain.
-- The ECDSA signing key.
-- The signature storage location.
+3. Configure the validator agent with the origin chain RPC URL(s), Mailbox and Merkle Tree Hook addresses for the origin chain, the ECDSA signing key, and the signature storage location.
 4. Announce the validator storage location on the origin chain’s `ValidatorAnnounce` contract.
 5. Verify that new signature files are being written for each dispatched message.
 6. Confirm the destination chain ISM validator list matches the checkpoint signing keys (static sets are configured at deploy time).

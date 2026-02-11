@@ -1,56 +1,13 @@
 # Hyperlane Solidity Tooling
 
-> [!WARNING]  
-> The following page is work-in-progress and must be updated to include valuable content.
+!!! warning
+    The following page is work-in-progress and must be updated to include valuable content.
 
-This directory contains the Foundry setup for `HypNativeMinter` and its Hyperlane and OpenZeppelin dependencies.
+This page contains the setup guide for `HypNativeMinter` - enabling the `TIA` as the native gas token of an EVM chain.
 
 ## Prerequisites
 - Foundry (`forge`, `cast`). Install and keep it up to date with `foundryup`.
-
-Reference:
-- https://getfoundry.sh/
-
-## Usage
-
-### Install Dependencies
-From the `solidity/` directory:
-```bash
-forge soldeer install
-```
-
-This pulls the repos listed in `foundry.toml` into `lib/`.
-
-### Compile Contracts
-```bash
-forge build
-```
-
-Build artifacts are written to `out/`, which is ignored from Git.
-
-### Run Tests
-```bash
-forge test
-```
-
-Add tests under `solidity/test/` as needed.
-
-### Format Contracts
-```bash
-forge fmt
-```
-
-### Update Dependencies
-```bash
-forge update
-```
-
-### Clean Build Outputs
-```bash
-forge clean
-```
-
-This removes `out/` and `cache/`.
+- Install the `celestia-appd` CLI.
 
 ## Deploy HypNativeMinter
 
@@ -58,6 +15,7 @@ A forge deployment script is included to deploy the `HypNativeMinter` contract.
 The script assumes that the `$PRIVATE_KEY` used for deployment is also the `mintAdmin` of the Evolve precompile.
 
 Configure the deployment parameters via environment variables:
+
 - `MAILBOX_ADDRESS`
 - `NATIVE_MINTER_PRECOMPILE` (optional, defaults to `0x000000000000000000000000000000000000F100`)
 - `HYP_NATIVE_SCALE` (optional, defaults to `1e12`)
@@ -96,7 +54,7 @@ Where `ADMIN_KEY` is the owner of the Hyperlane contract deployment.
 The `enrollRemoteRouter` method accepts both the destination domain identifier and token identifier/contract address as parameters.
 For example, the `utia` collateral token identifier on Celestia using the domain id `69420`:
 
-```
+```bash
 cast send 0x...deadbeef \
   "enrollRemoteRouter(uint32,bytes32)" \
   69420 0x726f757465725f61707000000000000000000000000000010000000000000000 \
@@ -108,6 +66,6 @@ Likewise, the collateral token on the remote counterpart should set its remote r
 For example, set the `utia` collateral token's remote router to the `HypNativeMinter` contract address using domain id 1234.
 Ensure the 20 byte contract address is left-padded to satisfy the 32 byte requirement.
 
-```
+```bash
 celestia-appd tx warp enroll-remote-router 0x726f757465725f61707000000000000000000000000000010000000000000000 1234 0x00000000000000000000000083b466f5856dC4F531Bb5Af45045De06889D63CB 0 --from $OWNER --fees 800utia
 ```
