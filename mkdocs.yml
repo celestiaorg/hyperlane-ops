@@ -42,6 +42,7 @@ extra_css:
 nav:
   - Overview: index.md
   - Getting Started: getting-started.md
+  - Glossary: glossary.md
   - Core Deployments:
       - New chain Onboarding: new-chain-onboarding.md
       - Celestia: celestia-core-deploy.md

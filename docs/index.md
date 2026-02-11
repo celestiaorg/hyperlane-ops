@@ -2,6 +2,8 @@
 
 This site contains setup, deployment, operational guides for Hyperlane with testnet examples for Celestia Mocha and more.
 
+Please refer to the [Glossary](./glossary.md) to familiarize yourself with the vocabulary used throughout the Hyperlane protocol.
+
 ## Quick Links
 
 - [Getting started](getting-started.md)
