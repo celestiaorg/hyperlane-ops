@@ -2,9 +2,13 @@
 
 ## Operating a relayer
 
-This repository contains a `docker-compose.yml` file with a Hyperlane relayer agent configuration maintained and mounted for the container from the `relayer/config.json` file.
+The [hyperlane-ops repository](https://celestiaorg.github.io/hyperlane-ops) contains a `docker-compose.yml` file along with a Hyperlane relayer agent config. This config is maintained and mounted for the container from the `relayer/config.json` file.
 
-This relayer agent may deployed on a server for supporting Hyperlane connection and warp route liveness.
+A relayer agent should be deployed on a server for supporting Hyperlane connection and warp route liveness.
+
+## Configuration
+- `relayer/config.json` is the Hyperlane agent configuration.
+- Keep `relayChains` in sync with chain entries in the registry.
 
 ### Usage
 
