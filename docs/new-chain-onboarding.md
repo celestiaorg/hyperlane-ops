@@ -62,7 +62,7 @@ This is required for sending messages to a remote counterparty chain.
 
 !!! important
     The IGP is currently owned by the Abacus Works Relayer EOA.
-    This is to reduce friction for maintenence of gas configs on-chain, thus the authority for setting gas configs on-chain resides with that account.
+    This is to reduce maintenence friction for periodic updates of gas configs, thus the authority for setting gas configs on-chain resides with that account.
 
 ```bash
 celestia-appd tx hyperlane hooks igp set-destination-gas-config [igp-id] [remote-domain] [token-exchange-rate] [gas-price] [gas-overhead] [flags]
@@ -77,7 +77,6 @@ celestia-appd tx hyperlane hooks igp set-destination-gas-config \
   101 \
   300000000 \
   174289 \
-  --from multisig \
-  --fees 800utia \
-  --generate-only
+  --from relayer \
+  --fees 800utia
 ```
