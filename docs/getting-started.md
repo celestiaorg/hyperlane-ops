@@ -38,7 +38,7 @@ The `ISM (Interchain Security Module)` is the verification layer on the destinat
 - For multisig bridges Validator agents index origin-chain messages, sign checkpoints (roots), and publish signatures to public storage.
 - Relayers fetch messages and validator signatures, build ISM metadata, and submit `Mailbox.process()` on the destination chain.
 
-### Message flow:
+### Message lifecycle:
 
 The following describes a high level end-to-end message flow. This illustrates the lifecycle of a message from source chain to destination chain.
 
