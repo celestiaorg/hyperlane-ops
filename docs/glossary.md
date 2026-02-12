@@ -14,6 +14,7 @@ A quick reference for common Hyperlane terms used throughout this repo and docum
 - **Mailbox**: The core contract/module responsible for dispatching and processing interchain messages.
 - **Merkle Tree Hook**: The post-dispatch hook that inserts message IDs into an incremental Merkle tree for checkpointing.
 - **Metadata**: The proof data supplied to the ISM by relayers (e.g., validator signatures).
+- **Registry**: The canonical set of chain metadata and contract addresses used by Hyperlane tooling (in this repo, the entries under `chains/`, `configs/` and `deployments/`).
 - **Relayer**: An off-chain agent that submits messages and metadata to destination Mailboxes.
 - **Routing ISM**: An ISM that selects a security module based on the origin domain.
 - **Synthetic Token**: A token minted on a destination chain that represents collateral locked on the origin chain.
