@@ -23,6 +23,11 @@ services:
       - 8.8.4.4
     networks:
       - hyperlane-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
 
 volumes:
   relayer-db:
