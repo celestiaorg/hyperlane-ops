@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=../schema.json
+tokens:
+  - addressOrDenom: "0x726f757465725f61707000000000000000000000000000020000000000000024"
+    chainName: celestiatestnet
+    connections:
+      - token: ethereum|edentestnet|0x0C1c5a78669ea6cb269883ad1B65334319Aacfd7
+      - token: ethereum|sepolia|0x22cCd0e1efc2beF46143eA00e3868A35ebA16113
+    decimals: 6
+    name: USDC
+    standard: CosmosNativeHypSynthetic
+    symbol: USDC
+  - addressOrDenom: "0x0C1c5a78669ea6cb269883ad1B65334319Aacfd7"
+    chainName: edentestnet
+    connections:
+      - token: cosmosnative|celestiatestnet|0x726f757465725f61707000000000000000000000000000020000000000000024
+      - token: ethereum|sepolia|0x22cCd0e1efc2beF46143eA00e3868A35ebA16113
+    decimals: 6
+    name: USDC
+    standard: EvmHypSynthetic
+    symbol: USDC
+  - addressOrDenom: "0x22cCd0e1efc2beF46143eA00e3868A35ebA16113"
+    chainName: sepolia
+    collateralAddressOrDenom: "0xf77764d1E232Ec088150a3E434678768f8774f21"
+    connections:
+      - token: cosmosnative|celestiatestnet|0x726f757465725f61707000000000000000000000000000020000000000000024
+      - token: ethereum|edentestnet|0x0C1c5a78669ea6cb269883ad1B65334319Aacfd7
+    decimals: 6
+    name: USDC
+    standard: EvmHypCollateral
+    symbol: USDC

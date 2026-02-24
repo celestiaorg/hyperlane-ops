@@ -12,6 +12,7 @@ Please refer to the [Glossary](./glossary.md) to familiarize yourself with the v
 - [EVM Core Deployment](evm-core-deploy.md)
 - [Multisig ISM](multisig-ism.md)
 - [Warp Routes](warp-routes.md) 
+- [Manual Warp Transfer](manual-warp-transfer.md)
 - [Mocha Testnet](testnet-deployments.md)
 - [Relayer](relayer.md)
 - [Solidity tooling for HypNativeMinter](solidity-hypnativeminter.md)

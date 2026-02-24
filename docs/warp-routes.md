@@ -99,6 +99,8 @@ Send a test transfer (optional):
 hyperlane warp send --relay --symbol <TOKEN> --registry .
 ```
 
+For manual transfer runbooks across EVM and Celestia, see [Manual Warp Transfer](./manual-warp-transfer.md).
+
 ## Update or Extend a Route
 
 To change ownership, ISM settings, or add additional chains, update your deployment config and apply it:
