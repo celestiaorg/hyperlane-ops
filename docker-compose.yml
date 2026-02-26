@@ -29,6 +29,52 @@ services:
         max-size: "50m"
         max-file: "3"
 
+  forwarding-backend:
+    image: ghcr.io/celestiaorg/forwarding-relayer:sha-e1bd877
+    container_name: forwarding-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DB_PATH=/app/storage/backend.db
+    volumes:
+      - forwarding-backend-data:/app/storage
+    command: ["backend"]
+    depends_on:
+      celestia-validator:
+        condition: service_healthy
+    networks:
+      - hyperlane-net
+    healthcheck:
+      test:
+        ["CMD-SHELL", "timeout 2 bash -c '</dev/tcp/localhost/8080' || exit 1"]
+      interval: 5s
+      timeout: 3s
+      start_period: 5s
+
+  forwarding-relayer:
+    image: ghcr.io/celestiaorg/forwarding-relayer:sha-e1bd877
+    container_name: forwarding-relayer
+    environment:
+      - CELESTIA_RPC=${CELESTIA_RPC}
+      - CELESTIA_GRPC=${CELESTIA_GRPC}
+      - BACKEND_URL=http://forwarding-backend:8080
+      - PRIVATE_KEY_HEX=${FORWARD_RELAYER_KEY}
+      - CHAIN_ID=${CELESTIA_CHAIN_ID}
+      - POLL_INTERVAL=6
+      - IGP_FEE_BUFFER=1.1
+      - BALANCE_CACHE_PATH=/app/storage/balance_cache.db
+    volumes:
+      - forwarding-relayer-data:/app/storage
+    command: ["relayer"]
+    depends_on:
+      forwarding-backend:
+        condition: service_healthy
+      hyperlane-init:
+        condition: service_completed_successfully
+    networks:
+      - hyperlane-net
+
 volumes:
   relayer-db:
 
