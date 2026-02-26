@@ -57,9 +57,6 @@
                     "http": "https://celestia-testnet-rpc.itrocket.net:443"
                 },
                 {
-                    "http": "https:rpc-celestia-testnet.mzonder.com:443"
-                },
-                {
                     "http": "http://public-celestia-mocha4-consensus.numia.xyz:26657"
                 }
             ],
