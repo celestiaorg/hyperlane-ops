@@ -40,9 +40,6 @@ services:
     volumes:
       - forwarding-backend-data:/app/storage
     command: ["backend"]
-    depends_on:
-      celestia-validator:
-        condition: service_healthy
     networks:
       - hyperlane-net
     healthcheck:
@@ -70,13 +67,13 @@ services:
     depends_on:
       forwarding-backend:
         condition: service_healthy
-      hyperlane-init:
-        condition: service_completed_successfully
     networks:
       - hyperlane-net
 
 volumes:
   relayer-db:
+  forwarding-backend-data:
+  forwarding-relayer-data:
 
 networks:
   hyperlane-net:
