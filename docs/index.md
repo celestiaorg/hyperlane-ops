@@ -12,6 +12,7 @@ Please refer to the [Glossary](./glossary.md) to familiarize yourself with the v
 - [EVM Core Deployment](evm-core-deploy.md)
 - [Multisig ISM](multisig-ism.md)
 - [Warp Routes](warp-routes.md) 
+- [Add Chain to Existing Celestia Warp Route](warp-route-add-chain-celestia.md)
 - [Manual Warp Transfer](manual-warp-transfer.md)
 - [Mocha Testnet](testnet-deployments.md)
 - [Relayer](relayer.md)
