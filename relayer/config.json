@@ -31,13 +31,13 @@
             "protocol": "cosmosnative",
             "restUrls": [
                 {
+                    "http": "https://celestia-testnet-api.itrocket.net"
+                },
+                {
                     "http": "https://api-1.testnet.celestia.nodes.guru"
                 },
                 {
                     "http": "https://api-2.testnet.celestia.nodes.guru"
-                },
-                {
-                    "http": "https://celestia-testnet-api.itrocket.net"
                 },
                 {
                     "http": "https://celestia-t-api.noders.services"
@@ -48,13 +48,16 @@
             ],
             "rpcUrls": [
                 {
+                    "http": "https://celestia-testnet-rpc.itrocket.net"
+                },
+                {
+                    "http": "http://151.115.60.15:26657"
+                },
+                {
                     "http": "https://rpc-1.testnet.celestia.nodes.guru"
                 },
                 {
                     "http": "https://rpc-2.testnet.celestia.nodes.guru"
-                },
-                {
-                    "http": "https://celestia-testnet-rpc.itrocket.net:443"
                 },
                 {
                     "http": "http://public-celestia-mocha4-consensus.numia.xyz:26657"
@@ -79,13 +82,13 @@
                     "http": "http://grpc-1.testnet.celestia.nodes.guru:10790"
                 },
                 {
+                    "http": "celestia-testnet-grpc.itrocket.net:443"
+                },
+                {
                     "http": "http://grpc-mocha.pops.one:9090"
                 },
                 {
                     "http": "http://public-celestia-mocha4-consensus.numia.xyz:9090"
-                },
-                {
-                    "http": "http://grpc-1.testnet.celestia.nodes.guru:10790"
                 },
                 {
                     "http": "http://grpc-2.testnet.celestia.nodes.guru:10790"
