@@ -1,6 +1,6 @@
 services:
   relayer:
-    image: gcr.io/abacus-labs-dev/hyperlane-agent:agents-v1.7.0
+    image: gcr.io/abacus-labs-dev/hyperlane-agent:agents-v2.0.0
     platform: linux/amd64
     container_name: hyperlane-relayer
     user: "0:0"
