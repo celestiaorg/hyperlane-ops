@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: hyperlane-relayer
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - relayer:9090
+
+  # Optional: enable if forwarding-relayer exposes Prometheus metrics in future.
+  # - job_name: forwarding-relayer
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets:
+  #         - forwarding-relayer:9090
