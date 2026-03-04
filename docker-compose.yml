@@ -30,7 +30,7 @@ services:
         max-file: "3"
 
   forwarding-backend:
-    image: ghcr.io/celestiaorg/forwarding-relayer:sha-e1bd877
+    image: ghcr.io/celestiaorg/forwarding-relayer:sha-8557ee1
     container_name: forwarding-backend
     ports:
       - "8080:8080"
@@ -50,7 +50,7 @@ services:
       start_period: 5s
 
   forwarding-relayer:
-    image: ghcr.io/celestiaorg/forwarding-relayer:sha-e1bd877
+    image: ghcr.io/celestiaorg/forwarding-relayer:sha-8557ee1
     container_name: forwarding-relayer
     environment:
       - CELESTIA_RPC=${CELESTIA_RPC}
@@ -59,10 +59,7 @@ services:
       - PRIVATE_KEY_HEX=${FORWARD_RELAYER_KEY}
       - CHAIN_ID=${CELESTIA_CHAIN_ID}
       - POLL_INTERVAL=6
-      - IGP_FEE_BUFFER=1.1
-      - BALANCE_CACHE_PATH=/app/storage/balance_cache.db
-    volumes:
-      - forwarding-relayer-data:/app/storage
+      - IGP_FEE_BUFFER=1.3
     command: ["relayer"]
     depends_on:
       forwarding-backend:
@@ -73,7 +70,6 @@ services:
 volumes:
   relayer-db:
   forwarding-backend-data:
-  forwarding-relayer-data:
 
 networks:
   hyperlane-net:
