@@ -4,7 +4,7 @@ The ops-agent is a Pi-based orchestration service for Hyperlane core deployment,
 
 ## Highlights
 
-- Runs in Docker Compose under the `agent` profile.
+- Runs as a standalone local service via the `ops-agent` CLI.
 - Exposes a local HTTP API on `127.0.0.1:8787`.
 - Uses two-step approval for mutating commands.
 - Exposes Prometheus metrics at `/metrics`.
@@ -12,7 +12,7 @@ The ops-agent is a Pi-based orchestration service for Hyperlane core deployment,
 ## Start
 
 ```bash
-docker compose --profile agent up -d --build ops-agent
+ops-agent serve
 ```
 
 ## API
@@ -21,6 +21,11 @@ docker compose --profile agent up -d --build ops-agent
 curl -sS -X POST http://127.0.0.1:8787/v1/plan \
   -H 'content-type: application/json' \
   -d '{"goal":"check relayer health"}'
+```
+
+```bash
+curl -sS http://127.0.0.1:8787/v1/info
+curl -sS "http://127.0.0.1:8787/v1/info?verify=1"
 ```
 
 ```bash
@@ -51,3 +56,10 @@ The following counters are exported:
 - `writes_executed_total`
 - `policy_violation_total`
 - `run_failures_total`
+
+## CLI
+
+```bash
+ops-agent info --json
+ops-agent info --verify --json
+```

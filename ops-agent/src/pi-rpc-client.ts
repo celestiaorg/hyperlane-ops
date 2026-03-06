@@ -1,5 +1,8 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { createInterface, type Interface } from "node:readline";
+import { fileURLToPath } from "node:url";
 
 interface RpcResponse {
   id?: string;
@@ -31,6 +34,43 @@ export interface PiRpcOptions {
 
 const DEFAULT_TIMEOUT_MS = 120_000;
 
+function projectRootFromRuntime(): string {
+  return resolve(dirname(fileURLToPath(import.meta.url)), "..");
+}
+
+function resolvePiExecutable(cwd: string): string {
+  if (process.env.PI_BIN && process.env.PI_BIN.trim().length > 0) {
+    return process.env.PI_BIN.trim();
+  }
+
+  const isWin = process.platform === "win32";
+  const binaryName = isWin ? "pi.cmd" : "pi";
+  const projectRoot = projectRootFromRuntime();
+
+  const candidates = [
+    resolve(cwd, "node_modules/.bin", binaryName),
+    resolve(projectRoot, "node_modules/.bin", binaryName),
+  ];
+
+  const match = candidates.find((candidate) => existsSync(candidate));
+  if (match) {
+    return match;
+  }
+
+  return binaryName;
+}
+
+function enrichSpawnError(error: Error, command: string): Error {
+  const asErrno = error as NodeJS.ErrnoException;
+  if (asErrno.code !== "ENOENT") {
+    return error;
+  }
+
+  return new Error(
+    `Failed to launch Pi RPC binary '${command}' (ENOENT). Install dependencies in ops-agent (npm install), or set PI_BIN to a valid pi executable path.`,
+  );
+}
+
 export class PiRpcClient {
   private process: ChildProcess | null = null;
   private rl: Interface | null = null;
@@ -58,7 +98,7 @@ export class PiRpcClient {
       args.push("--session-dir", this.options.sessionDir);
     }
 
-    const command = process.platform === "win32" ? "pi.cmd" : "pi";
+    const command = resolvePiExecutable(this.options.cwd);
 
     this.process = spawn(command, args, {
       cwd: this.options.cwd,
@@ -66,12 +106,28 @@ export class PiRpcClient {
       stdio: ["pipe", "pipe", "pipe"],
     });
 
+    let startupError: Error | null = null;
+
+    this.process.on("error", (error) => {
+      startupError = enrichSpawnError(error, command);
+
+      for (const req of this.pending.values()) {
+        clearTimeout(req.timeout);
+        req.reject(startupError);
+      }
+      this.pending.clear();
+    });
+
+    if (!this.process.stdout || !this.process.stdin) {
+      throw new Error("Pi RPC failed to start with piped stdio");
+    }
+
     this.process.stderr?.on("data", (chunk) => {
       this.stderr += chunk.toString();
     });
 
     this.rl = createInterface({
-      input: this.process.stdout!,
+      input: this.process.stdout,
       terminal: false,
     });
 
@@ -89,6 +145,10 @@ export class PiRpcClient {
     });
 
     await new Promise((resolve) => setTimeout(resolve, 100));
+
+    if (startupError) {
+      throw startupError;
+    }
 
     if (this.process.exitCode !== null) {
       throw new Error(`Pi RPC exited immediately with code ${this.process.exitCode}. Stderr: ${this.stderr}`);
