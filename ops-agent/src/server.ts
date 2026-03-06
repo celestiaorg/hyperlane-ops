@@ -1,8 +1,8 @@
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { resolve } from "node:path";
+import { basename, extname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import Fastify from "fastify";
 import {
   ApproveRequestSchema,
   type ApproveRequest,
@@ -17,48 +17,6 @@ import { OpsOrchestrator } from "./orchestrator.js";
 import { PiRpcClient } from "./pi-rpc-client.js";
 import { PlanStore } from "./plan-store.js";
 import { validateBody } from "./validation.js";
-
-function readJsonBody(req: IncomingMessage): Promise<unknown> {
-  return new Promise((resolveBody, reject) => {
-    let raw = "";
-
-    req.on("data", (chunk) => {
-      raw += chunk.toString();
-      if (raw.length > 1_000_000) {
-        reject(new Error("Request body too large"));
-      }
-    });
-
-    req.on("end", () => {
-      if (!raw.trim()) {
-        resolveBody({});
-        return;
-      }
-
-      try {
-        resolveBody(JSON.parse(raw));
-      } catch {
-        reject(new Error("Invalid JSON body"));
-      }
-    });
-
-    req.on("error", (error) => reject(error));
-  });
-}
-
-function sendJson(res: ServerResponse, statusCode: number, body: unknown): void {
-  res.writeHead(statusCode, {
-    "Content-Type": "application/json",
-  });
-  res.end(`${JSON.stringify(body)}\n`);
-}
-
-function sendText(res: ServerResponse, statusCode: number, body: string): void {
-  res.writeHead(statusCode, {
-    "Content-Type": "text/plain; charset=utf-8",
-  });
-  res.end(body);
-}
 
 function hasEnv(name: string): boolean {
   return Boolean(process.env[name] && process.env[name]?.trim().length);
@@ -82,6 +40,105 @@ function resolveStateStorePath(baseCwd: string): string {
   }
 
   return resolve(baseCwd, "state/store.json");
+}
+
+function resolvePiProjectCwd(baseCwd: string): string {
+  if (process.env.PI_PROJECT_CWD && process.env.PI_PROJECT_CWD.trim().length > 0) {
+    return resolve(process.env.PI_PROJECT_CWD.trim());
+  }
+
+  const candidates = [baseCwd, resolve(baseCwd, ".."), resolve(baseCwd, "ops-agent")];
+  const visited = new Set<string>();
+  for (const candidate of candidates) {
+    const normalized = resolve(candidate);
+    if (visited.has(normalized)) {
+      continue;
+    }
+    visited.add(normalized);
+    if (existsSync(resolve(normalized, ".pi/settings.json"))) {
+      return normalized;
+    }
+  }
+
+  return baseCwd;
+}
+
+function tryReadSettingsSkillPaths(piProjectCwd: string): string[] {
+  const settingsPath = resolve(piProjectCwd, ".pi/settings.json");
+  if (!existsSync(settingsPath)) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(settingsPath, "utf8")) as { skills?: unknown };
+    if (!Array.isArray(parsed.skills)) {
+      return [];
+    }
+    const piDir = resolve(piProjectCwd, ".pi");
+    return parsed.skills.filter((item): item is string => typeof item === "string").map((item) => resolve(piDir, item));
+  } catch {
+    return [];
+  }
+}
+
+function collectSkillNamesFromPath(path: string): string[] {
+  if (!existsSync(path)) {
+    return [];
+  }
+
+  const stat = statSync(path);
+  if (stat.isFile() && extname(path).toLowerCase() === ".md") {
+    const file = basename(path);
+    if (file === "SKILL.md") {
+      return [basename(resolve(path, ".."))];
+    }
+    return [file.slice(0, -3)];
+  }
+
+  if (!stat.isDirectory()) {
+    return [];
+  }
+
+  const names: string[] = [];
+  const entries = readdirSync(path, { withFileTypes: true });
+
+  for (const entry of entries) {
+    if (entry.isFile() && entry.name.toLowerCase().endsWith(".md")) {
+      if (entry.name === "SKILL.md") {
+        names.push(basename(path));
+      } else {
+        names.push(entry.name.slice(0, -3));
+      }
+      continue;
+    }
+
+    if (!entry.isDirectory()) {
+      continue;
+    }
+
+    const skillPath = resolve(path, entry.name, "SKILL.md");
+    if (existsSync(skillPath)) {
+      names.push(entry.name);
+    }
+  }
+
+  return names;
+}
+
+function discoverAvailableSkills(baseCwd: string): string[] {
+  const piProjectCwd = resolvePiProjectCwd(baseCwd);
+  const configuredRoots = tryReadSettingsSkillPaths(piProjectCwd);
+  const defaultRoot = resolve(piProjectCwd, ".pi/skills");
+  const roots = [...new Set([defaultRoot, ...configuredRoots])];
+
+  const names = new Set<string>();
+  for (const root of roots) {
+    for (const name of collectSkillNamesFromPath(root)) {
+      names.add(name);
+    }
+  }
+
+  return [...names].sort((a, b) => a.localeCompare(b));
 }
 
 function authFileInfo(filePath: string): {
@@ -169,186 +226,163 @@ export async function startServer(): Promise<void> {
     store,
     metrics,
   });
-
-  const server = createServer(async (req, res) => {
-    try {
-      if (!req.url || !req.method) {
-        sendJson(res, 400, { error: "Invalid request" });
-        return;
-      }
-
-      const parsedUrl = new URL(req.url, "http://localhost");
-      const pathname = parsedUrl.pathname;
-
-      if (req.method === "GET" && pathname === "/healthz") {
-        sendJson(res, 200, { status: "ok" });
-        return;
-      }
-
-      if (req.method === "GET" && pathname === "/metrics") {
-        const body = await metrics.registry.metrics();
-        sendText(res, 200, body);
-        return;
-      }
-
-      if (req.method === "GET" && pathname === "/v1/info") {
-        const verify = parsedUrl.searchParams.get("verify") === "1" || parsedUrl.searchParams.get("verify") === "true";
-        const authPath = authFilePath();
-        const authInfo = authFileInfo(authPath);
-
-        const payload: {
-          model: {
-            provider: string;
-            model: string;
-          };
-          credentials: {
-            openaiApiKeyPresent: boolean;
-            hypKeyPresent: boolean;
-            hypKeyCosmosnativePresent: boolean;
-            authFilePath: string;
-            authFilePresent: boolean;
-            authFileHasOpenAiApiKey: boolean;
-            authFileHasOpenAiCodexOAuth: boolean;
-            authFileParseError?: string;
-          };
-          runtime: {
-            cwd: string;
-            sessionDir: string;
-          };
-          verification?: {
-            requested: true;
-            ok: boolean;
-            provider: string;
-            model: string;
-            error?: string;
-          };
-        } = {
-          model: {
-            provider: process.env.PI_DEFAULT_PROVIDER ?? "",
-            model: process.env.PI_DEFAULT_MODEL ?? "",
-          },
-          credentials: {
-            openaiApiKeyPresent: hasEnv("OPENAI_API_KEY"),
-            hypKeyPresent: hasEnv("HYP_KEY"),
-            hypKeyCosmosnativePresent: hasEnv("HYP_KEY_COSMOSNATIVE"),
-            authFilePath: authPath,
-            authFilePresent: authInfo.present,
-            authFileHasOpenAiApiKey: authInfo.hasOpenAiApiKey,
-            authFileHasOpenAiCodexOAuth: authInfo.hasOpenAiCodexOAuth,
-            authFileParseError: authInfo.parseError,
-          },
-          runtime: {
-            cwd: baseCwd,
-            sessionDir: process.env.PI_SESSION_DIR ?? "",
-          },
-        };
-
-        if (verify) {
-          payload.verification = {
-            requested: true,
-            ...(await verifyPi(baseCwd)),
-          };
-        }
-
-        sendJson(res, 200, payload);
-        return;
-      }
-
-      if (req.method === "POST" && pathname === "/v1/plan") {
-        const parsed = validateBody<PlanRequest>(PlanRequestSchema, await readJsonBody(req));
-        const result = await orchestrator.createPlan(parsed.goal, parsed.context, parsed.cwd);
-        sendJson(res, 200, {
-          planId: result.plan.id,
-          summary: result.plan.summary,
-          commands: result.plan.commands,
-          rawResponse: result.rawResponse,
-        });
-        return;
-      }
-
-      if (req.method === "GET" && pathname.startsWith("/v1/plans/")) {
-        const match = pathname.match(/^\/v1\/plans\/([^/]+)$/);
-        if (!match) {
-          sendJson(res, 404, { error: "Not found" });
-          return;
-        }
-
-        const plan = orchestrator.getPlan(match[1]);
-        if (!plan) {
-          sendJson(res, 404, { error: "Plan not found" });
-          return;
-        }
-
-        sendJson(res, 200, plan);
-        return;
-      }
-
-      if (req.method === "POST" && pathname === "/v1/approve") {
-        const parsed = validateBody<ApproveRequest>(ApproveRequestSchema, await readJsonBody(req));
-        const approval = orchestrator.approve(parsed.planId, parsed.commandHashes, parsed.ttlSeconds ?? 900);
-        sendJson(res, 200, {
-          approvalToken: approval.token,
-          expiresAt: approval.expiresAt,
-        });
-        return;
-      }
-
-      if (req.method === "POST" && pathname === "/v1/execute") {
-        const parsed = validateBody<ExecuteRequest>(ExecuteRequestSchema, await readJsonBody(req));
-        const execution = await orchestrator.execute(parsed.planId, {
-          approvalToken: parsed.approvalToken,
-          readOnly: parsed.readOnly,
-        });
-        sendJson(res, 202, execution);
-        return;
-      }
-
-      if (req.method === "GET" && pathname.startsWith("/v1/runs/")) {
-        const match = pathname.match(/^\/v1\/runs\/([^/]+)(\/events)?$/);
-        if (!match) {
-          sendJson(res, 404, { error: "Not found" });
-          return;
-        }
-
-        const runId = match[1];
-        const run = orchestrator.getRun(runId);
-        if (!run) {
-          sendJson(res, 404, { error: "Run not found" });
-          return;
-        }
-
-        if (match[2]) {
-          const ndjson = `${run.transcript.map((event) => JSON.stringify(event)).join("\n")}\n`;
-          sendText(res, 200, ndjson);
-          return;
-        }
-
-        sendJson(res, 200, run);
-        return;
-      }
-
-      sendJson(res, 404, { error: "Not found" });
-    } catch (error) {
-      sendJson(res, 400, {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
+  const app = Fastify({
+    logger: false,
+    bodyLimit: 1_000_000,
   });
 
-  await new Promise<void>((resolveListen, rejectListen) => {
-    const onError = (error: Error) => {
-      server.off("error", onError);
-      rejectListen(error);
-    };
+  app.setNotFoundHandler((_request, reply) => {
+    reply.code(404).send({ error: "Not found" });
+  });
 
-    server.once("error", onError);
-    server.listen(port, "0.0.0.0", () => {
-      server.off("error", onError);
-      // eslint-disable-next-line no-console
-      console.log(`ops-agent listening on :${port}`);
-      resolveListen();
+  app.setErrorHandler((error, _request, reply) => {
+    const candidateStatus = (error as { statusCode?: number }).statusCode;
+    const statusCode = typeof candidateStatus === "number" && candidateStatus >= 400 ? candidateStatus : 400;
+    const message = error instanceof Error ? error.message : String(error);
+    reply.code(statusCode).send({
+      error: message,
     });
   });
+
+  app.get("/healthz", async () => ({ status: "ok" }));
+
+  app.get("/metrics", async (_request, reply) => {
+    const body = await metrics.registry.metrics();
+    reply.type("text/plain; charset=utf-8").send(body);
+  });
+
+  app.get<{ Querystring: { verify?: string } }>("/v1/info", async (request) => {
+    const verify = request.query.verify === "1" || request.query.verify === "true";
+    const authPath = authFilePath();
+    const authInfo = authFileInfo(authPath);
+    const skills = discoverAvailableSkills(baseCwd);
+
+    const payload: {
+      model: {
+        provider: string;
+        model: string;
+      };
+      credentials: {
+        openaiApiKeyPresent: boolean;
+        hypKeyPresent: boolean;
+        hypKeyCosmosnativePresent: boolean;
+        authFilePath: string;
+        authFilePresent: boolean;
+        authFileHasOpenAiApiKey: boolean;
+        authFileHasOpenAiCodexOAuth: boolean;
+        authFileParseError?: string;
+      };
+      runtime: {
+        cwd: string;
+        sessionDir: string;
+        skills: string[];
+      };
+      verification?: {
+        requested: true;
+        ok: boolean;
+        provider: string;
+        model: string;
+        error?: string;
+      };
+    } = {
+      model: {
+        provider: process.env.PI_DEFAULT_PROVIDER ?? "",
+        model: process.env.PI_DEFAULT_MODEL ?? "",
+      },
+      credentials: {
+        openaiApiKeyPresent: hasEnv("OPENAI_API_KEY"),
+        hypKeyPresent: hasEnv("HYP_KEY"),
+        hypKeyCosmosnativePresent: hasEnv("HYP_KEY_COSMOSNATIVE"),
+        authFilePath: authPath,
+        authFilePresent: authInfo.present,
+        authFileHasOpenAiApiKey: authInfo.hasOpenAiApiKey,
+        authFileHasOpenAiCodexOAuth: authInfo.hasOpenAiCodexOAuth,
+        authFileParseError: authInfo.parseError,
+      },
+      runtime: {
+        cwd: baseCwd,
+        sessionDir: process.env.PI_SESSION_DIR ?? "",
+        skills,
+      },
+    };
+
+    if (verify) {
+      payload.verification = {
+        requested: true,
+        ...(await verifyPi(baseCwd)),
+      };
+    }
+
+    return payload;
+  });
+
+  app.post<{ Body: unknown }>("/v1/plan", async (request) => {
+    const parsed = validateBody<PlanRequest>(PlanRequestSchema, request.body);
+    const result = await orchestrator.createPlan(parsed.goal, parsed.context, parsed.cwd);
+    return {
+      planId: result.plan.id,
+      summary: result.plan.summary,
+      commands: result.plan.commands,
+      rawResponse: result.rawResponse,
+    };
+  });
+
+  app.get<{ Params: { planId: string } }>("/v1/plans/:planId", async (request, reply) => {
+    const plan = orchestrator.getPlan(request.params.planId);
+    if (!plan) {
+      reply.code(404);
+      return { error: "Plan not found" };
+    }
+
+    return plan;
+  });
+
+  app.post<{ Body: unknown }>("/v1/approve", async (request) => {
+    const parsed = validateBody<ApproveRequest>(ApproveRequestSchema, request.body);
+    const approval = orchestrator.approve(parsed.planId, parsed.commandHashes, parsed.ttlSeconds ?? 900);
+    return {
+      approvalToken: approval.token,
+      expiresAt: approval.expiresAt,
+    };
+  });
+
+  app.post<{ Body: unknown }>("/v1/execute", async (request, reply) => {
+    const parsed = validateBody<ExecuteRequest>(ExecuteRequestSchema, request.body);
+    const execution = await orchestrator.execute(parsed.planId, {
+      approvalToken: parsed.approvalToken,
+      readOnly: parsed.readOnly,
+    });
+    reply.code(202);
+    return execution;
+  });
+
+  app.get<{ Params: { runId: string } }>("/v1/runs/:runId", async (request, reply) => {
+    const run = orchestrator.getRun(request.params.runId);
+    if (!run) {
+      reply.code(404);
+      return { error: "Run not found" };
+    }
+
+    return run;
+  });
+
+  app.get<{ Params: { runId: string } }>("/v1/runs/:runId/events", async (request, reply) => {
+    const run = orchestrator.getRun(request.params.runId);
+    if (!run) {
+      reply.code(404);
+      return { error: "Run not found" };
+    }
+
+    const ndjson = `${run.transcript.map((event) => JSON.stringify(event)).join("\n")}\n`;
+    reply.type("text/plain; charset=utf-8").send(ndjson);
+  });
+
+  await app.listen({
+    port,
+    host: "0.0.0.0",
+  });
+  // eslint-disable-next-line no-console
+  console.log(`ops-agent listening on :${port}`);
 }
 
 async function main(): Promise<void> {

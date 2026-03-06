@@ -104,6 +104,7 @@ type InfoResponse = {
   runtime?: {
     cwd?: string;
     sessionDir?: string;
+    skills?: string[];
   };
   verification?: {
     requested?: boolean;
@@ -273,6 +274,7 @@ function renderInfoHuman(info: InfoResponse): string {
   lines.push("Runtime");
   lines.push(`  CWD: ${asDisplayValue(runtime.cwd)}`);
   lines.push(`  PI_SESSION_DIR: ${asDisplayValue(runtime.sessionDir)}`);
+  lines.push(`  Skills: ${JSON.stringify(runtime.skills ?? [])}`);
 
   if (info.verification?.requested) {
     lines.push("");
