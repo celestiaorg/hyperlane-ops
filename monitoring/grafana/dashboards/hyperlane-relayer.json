@@ -448,7 +448,7 @@
     },
     {
       "id": 11,
-      "type": "timeseries",
+      "type": "bargauge",
       "title": "Chain Block Height",
       "description": "Current observed chain height per chain",
       "datasource": {
@@ -466,17 +466,8 @@
           "color": {
             "mode": "palette-classic"
           },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 1,
-            "showPoints": "never",
-            "stacking": {
-              "mode": "none",
-              "group": "A"
-            }
-          },
           "mappings": [],
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -490,17 +481,14 @@
         "overrides": []
       },
       "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true,
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "reduceOptions": {
           "calcs": [
             "lastNotNull"
-          ]
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
+          ],
+          "fields": "",
+          "values": false
         }
       },
       "targets": [
@@ -511,8 +499,9 @@
           },
           "editorMode": "code",
           "expr": "max by (chain) (hyperlane_block_height{agent=\"relayer\"})",
+          "instant": true,
           "legendFormat": "{{chain}}",
-          "range": true,
+          "range": false,
           "refId": "A"
         }
       ]
@@ -661,7 +650,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "clamp_min(max by (chain) (hyperlane_block_height{agent=\"relayer\"}) - on (chain) group_left(data_type) max by (chain, data_type) (hyperlane_contract_sync_block_height{agent=\"relayer\"}), 0)",
+          "expr": "clamp_min(max by (chain) (hyperlane_block_height{agent=\"relayer\"}) - on (chain) group_right max by (chain, data_type) (hyperlane_contract_sync_block_height{agent=\"relayer\"}), 0)",
           "legendFormat": "{{chain}} {{data_type}}",
           "range": true,
           "refId": "A"
@@ -1183,10 +1172,10 @@
         "overrides": []
       },
       "options": {
-        "colorMode": "background",
+        "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
-        "orientation": "auto",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -1194,7 +1183,7 @@
           "fields": "",
           "values": false
         },
-        "textMode": "auto"
+        "textMode": "value_and_name"
       },
       "targets": [
         {
