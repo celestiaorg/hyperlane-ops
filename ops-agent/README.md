@@ -13,9 +13,16 @@ Pi-based orchestration service for Hyperlane core, warp deployment, and relayer 
 ## Environment
 
 - `PI_DEFAULT_PROVIDER` and `PI_DEFAULT_MODEL` set provider/model for Pi RPC process.
+- `PI_PROJECT_CWD` (optional) overrides the cwd used to load Pi project settings/skills.
 - `HYP_KEY` required for EVM mutating commands.
 - `HYP_KEY_COSMOSNATIVE` required for cosmosnative mutating commands.
 - Optional `PI_BIN` can point to a specific `pi` executable path.
+
+## Project Pi Config
+
+- Ops-agent project settings and skills are stored in `ops-agent/.pi`.
+- By default the planner auto-detects `ops-agent/.pi` when server command cwd points at this repository root.
+- If your layout differs, set `PI_PROJECT_CWD` to the directory containing `.pi/settings.json`.
 
 ## Authentication
 

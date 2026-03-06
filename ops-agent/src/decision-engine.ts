@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import type { DecisionEngine, DecisionPlan } from "./types.js";
 import { PiRpcClient } from "./pi-rpc-client.js";
 
@@ -24,7 +26,24 @@ function extractJsonPayload(text: string): RawPlan {
   return parsed;
 }
 
-function makePlannerPrompt(goal: string, context?: string): string {
+function resolvePiRuntimeCwd(commandCwd: string): string {
+  if (process.env.PI_PROJECT_CWD && process.env.PI_PROJECT_CWD.trim().length > 0) {
+    return resolve(process.env.PI_PROJECT_CWD.trim());
+  }
+
+  const opsAgentDir = resolve(commandCwd, "ops-agent");
+  if (existsSync(resolve(opsAgentDir, ".pi/settings.json"))) {
+    return opsAgentDir;
+  }
+
+  if (existsSync(resolve(commandCwd, ".pi/settings.json"))) {
+    return commandCwd;
+  }
+
+  return commandCwd;
+}
+
+function makePlannerPrompt(goal: string, commandCwd: string, context?: string): string {
   const contextText = context?.trim().length ? `Context:\n${context}\n` : "";
 
   return [
@@ -36,6 +55,7 @@ function makePlannerPrompt(goal: string, context?: string): string {
     "- Prefer read-only checks first, then mutating commands if needed.",
     "- Use --registry . for hyperlane core/warp commands.",
     "- Use only these workflow families: hyperlane core, hyperlane warp, docker compose relayer, cast call/send, celestia-appd query/tx.",
+    `- Commands are executed from this working directory: ${commandCwd}`,
     "- No prose outside JSON.",
     contextText,
     `Goal: ${goal}`,
@@ -44,8 +64,9 @@ function makePlannerPrompt(goal: string, context?: string): string {
 
 export class PiDecisionEngine implements DecisionEngine {
   async createPlan(goal: string, context: string | undefined, cwd: string): Promise<DecisionPlan> {
+    const piRuntimeCwd = resolvePiRuntimeCwd(cwd);
     const client = new PiRpcClient({
-      cwd,
+      cwd: piRuntimeCwd,
       provider: process.env.PI_DEFAULT_PROVIDER,
       model: process.env.PI_DEFAULT_MODEL,
       sessionDir: process.env.PI_SESSION_DIR,
@@ -54,7 +75,7 @@ export class PiDecisionEngine implements DecisionEngine {
 
     try {
       await client.start();
-      const prompt = makePlannerPrompt(goal, context);
+      const prompt = makePlannerPrompt(goal, cwd, context);
       await client.promptAndWait(prompt);
       const assistantText = await client.getLastAssistantText();
       if (!assistantText) {
