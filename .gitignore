@@ -14,3 +14,7 @@ solidity/remappings.txt
 **/faucet-pid.txt
 **/faucet-stats.log
 **/faucet-store.db
+
+ops-agent/node_modules/
+ops-agent/dist/
+ops-agent/state/store.json

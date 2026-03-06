@@ -55,6 +55,7 @@ nav:
       - Manual Warp Transfer: manual-warp-transfer.md
   - Agents:
       - Relayer: relayer.md
+      - Ops Agent: ops-agent.md
   - Mocha:
       - Testnet Deployments: testnet-deployments.md
   - Solidity Tooling:

@@ -66,6 +66,32 @@ services:
     networks:
       - hyperlane-net
 
+  ops-agent:
+    profiles: ["agent"]
+    build:
+      context: .
+      dockerfile: ops-agent/Dockerfile
+    container_name: hyperlane-ops-agent
+    working_dir: /workspace
+    env_file:
+      - .env
+    environment:
+      - OPS_AGENT_PORT=8787
+      - OPS_AGENT_CWD=/workspace
+      - PI_DEFAULT_PROVIDER=${PI_DEFAULT_PROVIDER:-openai}
+      - PI_DEFAULT_MODEL=${PI_DEFAULT_MODEL:-}
+      - PI_SESSION_DIR=/workspace/ops-agent/state/sessions
+    ports:
+      - "127.0.0.1:8787:8787"
+    volumes:
+      - ./:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - relayer
+    restart: unless-stopped
+    networks:
+      - hyperlane-net
+
   forwarding-backend:
     profiles: ["forwarding"]
     image: ghcr.io/celestiaorg/forwarding-relayer:sha-8557ee1

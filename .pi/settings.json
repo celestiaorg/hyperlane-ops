@@ -1,0 +1,10 @@
+{
+  "quietStartup": true,
+  "extensions": [
+    "../ops-agent/extensions/hyperlane-guard.ts"
+  ],
+  "skills": [
+    "./skills"
+  ],
+  "enableSkillCommands": true
+}

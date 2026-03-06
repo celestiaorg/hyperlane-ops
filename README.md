@@ -39,6 +39,7 @@ This repository contains a Hyperlane registry with chain configs and canonical a
 - `docs` contains markdown content for the documentation website.
 - `faucets/` contains pow-faucet deployments for the Eden-Mocha testnet.
 - `relayer/` contains a Hyperlane agent configuration used for operating an off-chain message relayer.
+- `ops-agent/` contains a Pi-based orchestration service for core/warp/relayer workflows.
 - `solidity/` contains contracts used for native asset minting via Hyperlane.
 
 ## Testnet Deployments
