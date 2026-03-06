@@ -82,16 +82,10 @@
                     "http": "http://grpc-1.testnet.celestia.nodes.guru:10790"
                 },
                 {
-                    "http": "celestia-testnet-grpc.itrocket.net:443"
-                },
-                {
-                    "http": "http://grpc-mocha.pops.one:9090"
-                },
-                {
-                    "http": "http://public-celestia-mocha4-consensus.numia.xyz:9090"
-                },
-                {
                     "http": "http://grpc-2.testnet.celestia.nodes.guru:10790"
+                },
+                {
+                    "http": "https://celestia-testnet-grpc.itrocket.net:443"
                 }
             ]
         },

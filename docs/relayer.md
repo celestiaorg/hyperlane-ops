@@ -34,6 +34,61 @@ docker compose restart relayer
 docker logs hyperlane-relayer -f
 ```
 
+## Monitoring
+
+The root `docker-compose.yml` includes an optional `monitoring` profile with Prometheus and Grafana.
+
+### Compose profiles
+
+Use these commands depending on which services you want active:
+
+1. Relayer only.
+```bash
+docker compose up -d relayer
+```
+
+2. Relayer + monitoring.
+```bash
+docker compose --profile monitoring up -d
+```
+
+3. Relayer + forwarding services.
+```bash
+docker compose --profile forwarding up -d
+```
+
+4. Relayer + monitoring + forwarding services.
+```bash
+docker compose --profile monitoring --profile forwarding up -d
+```
+
+1. Start the relayer plus monitoring stack.
+```bash
+docker compose --profile monitoring up -d
+```
+
+2. Check service status.
+```bash
+docker compose --profile monitoring ps
+```
+
+3. Stream logs for monitoring services and relayer.
+```bash
+docker compose logs -f prometheus grafana relayer
+```
+
+4. Verify relayer metrics are reachable.
+```bash
+curl -fsS http://127.0.0.1:9090/metrics | head
+```
+
+5. Access Grafana and Prometheus securely from a remote machine using SSH tunneling.
+```bash
+ssh -L 3000:127.0.0.1:3000 -L 9091:127.0.0.1:9091 <server>
+```
+
+Grafana is available on `http://127.0.0.1:3000` and Prometheus on `http://127.0.0.1:9091`.
+
 If operating the relayer agent on a server for an extended period of time, you may require a large amount of disk space in order to keep it alive.
 The relayer agent can consume alot of disk space by the JSON logs alone. You can inspect this and truncate the log file using the following commands. If the relayer agent stopped working due to this, a container restart may be required.
 
