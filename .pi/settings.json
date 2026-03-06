@@ -1,7 +1,7 @@
 {
   "quietStartup": true,
   "extensions": [
-    "../extensions/hyperlane-guard.ts"
+    "../ops-agent/extensions/hyperlane-guard.ts"
   ],
   "skills": [
     "./skills"

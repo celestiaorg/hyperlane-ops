@@ -19,6 +19,12 @@ interface PendingRequest {
   timeout: NodeJS.Timeout;
 }
 
+interface ExtensionUiRequest {
+  type: "extension_ui_request";
+  id?: string;
+  method?: string;
+}
+
 export interface PiRpcEvent {
   type: string;
   [key: string]: unknown;
@@ -197,13 +203,20 @@ export class PiRpcClient {
   async collectEventsUntilIdle(timeoutMs = DEFAULT_TIMEOUT_MS): Promise<PiRpcEvent[]> {
     return new Promise((resolve, reject) => {
       const events: PiRpcEvent[] = [];
+      const recentTypes: string[] = [];
       const timer = setTimeout(() => {
         unsubscribe();
-        reject(new Error(`Timed out waiting for agent_end. Stderr: ${this.stderr}`));
+        const suffix = recentTypes.length > 0 ? ` Recent events: ${recentTypes.join(", ")}` : "";
+        reject(new Error(`Timed out waiting for agent_end. Stderr: ${this.stderr}${suffix}`));
       }, timeoutMs);
 
       const unsubscribe = this.onEvent((event) => {
         events.push(event);
+        const eventType = typeof event.type === "string" ? event.type : "unknown";
+        recentTypes.push(eventType);
+        if (recentTypes.length > 12) {
+          recentTypes.shift();
+        }
         if (event.type === "agent_end") {
           clearTimeout(timer);
           unsubscribe();
@@ -245,10 +258,29 @@ export class PiRpcClient {
       return;
     }
 
+    if (asRecord.type === "extension_ui_request") {
+      this.respondToExtensionUiRequest(parsed as ExtensionUiRequest);
+    }
+
     const event = parsed as PiRpcEvent;
     for (const listener of this.eventListeners) {
       listener(event);
     }
+  }
+
+  private respondToExtensionUiRequest(request: ExtensionUiRequest): void {
+    const requestId = request.id;
+    if (!requestId || !this.process?.stdin) {
+      return;
+    }
+
+    // ops-agent is a headless runtime, so extension UI prompts must be cancelled.
+    const response = {
+      type: "extension_ui_response",
+      id: requestId,
+      cancelled: true,
+    };
+    this.process.stdin.write(`${JSON.stringify(response)}\n`);
   }
 
   private async send(command: Record<string, unknown>): Promise<RpcResponse> {

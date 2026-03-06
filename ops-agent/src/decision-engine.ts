@@ -31,13 +31,17 @@ function resolvePiRuntimeCwd(commandCwd: string): string {
     return resolve(process.env.PI_PROJECT_CWD.trim());
   }
 
-  const opsAgentDir = resolve(commandCwd, "ops-agent");
-  if (existsSync(resolve(opsAgentDir, ".pi/settings.json"))) {
-    return opsAgentDir;
-  }
-
-  if (existsSync(resolve(commandCwd, ".pi/settings.json"))) {
-    return commandCwd;
+  const candidates = [commandCwd, resolve(commandCwd, ".."), resolve(commandCwd, "ops-agent")];
+  const visited = new Set<string>();
+  for (const candidate of candidates) {
+    const normalized = resolve(candidate);
+    if (visited.has(normalized)) {
+      continue;
+    }
+    visited.add(normalized);
+    if (existsSync(resolve(normalized, ".pi/settings.json"))) {
+      return normalized;
+    }
   }
 
   return commandCwd;
@@ -76,9 +80,17 @@ export class PiDecisionEngine implements DecisionEngine {
     try {
       await client.start();
       const prompt = makePlannerPrompt(goal, cwd, context);
-      await client.promptAndWait(prompt);
+      let waitError: Error | undefined;
+      try {
+        await client.promptAndWait(prompt);
+      } catch (error) {
+        waitError = error instanceof Error ? error : new Error(String(error));
+      }
       const assistantText = await client.getLastAssistantText();
       if (!assistantText) {
+        if (waitError) {
+          throw waitError;
+        }
         throw new Error("Pi returned no assistant message");
       }
       const parsed = extractJsonPayload(assistantText);

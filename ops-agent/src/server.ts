@@ -71,6 +71,19 @@ function authFilePath(): string {
   return resolve(homedir(), ".pi/agent/auth.json");
 }
 
+function resolveStateStorePath(baseCwd: string): string {
+  if (process.env.OPS_AGENT_STATE_FILE && process.env.OPS_AGENT_STATE_FILE.trim().length > 0) {
+    return resolve(baseCwd, process.env.OPS_AGENT_STATE_FILE.trim());
+  }
+
+  const monorepoOpsAgentDir = resolve(baseCwd, "ops-agent");
+  if (existsSync(resolve(monorepoOpsAgentDir, "package.json"))) {
+    return resolve(monorepoOpsAgentDir, "state/store.json");
+  }
+
+  return resolve(baseCwd, "state/store.json");
+}
+
 function authFileInfo(filePath: string): {
   present: boolean;
   hasOpenAiApiKey: boolean;
@@ -149,7 +162,7 @@ export async function startServer(): Promise<void> {
   const baseCwd = process.env.OPS_AGENT_CWD ? resolve(process.env.OPS_AGENT_CWD) : process.cwd();
 
   const metrics = createMetrics();
-  const store = new PlanStore(resolve(baseCwd, "ops-agent/state/store.json"));
+  const store = new PlanStore(resolveStateStorePath(baseCwd));
   const orchestrator = new OpsOrchestrator({
     baseCwd,
     decisionEngine: new PiDecisionEngine(),
