@@ -58,7 +58,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 9
       },
       "id": 27,
       "panels": [],
@@ -129,7 +129,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 1
+        "y": 10
       },
       "id": 2,
       "options": {
@@ -226,7 +226,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 10
+        "y": 19
       },
       "id": 1,
       "options": {
@@ -322,7 +322,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 19
+        "y": 28
       },
       "id": 10,
       "options": {
@@ -422,7 +422,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 27
+        "y": 36
       },
       "id": 8,
       "options": {
@@ -465,7 +465,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 35
+        "y": 0
       },
       "id": 28,
       "panels": [],
@@ -485,7 +485,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 36
+        "y": 1
       },
       "fieldConfig": {
         "defaults": {
@@ -545,7 +545,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 36
+        "y": 1
       },
       "fieldConfig": {
         "defaults": {
@@ -1652,6 +1652,6 @@
   "timezone": "browser",
   "title": "Hyperlane Relayer Dashboard",
   "uid": "afdf6ada6uzvgga",
-  "version": 7,
+  "version": 8,
   "weekStart": ""
 }
