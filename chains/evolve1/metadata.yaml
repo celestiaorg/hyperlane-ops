@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../schema.json
+chainId: 1234
+displayName: Evolve1
+domainId: 1234
+isTestnet: true
+name: evolve1
+nativeToken:
+  decimals: 18
+  name: Ether
+  symbol: ETH
+protocol: ethereum
+rpcUrls:
+  - http: "http://localhost:8545"
+technicalStack: other

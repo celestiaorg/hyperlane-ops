@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { looksLikeWriteToSensitiveFile, normalizeCommand, splitCommandSegments } from "./command-parser.js";
+import { normalizeCoreCommandConfig, parseCoreCommand } from "./core-config.js";
 import type { PolicyEvaluation } from "./types.js";
 
 const DESTRUCTIVE_PATTERNS = [/\bgit\s+reset\s+--hard\b/i, /\bgit\s+checkout\s+--\b/i, /\brm\s+-rf\b/i];
@@ -67,12 +68,27 @@ function commandTargetsCosmosNative(command: string, cwd: string): boolean {
   return configImpliesCosmosNative(command, cwd);
 }
 
+function getCoreCommandChain(command: string): string | undefined {
+  return parseCoreCommand(command)?.chain;
+}
+
+function chainMetadataExists(cwd: string, chain: string): boolean {
+  const metadataPath = resolve(cwd, "chains", chain, "metadata.yaml");
+  try {
+    readFileSync(metadataPath, "utf8");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function hasEnv(name: string): boolean {
   return Boolean(process.env[name] && process.env[name]?.trim().length);
 }
 
 export function evaluateCommand(command: string, cwd: string): PolicyEvaluation {
-  const normalized = normalizeCommand(command);
+  const normalizedCommand = normalizeCoreCommandConfig(normalizeCommand(command)).command;
+  const normalized = normalizedCommand;
 
   if (!normalized) {
     return {
@@ -105,6 +121,46 @@ export function evaluateCommand(command: string, cwd: string): PolicyEvaluation 
       class: "blocked",
       reason: "Hyperlane commands must include --registry .",
       remediation: `${normalized} --registry .`,
+      requiresApproval: false,
+    };
+  }
+
+  const coreChain = getCoreCommandChain(normalized);
+  const coreDetails = parseCoreCommand(normalized);
+  if (coreDetails && (coreDetails.action === "deploy" || coreDetails.action === "apply")) {
+    if (!coreChain) {
+      return {
+        class: "blocked",
+        reason: "hyperlane core deploy/apply commands must include --chain",
+        remediation: `${normalized} --chain <chain-name>`,
+        requiresApproval: false,
+      };
+    }
+
+    if (!coreDetails.configPath) {
+      return {
+        class: "blocked",
+        reason: "hyperlane core deploy/apply commands must include --config configs/<chain>-core.yaml",
+        remediation: `${normalized} --config configs/${coreChain}-core.yaml`,
+        requiresApproval: false,
+      };
+    }
+
+    if (coreDetails.configPath.replace(/^\.\//, "").endsWith("core-config.example.yaml")) {
+      return {
+        class: "blocked",
+        reason: "Do not deploy directly with configs/core-config.example.yaml",
+        remediation: `Use --config configs/${coreChain}-core.yaml (copied from configs/core-config.example.yaml)`,
+        requiresApproval: false,
+      };
+    }
+  }
+
+  if (coreChain && /^hyperlane\s+core\s+(deploy|apply)\b/i.test(normalized) && !chainMetadataExists(cwd, coreChain)) {
+    return {
+      class: "blocked",
+      reason: `Chain metadata is missing for '${coreChain}'`,
+      remediation: `Create chains/${coreChain}/metadata.yaml first (for example: ops-agent add-chain --cwd ${cwd})`,
       requiresApproval: false,
     };
   }

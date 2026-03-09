@@ -9,6 +9,8 @@ Pi-based orchestration service for Hyperlane core, warp deployment, and relayer 
 - Two-step approval (`plan` -> `approve` -> `execute`)
 - Run transcript storage and retrieval
 - Prometheus metrics endpoint
+- Hyperlane core plans default to `--config configs/<chain>-core.yaml`.
+- For EVM core deploy/apply, ops-agent auto-creates `configs/<chain>-core.yaml` from `configs/core-config.example.yaml` if missing, then rewrites `owner`/`beneficiary` from `HYP_KEY` before execution.
 
 ## Environment
 
@@ -160,3 +162,27 @@ ops-agent info --verify --json
 ops-agent plan "check relayer health"
 ops-agent run "diagnose relayer lag" --read-only
 ```
+
+## Hyperlane Core Deploy Defaults
+
+- Core deploy/apply/read plans should include `--chain <chain>` and `--config configs/<chain>-core.yaml`.
+- Do not deploy directly with `configs/core-config.example.yaml`.
+- During EVM core deploy/apply execution, ops-agent ensures `configs/<chain>-core.yaml` exists by copying `configs/core-config.example.yaml`.
+- The `owner` and `beneficiary` fields in that file are rewritten to the EVM address derived from `HYP_KEY`.
+- Owner address derivation uses `cast wallet address --private-key ...`, so Foundry `cast` must be installed on the host/container running ops-agent.
+
+## Interactive workflow mode
+
+The CLI supports interview-style workflows.
+
+```bash
+ops-agent add-chain --cwd /Users/damiannolan/development/hyperlane-ops
+ops-agent hyperlane-core --cwd /Users/damiannolan/development/hyperlane-ops
+ops-agent warp-route --cwd /Users/damiannolan/development/hyperlane-ops
+```
+
+Notes:
+- `add-chain` is a built-in local wizard (no Pi dependency) and writes `chains/<name>/metadata.yaml` only after explicit confirmation.
+- `hyperlane-core` and `warp-route` run Pi directly and continue as multi-turn interviews.
+- Type `/exit` to stop an interactive workflow.
+- Optional per-session overrides for Pi-backed workflows: `--provider`, `--model`, `--timeout`.

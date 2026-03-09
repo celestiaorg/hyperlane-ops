@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
-import { hashCommand } from "./command-parser.js";
+import { hashCommand, normalizeCommand } from "./command-parser.js";
+import { normalizeCoreCommandConfig, prepareCoreDeployCommand } from "./core-config.js";
 import { executeShellCommand, type CommandExecutionResult } from "./executor.js";
 import type { AgentMetrics } from "./metrics.js";
 import { evaluatePipeline } from "./policy.js";
@@ -32,12 +33,15 @@ export class OpsOrchestrator {
     const resolvedCwd = resolve(cwd ? cwd : this.options.baseCwd);
 
     const decisionPlan = await this.makePlan(goal, context, resolvedCwd);
+    const sanitizedCommands = sanitizePlannerCommands(decisionPlan.commands);
+    const commandsToEvaluate = sanitizedCommands.length ? sanitizedCommands : ["hyperlane registry list --registry ."];
 
-    const commands = decisionPlan.commands.map((command) => {
-      const evaluation = evaluatePipeline(command, resolvedCwd);
+    const commands = commandsToEvaluate.map((command) => {
+      const normalizedCommand = normalizeCoreCommandConfig(command).command;
+      const evaluation = evaluatePipeline(normalizedCommand, resolvedCwd);
       return {
-        hash: hashCommand(command),
-        command,
+        hash: hashCommand(normalizedCommand),
+        command: normalizedCommand,
         class: evaluation.class,
         reason: evaluation.reason,
         remediation: evaluation.remediation,
@@ -127,14 +131,16 @@ export class OpsOrchestrator {
       this.options.store.appendRunEvent(runId, makeRunEvent("status", "Run started"));
 
       for (const command of plan.commands) {
-        const freshPolicy = evaluatePipeline(command.command, plan.cwd);
+        const normalized = normalizeCoreCommandConfig(command.command);
+        let executionCommand = normalized.command;
+        const freshPolicy = evaluatePipeline(executionCommand, plan.cwd);
         const policyClass = freshPolicy.class;
 
         if (readOnly && policyClass !== "read") {
           this.options.store.updateRun(runId, (run) => {
             run.commands.push({
               hash: command.hash,
-              command: command.command,
+              command: executionCommand,
               class: policyClass,
               status: "skipped",
               reason: "Skipped because readOnly execution was requested",
@@ -151,7 +157,7 @@ export class OpsOrchestrator {
           this.options.store.updateRun(runId, (run) => {
             run.commands.push({
               hash: command.hash,
-              command: command.command,
+              command: executionCommand,
               class: policyClass,
               status: "blocked",
               reason: freshPolicy.reason,
@@ -169,7 +175,7 @@ export class OpsOrchestrator {
           this.options.store.updateRun(runId, (run) => {
             run.commands.push({
               hash: command.hash,
-              command: command.command,
+              command: executionCommand,
               class: policyClass,
               status: "blocked",
               reason: "Command hash not approved",
@@ -182,14 +188,22 @@ export class OpsOrchestrator {
           continue;
         }
 
-        this.options.store.appendRunEvent(runId, makeRunEvent("command", command.command, command.hash));
-        const result = await this.executor(command.command, plan.cwd);
+        if (policyClass === "write") {
+          const prepared = prepareCoreDeployCommand(executionCommand, plan.cwd);
+          executionCommand = prepared.command;
+          for (const note of prepared.notes) {
+            this.options.store.appendRunEvent(runId, makeRunEvent("output", note, command.hash));
+          }
+        }
+
+        this.options.store.appendRunEvent(runId, makeRunEvent("command", executionCommand, command.hash));
+        const result = await this.executor(executionCommand, plan.cwd);
 
         const status = result.exitCode === 0 ? "executed" : "failed";
         this.options.store.updateRun(runId, (run) => {
           run.commands.push({
             hash: command.hash,
-            command: command.command,
+            command: executionCommand,
             class: policyClass,
             status,
             exitCode: result.exitCode,
@@ -240,4 +254,51 @@ export class OpsOrchestrator {
       };
     }
   }
+}
+
+function sanitizePlannerCommands(commands: string[]): string[] {
+  const result: string[] = [];
+  const seen = new Set<string>();
+
+  for (const raw of commands) {
+    const command = normalizePlannerCommand(raw);
+    if (!command) {
+      continue;
+    }
+    const normalized = normalizeCommand(command);
+    if (seen.has(normalized)) {
+      continue;
+    }
+    seen.add(normalized);
+    result.push(normalized);
+  }
+
+  return result;
+}
+
+function normalizePlannerCommand(rawCommand: string): string | null {
+  const command = normalizeCommand(rawCommand);
+  if (!command) {
+    return null;
+  }
+
+  // Planner occasionally emits shell pre-checks that are intentionally outside allowlist.
+  if (/^test\s+-f\s+chains\/[a-z0-9][a-z0-9-]*\/metadata\.ya?ml$/i.test(command)) {
+    return null;
+  }
+  if (/^test\s+-f\s+configs\/[a-z0-9._-]+-core\.ya?ml$/i.test(command)) {
+    return null;
+  }
+
+  const conditionalCoreMatch = command.match(
+    /^if\s+\[\s+-f\s+chains\/[^\]]+\]\s*;\s*then\s+(.+?)\s*;\s*fi$/i,
+  );
+  if (conditionalCoreMatch) {
+    const inner = normalizeCommand(conditionalCoreMatch[1] ?? "");
+    if (/^hyperlane\s+core\s+(read|deploy|apply)\b/i.test(inner)) {
+      return inner;
+    }
+  }
+
+  return command;
 }

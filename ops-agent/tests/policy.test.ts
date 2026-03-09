@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, test } from "vitest";
+import { mkdtempSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { evaluatePipeline } from "../src/policy.js";
 
 const ORIGINAL_ENV = { ...process.env };
@@ -29,10 +32,30 @@ describe("policy", () => {
 
   test("marks write command when env and registry checks pass", () => {
     process.env.HYP_KEY = "0xabc";
+    const repoRoot = join(process.cwd(), "..");
     const result = evaluatePipeline(
       "hyperlane core deploy --chain sepolia --config configs/sepolia-core.yaml --registry .",
-      process.cwd(),
+      repoRoot,
     );
     expect(result.class).toBe("write");
+  });
+
+  test("blocks core deploy/apply missing --chain", () => {
+    process.env.HYP_KEY = "0xabc";
+    const result = evaluatePipeline("hyperlane core deploy --registry . --config configs/evolve1-core.yaml", process.cwd());
+    expect(result.class).toBe("blocked");
+    expect(result.reason).toContain("--chain");
+  });
+
+  test("blocks core deploy when chain metadata is missing", () => {
+    process.env.HYP_KEY = "0xabc";
+    const cwd = mkdtempSync(join(tmpdir(), "ops-agent-policy-"));
+    const result = evaluatePipeline(
+      "hyperlane core deploy --chain evolve1 --config configs/evolve1-core.yaml --registry .",
+      cwd,
+    );
+    expect(result.class).toBe("blocked");
+    expect(result.reason).toContain("Chain metadata is missing");
+    expect(result.remediation).toContain("ops-agent add-chain");
   });
 });

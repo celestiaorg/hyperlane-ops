@@ -1,5 +1,7 @@
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { readdirSync, statSync } from "node:fs";
+import { resolve, join } from "node:path";
+import { normalizeCoreCommandConfig } from "./core-config.js";
 import type { DecisionEngine, DecisionPlan } from "./types.js";
 import { PiRpcClient } from "./pi-rpc-client.js";
 
@@ -58,12 +60,140 @@ function makePlannerPrompt(goal: string, commandCwd: string, context?: string): 
     "- Commands must be shell commands only.",
     "- Prefer read-only checks first, then mutating commands if needed.",
     "- Use --registry . for hyperlane core/warp commands.",
+    "- For hyperlane core deploy/apply/read commands, always include --chain and --config configs/<chain>-core.yaml.",
+    "- Never use configs/core-config.example.yaml directly in hyperlane core deploy/apply/read commands.",
+    "- Before core deploy/apply on a chain, ensure chains/<chain>/metadata.yaml exists; if missing, do not include deploy/apply.",
     "- Use only these workflow families: hyperlane core, hyperlane warp, docker compose relayer, cast call/send, celestia-appd query/tx.",
     `- Commands are executed from this working directory: ${commandCwd}`,
     "- No prose outside JSON.",
     contextText,
     `Goal: ${goal}`,
   ].join("\n");
+}
+
+function extractCoreCommandChain(command: string): string | null {
+  const coreCommand = command.match(/^hyperlane\s+core\s+(read|deploy|apply)\b/i);
+  if (!coreCommand) {
+    return null;
+  }
+
+  const match = command.match(/(?:^|\s)--chain\s+([^\s]+)/i);
+  return match?.[1] ?? null;
+}
+
+function isCoreMutatingCommand(command: string): boolean {
+  return /^hyperlane\s+core\s+(deploy|apply)\b/i.test(command);
+}
+
+function hasChainMetadata(cwd: string, chain: string): boolean {
+  return existsSync(resolve(cwd, "chains", chain, "metadata.yaml"));
+}
+
+function enforceCoreConfigDefaults(plan: DecisionPlan): DecisionPlan {
+  let changed = false;
+  const commands = plan.commands.map((command) => {
+    const next = normalizeCoreCommandConfig(command);
+    if (next.changed) {
+      changed = true;
+    }
+    return next.command;
+  });
+
+  if (!changed) {
+    return plan;
+  }
+
+  const note =
+    "Core config default applied: using --config configs/<chain>-core.yaml for hyperlane core commands.";
+  return {
+    ...plan,
+    summary: `${note} ${plan.summary}`,
+    commands,
+    rawResponse: plan.rawResponse ? `${plan.rawResponse}\nPlanner guard: ${note}` : `Planner guard: ${note}`,
+  };
+}
+
+function enforceChainMetadataPrerequisites(plan: DecisionPlan, cwd: string): DecisionPlan {
+  const missingChains = new Set<string>();
+
+  for (const command of plan.commands) {
+    if (!isCoreMutatingCommand(command)) {
+      continue;
+    }
+    const chain = extractCoreCommandChain(command);
+    if (!chain) {
+      continue;
+    }
+    if (!hasChainMetadata(cwd, chain)) {
+      missingChains.add(chain);
+    }
+  }
+
+  if (missingChains.size === 0) {
+    return plan;
+  }
+
+  const filteredCommands = plan.commands.filter((command) => {
+    const chain = extractCoreCommandChain(command);
+    if (!chain) {
+      return true;
+    }
+    return !missingChains.has(chain);
+  });
+
+  const commands = filteredCommands.length > 0 ? filteredCommands : ["hyperlane registry list --registry ."];
+  const missing = [...missingChains].sort().join(", ");
+  const prerequisiteNote = `Prerequisite required: add chain metadata first for [${missing}] under chains/<chain>/metadata.yaml (for example: ops-agent add-chain --cwd ${cwd}).`;
+  const summary = `${prerequisiteNote} ${plan.summary}`;
+  const rawResponse = plan.rawResponse
+    ? `${plan.rawResponse}\nPlanner guard: ${prerequisiteNote}`
+    : `Planner guard: ${prerequisiteNote}`;
+
+  return {
+    ...plan,
+    summary,
+    commands,
+    rawResponse,
+  };
+}
+
+function listLocalChains(cwd: string): string[] {
+  const chainsDir = resolve(cwd, "chains");
+  if (!existsSync(chainsDir)) {
+    return [];
+  }
+
+  try {
+    return readdirSync(chainsDir)
+      .filter((entry) => {
+        const chainDir = join(chainsDir, entry);
+        return statSync(chainDir).isDirectory() && existsSync(join(chainDir, "metadata.yaml"));
+      })
+      .map((entry) => entry.toLowerCase());
+  } catch {
+    return [];
+  }
+}
+
+function extractRequestedChain(goal: string, context: string | undefined, cwd: string): string | undefined {
+  const haystack = `${goal}\n${context ?? ""}`.toLowerCase();
+  const knownChains = listLocalChains(cwd);
+
+  for (const chain of knownChains) {
+    const pattern = new RegExp(`(?:^|[^a-z0-9_-])${chain}(?:[^a-z0-9_-]|$)`, "i");
+    if (pattern.test(haystack)) {
+      return chain;
+    }
+  }
+
+  const explicitMatch = haystack.match(
+    /\b(?:chain(?:\s+called|\s+named)?|for\s+chain|on\s+chain)\s+([a-z][a-z0-9_-]*)\b/i,
+  );
+  if (explicitMatch?.[1]) {
+    return explicitMatch[1].toLowerCase();
+  }
+
+  return undefined;
 }
 
 export class PiDecisionEngine implements DecisionEngine {
@@ -94,11 +224,17 @@ export class PiDecisionEngine implements DecisionEngine {
         throw new Error("Pi returned no assistant message");
       }
       const parsed = extractJsonPayload(assistantText);
-
-      return {
+      const normalized = enforceCoreConfigDefaults({
         summary: parsed.summary,
         commands: parsed.commands,
         rawResponse: assistantText,
+      });
+      const guarded = enforceChainMetadataPrerequisites(normalized, cwd);
+
+      return {
+        summary: guarded.summary,
+        commands: guarded.commands,
+        rawResponse: guarded.rawResponse,
       };
     } finally {
       await client.stop();
@@ -107,9 +243,10 @@ export class PiDecisionEngine implements DecisionEngine {
 }
 
 export class FallbackDecisionEngine implements DecisionEngine {
-  async createPlan(goal: string, _context: string | undefined, _cwd: string): Promise<DecisionPlan> {
+  async createPlan(goal: string, context: string | undefined, cwd: string): Promise<DecisionPlan> {
     const lower = goal.toLowerCase();
     const commands: string[] = [];
+    const inferredChain = extractRequestedChain(goal, context, cwd);
 
     if (lower.includes("relayer") || lower.includes("health")) {
       commands.push("docker compose ps relayer");
@@ -121,7 +258,11 @@ export class FallbackDecisionEngine implements DecisionEngine {
     }
 
     if (lower.includes("core")) {
-      commands.push("hyperlane core read --chain sepolia --config configs/sepolia-core.yaml --registry .");
+      if (inferredChain) {
+        commands.push(`hyperlane core read --chain ${inferredChain} --config configs/${inferredChain}-core.yaml --registry .`);
+      } else {
+        commands.push("hyperlane registry list --registry .");
+      }
     }
 
     if (!commands.length) {
@@ -129,9 +270,9 @@ export class FallbackDecisionEngine implements DecisionEngine {
       commands.push("hyperlane registry list --registry .");
     }
 
-    return {
+    return enforceCoreConfigDefaults({
       summary: "Fallback command plan based on repository runbooks",
       commands,
-    };
+    });
   }
 }
