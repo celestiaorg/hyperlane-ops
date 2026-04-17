@@ -72,14 +72,12 @@ Run the deployment using the config:
 
 ```bash
 hyperlane warp deploy \
-  --wd ./deployments/warp_routes/<TOKEN>/<route>-deploy.yaml \
-  --wc ./deployments/warp_routes/<TOKEN>/<route>-config.yaml \
+  --warp-route-id <TOKEN> \
   --registry .
 ```
 
 Notes:
 !!! note
-    - If `--wd`/`--wc` are omitted, the CLI writes artifacts to `$HOME/.hyperlane/deployments/warp_routes/`.
     - The deployer will prompt for the private key if `HYP_KEY` or `HYP_KEY_COSMOSNATIVE` is not set.
 
 After deployment:

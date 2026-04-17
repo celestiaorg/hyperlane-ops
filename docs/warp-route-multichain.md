@@ -39,7 +39,7 @@ sepolia:
 Deploy the warp route:
 
 ```bash
-hyperlane warp deploy --wd ./deployments/warp_routes/LBTC/celestiatestnet-edentestnet-sepolia-deploy.yaml --wc ./deployments/warp_routes/ETH/celestiatestnet-edentestnet-sepolia-config.yaml --registry .
+hyperlane warp deploy --warp-route-id <TOKEN_SYMBOL> --registry .
 ```
 
 ## Example: Extending an Existing Warp Route

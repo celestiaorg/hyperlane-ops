@@ -78,11 +78,10 @@ If either required key is missing:
 3. For cosmosnative chains, include fields required by local docs (e.g. `scale` when needed).
 
 ### 3) Deploy or apply
-Deploy new route:
+Deploy new route, where `<TOKEN>` is the token symbol in the warp routes deployments directory of the registry, e.g. `ETH`:
 ```bash
 hyperlane warp deploy \
-  --wd ./deployments/warp_routes/<TOKEN>/<route>-deploy.yaml \
-  --wc ./deployments/warp_routes/<TOKEN>/<route>-config.yaml \
+  --warp-route-id <TOKEN>
   --registry .
 ```
 
