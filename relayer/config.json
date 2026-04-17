@@ -17,7 +17,7 @@
                 "amount": "0.1"
             },
             "index": {
-                "from": 9298842,
+                "from": 9130090,
                 "chunk": 10
             },
             "isTestnet": true,
@@ -47,17 +47,14 @@
                 }
             ],
             "rpcUrls": [
+		{
+		    "http": "https://mocha.celestia.services/ec6b4d5e14aaa89196da031467623248672f82a4"
+		},
+		{
+		    "http": "http://195.154.103.60:26657"
+		},
                 {
                     "http": "https://celestia-testnet-rpc.itrocket.net"
-                },
-                {
-                    "http": "http://151.115.60.15:26657"
-                },
-                {
-                    "http": "https://rpc-1.testnet.celestia.nodes.guru"
-                },
-                {
-                    "http": "https://rpc-2.testnet.celestia.nodes.guru"
                 },
                 {
                     "http": "http://public-celestia-mocha4-consensus.numia.xyz:26657"
@@ -79,13 +76,10 @@
             },
             "grpcUrls": [
                 {
-                    "http": "http://grpc-1.testnet.celestia.nodes.guru:10790"
-                },
+		    "http": "http://195.154.103.60:9090"
+		},
                 {
-                    "http": "http://grpc-2.testnet.celestia.nodes.guru:10790"
-                },
-                {
-                    "http": "https://celestia-testnet-grpc.itrocket.net:443"
+	            "http": "https://celestia-testnet-grpc.itrocket.net:443"
                 }
             ]
         },
