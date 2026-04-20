@@ -76,19 +76,13 @@ AMOUNT_UNITS=1000000 # 1 TIA, 6 decimals
 Verify the Celestia-side Warp token:
 
 ```bash
-docker compose -f devnet/docker-compose.yml exec -T celestia-validator \
-  celestia-appd query warp token \
-  $CELESTIADEV_TIA_TOKEN_ID \
-  --node http://localhost:26657 -o json
+make -C devnet query-celestia-warp-token
 ```
 
 Verify Celestia has the Anvil router enrolled:
 
 ```bash
-docker compose -f devnet/docker-compose.yml exec -T celestia-validator \
-  celestia-appd query warp remote-routers \
-  $CELESTIADEV_TIA_TOKEN_ID \
-  --node http://localhost:26657 -o json
+make -C devnet query-celestia-warp-remotes
 ```
 
 Verify Anvil has the Celestia router enrolled:
