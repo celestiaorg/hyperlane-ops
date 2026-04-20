@@ -1,0 +1,183 @@
+services:
+  celestia-init:
+    image: ghcr.io/celestiaorg/celestia-app-standalone:v8.0.2-mocha
+    container_name: celestia-init
+    entrypoint: /scripts/init.sh
+    volumes:
+      - ./celestia-app/init.sh:/scripts/init.sh:ro
+      - celestia-app:/home/celestia/.celestia-app
+    restart: "no"
+
+  celestia-validator:
+    image: ghcr.io/celestiaorg/celestia-app-standalone:v8.0.2-mocha
+    container_name: celestia-validator
+    ports:
+      - "26656:26656"
+      - "26657:26657"
+      - "1317:1317"
+      - "9090:9090"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bh=$(curl -sf http://localhost:26657/status | jq -r '.result.sync_info.latest_block_height'); if [ \"$$bh\" -gt 1 ]; then exit 0; else exit 1; fi",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+    volumes:
+      - celestia-app:/home/celestia/.celestia-app
+    command: >
+      start --force-no-bbr --api.enable=true --api.address=tcp://0.0.0.0:1317
+      --home /home/celestia/.celestia-app
+    depends_on:
+      celestia-init:
+        condition: service_completed_successfully
+    networks:
+      - celestia-net
+
+  anvil:
+    image: ghcr.io/foundry-rs/foundry:latest
+    container_name: anvil
+    ports:
+      - "8545:8545"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "cast block-number --rpc-url http://localhost:8545 > /dev/null 2>&1",
+        ]
+      interval: 5s
+      timeout: 3s
+      start_period: 2s
+    networks:
+      - celestia-net
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        anvil --host 0.0.0.0 --chain-id 1234 --block-time 1 --accounts 10 --balance 10000 --mnemonic "test test test test test test test test test test test junk"
+
+  hyperlane-init:
+    image: ghcr.io/celestiaorg/hyperlane-init:sha-9406639
+    platform: linux/amd64
+    container_name: hyperlane-init
+    environment:
+      - HYP_VALIDATOR_CHECKPOINT_KEY
+    volumes:
+      - ./hyperlane:/home/hyperlane
+      - celestia-app:/home/celestia/.celestia-app
+    working_dir: /home/hyperlane
+    entrypoint: ["/bin/bash", "/home/hyperlane/scripts/docker-entrypoint.sh"]
+    depends_on:
+      celestia-validator:
+        condition: service_healthy
+      anvil:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - celestia-net
+
+  validator-anvil:
+    image: ghcr.io/hyperlane-xyz/hyperlane-agent:agents-v2.1.0
+    platform: linux/amd64
+    container_name: validator-anvil
+    user: "0:0"
+    environment:
+      - CONFIG_FILES=/app/config/agent-config.json
+      - HYP_VALIDATOR_CHECKPOINT_KEY
+    volumes:
+      - ./hyperlane/agent-config.json:/app/config/agent-config.json:ro
+      - hyperlane-checkpoints:/tmp/hyperlane-checkpoints
+      - hyperlane-db-validator-anvil:/hyperlane_db
+    entrypoint:
+      - /bin/sh
+      - -lc
+      - >
+          test -n "$$HYP_VALIDATOR_CHECKPOINT_KEY" ||
+          { echo "HYP_VALIDATOR_CHECKPOINT_KEY is required" >&2; exit 1; };
+          mkdir -p /tmp/hyperlane-checkpoints/anvil &&
+          ./validator
+          --db /hyperlane_db
+          --originChainName anvil
+          --validator.key "$$HYP_VALIDATOR_CHECKPOINT_KEY"
+          --checkpointSyncer.type localStorage
+          --checkpointSyncer.path /tmp/hyperlane-checkpoints/anvil
+          --metrics-port 9092
+    depends_on:
+      hyperlane-init:
+        condition: service_completed_successfully
+    networks:
+      - celestia-net
+
+  validator-celestiadev:
+    image: ghcr.io/hyperlane-xyz/hyperlane-agent:agents-v2.1.0
+    platform: linux/amd64
+    container_name: validator-celestiadev
+    user: "0:0"
+    environment:
+      - CONFIG_FILES=/app/config/agent-config.json
+      - HYP_VALIDATOR_CHECKPOINT_KEY
+    volumes:
+      - ./hyperlane/agent-config.json:/app/config/agent-config.json:ro
+      - hyperlane-checkpoints:/tmp/hyperlane-checkpoints
+      - hyperlane-db-validator-celestiadev:/hyperlane_db
+    entrypoint:
+      - /bin/sh
+      - -lc
+      - >
+          test -n "$$HYP_VALIDATOR_CHECKPOINT_KEY" ||
+          { echo "HYP_VALIDATOR_CHECKPOINT_KEY is required" >&2; exit 1; };
+          mkdir -p /tmp/hyperlane-checkpoints/celestiadev &&
+          ./validator
+          --db /hyperlane_db
+          --originChainName celestiadev
+          --validator.key "$$HYP_VALIDATOR_CHECKPOINT_KEY"
+          --checkpointSyncer.type localStorage
+          --checkpointSyncer.path /tmp/hyperlane-checkpoints/celestiadev
+          --metrics-port 9093
+    depends_on:
+      hyperlane-init:
+        condition: service_completed_successfully
+    networks:
+      - celestia-net
+
+  relayer:
+    image: ghcr.io/hyperlane-xyz/hyperlane-agent:agents-v2.1.0
+    platform: linux/amd64
+    container_name: relayer
+    user: "0:0"
+    environment:
+      - CONFIG_FILES=/app/config/agent-config.json
+    volumes:
+      - ./hyperlane/agent-config.json:/app/config/agent-config.json:ro
+      - hyperlane-checkpoints:/tmp/hyperlane-checkpoints:ro
+      - hyperlane-db-relayer:/hyperlane_db
+    entrypoint:
+      - /bin/sh
+      - -lc
+      - >
+          ./relayer
+          --db /hyperlane_db
+          --relayChains anvil,celestiadev
+          --allowLocalCheckpointSyncers true
+          --metrics-port 9091
+    depends_on:
+      hyperlane-init:
+        condition: service_completed_successfully
+      validator-anvil:
+        condition: service_started
+      validator-celestiadev:
+        condition: service_started
+    networks:
+      - celestia-net
+
+volumes:
+  celestia-app:
+  hyperlane-checkpoints:
+  hyperlane-db-relayer:
+  hyperlane-db-validator-anvil:
+  hyperlane-db-validator-celestiadev:
+
+networks:
+  celestia-net:
+    driver: bridge

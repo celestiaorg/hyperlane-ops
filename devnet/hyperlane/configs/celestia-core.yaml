@@ -1,0 +1,27 @@
+defaultHook:
+  address: "0x726f757465725f706f73745f6469737061746368000000040000000000000000"
+  beneficiary: celestia1y3kf30y9zprqzr2g2gjjkw3wls0a35pfs3a58q
+  oracleConfig:
+    anvil:
+      gasPrice: "1000000000"
+      tokenExchangeRate: "1"
+  oracleKey: celestia1y3kf30y9zprqzr2g2gjjkw3wls0a35pfs3a58q
+  overhead:
+    anvil: 300000
+  owner: celestia1y3kf30y9zprqzr2g2gjjkw3wls0a35pfs3a58q
+  type: interchainGasPaymaster
+defaultIsm:
+  address: "0x726f757465725f69736d00000000000000000000000000010000000000000001"
+  domains:
+    anvil:
+      address: "0x726f757465725f69736d00000000000000000000000000040000000000000000"
+      threshold: 1
+      type: merkleRootMultisigIsm
+      validators:
+        - "0x122644796671D1D90B20bA291C5081625e298059"
+  owner: celestia1y3kf30y9zprqzr2g2gjjkw3wls0a35pfs3a58q
+  type: domainRoutingIsm
+owner: celestia1y3kf30y9zprqzr2g2gjjkw3wls0a35pfs3a58q
+requiredHook:
+  address: "0x726f757465725f706f73745f6469737061746368000000030000000000000001"
+  type: merkleTreeHook

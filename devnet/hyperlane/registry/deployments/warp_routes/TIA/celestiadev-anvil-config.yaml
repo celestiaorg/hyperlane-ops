@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=../schema.json
+tokens:
+  - addressOrDenom: "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f"
+    chainName: anvil
+    connections:
+      - token: cosmosnative|celestiadev|0x726f757465725f61707000000000000000000000000000010000000000000000
+    decimals: 6
+    name: wTIA
+    standard: EvmHypSynthetic
+    symbol: TIA
+  - addressOrDenom: "0x726f757465725f61707000000000000000000000000000010000000000000000"
+    chainName: celestiadev
+    collateralAddressOrDenom: utia
+    connections:
+      - token: ethereum|anvil|0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f
+    decimals: 6
+    name: TIA
+    standard: CosmosNativeHypCollateral
+    symbol: TIA
