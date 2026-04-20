@@ -1,15 +1,10 @@
-# Devnet Warp Transfer (`celestiadev` <-> `anvil`)
+# Devnet Validator Multisig WarpRoute
 
-This runbook covers the local devnet Warp Route for:
+This runbook covers a local devnet Warp Route setup using a single validator multisig Hyperlane connection for (`celestiadev` <-> `anvil`):
+
+Using the following Warp route:
 
 - `TIA/celestiadev-anvil`
-
-It includes:
-
-- starting and stopping the local Docker Compose stack
-- a manual `TIA -> anvil` transfer
-- a manual `anvil -> celestiadev` redemption
-- balance and log checks for each step
 
 ## Prerequisites
 
@@ -17,18 +12,18 @@ It includes:
 - Docker is available locally.
 - You have a validator checkpoint key for the Hyperlane validator services.
 
-This devnet was validated with:
+This devnet was validated with the address `0x122644796671D1D90B20bA291C5081625e298059` using the key below:
 
 ```bash
 export HYP_VALIDATOR_CHECKPOINT_KEY=0x59c6995e998f97a5a0044966f094538e9e86dae88c7a8412f4603b6b78690d1b
 ```
 
-## Stack Lifecycle
+## Running a local Docker network
 
 Start the devnet:
 
 ```bash
-make -C devnet up HYP_VALIDATOR_CHECKPOINT_KEY="$HYP_VALIDATOR_CHECKPOINT_KEY"
+make -C devnet start HYP_VALIDATOR_CHECKPOINT_KEY="$HYP_VALIDATOR_CHECKPOINT_KEY"
 ```
 
 Check service status:
@@ -37,33 +32,21 @@ Check service status:
 make -C devnet ps
 ```
 
-Expected long-running services:
-
-- `celestia-validator`
-- `anvil`
-- `validator-anvil`
-- `validator-celestiadev`
-- `relayer`
-
 Follow logs:
 
 ```bash
 make -C devnet logs
 ```
 
-Stop containers without removing them:
+Stop containers and remove volume state:
 
 ```bash
 make -C devnet stop
 ```
 
-Tear the stack down:
-
-```bash
-make -C devnet down
-```
-
 ## Route Constants
+
+<!-- TODO: Move the following constants and commands to the makefile -->
 
 ```bash
 # Domains
@@ -318,21 +301,3 @@ On the validated run, the Celestia default account balance returned to:
 ```text
 999999918600 utia
 ```
-
-## 4. Troubleshooting
-
-- `out of gas` on Celestia origin transfer:
-  Re-run with a higher explicit `--gas` value. `350000` worked in this devnet.
-
-- `Validator has not announced signature storage location`:
-  Confirm both validator services are up and the shared checkpoint volume is mounted.
-
-- Relayer error reading local checkpoint files:
-  A transient local file miss can happen just after a message dispatch. If the validator has ingested the leaf, the relayer typically succeeds on retry.
-
-- No mint on Anvil:
-  Check `validator-celestiadev` logs for checkpoint submission and `relayer` logs for message processing.
-
-- No redemption on Celestia:
-  Confirm the EVM return recipient is the raw Celestia account bytes padded to `bytes32`, not the Bech32 string.
-
