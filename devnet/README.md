@@ -46,30 +46,17 @@ make -C devnet stop
 
 ## Route Constants
 
-<!-- TODO: Move the following constants and commands to the makefile -->
+The `Makefile` already carries the working defaults for this devnet, including:
 
-```bash
-# Domains
-ANVIL_DOMAIN=1234
-CELESTIADEV_DOMAIN=69420
+- `ANVIL_DOMAIN=1234`
+- `CELESTIADEV_DOMAIN=69420`
+- `ANVIL_TIA_ROUTER=0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f`
+- `CELESTIADEV_TIA_TOKEN_ID=0x726f757465725f61707000000000000000000000000000010000000000000000`
+- `ANVIL_DEFAULT=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`
+- `CELESTIA_DEFAULT=celestia1d2qfkdk27r2x4y67ua5r2pj7ck5t8n4890x9wy`
+- `AMOUNT_UNITS=1000000`
 
-# Warp route identifiers
-ANVIL_TIA_ROUTER=0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f
-CELESTIADEV_TIA_TOKEN_ID=0x726f757465725f61707000000000000000000000000000010000000000000000
-
-# Test accounts used by the devnet
-ANVIL_DEFAULT=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
-ANVIL_DEFAULT_PK=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-
-CELESTIA_DEFAULT=celestia1d2qfkdk27r2x4y67ua5r2pj7ck5t8n4890x9wy
-CELESTIA_DEFAULT_HEX=0x6A809B36CAF0D46A935EE76835065EC5A8B3CEA7
-CELESTIA_DEFAULT_RECIPIENT_B32=0x0000000000000000000000006a809b36caf0d46a935ee76835065ec5a8b3cea7
-
-ANVIL_DEFAULT_RECIPIENT_B32=0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266
-
-# Transfer amount
-AMOUNT_UNITS=1000000 # 1 TIA, 6 decimals
-```
+You can override any of them per command if needed.
 
 ## 1. Preflight Checks
 
@@ -88,21 +75,13 @@ make -C devnet query-celestia-warp-remotes
 Verify Anvil has the Celestia router enrolled:
 
 ```bash
-docker compose -f devnet/docker-compose.yml exec -T anvil \
-  cast call --rpc-url http://localhost:8545 \
-  $ANVIL_TIA_ROUTER \
-  "routers(uint32)(bytes32)" \
-  $CELESTIADEV_DOMAIN
+make -C devnet query-anvil-router
 ```
 
 Quote the Celestia-origin Hyperlane fee:
 
 ```bash
-docker compose -f devnet/docker-compose.yml exec -T celestia-validator \
-  celestia-appd query warp quote-transfer \
-  $CELESTIADEV_TIA_TOKEN_ID \
-  $ANVIL_DOMAIN \
-  --node http://localhost:26657 -o json
+make -C devnet quote-celestia-transfer
 ```
 
 Expected result:
@@ -114,11 +93,7 @@ Expected result:
 Quote the EVM-origin Hyperlane fee:
 
 ```bash
-docker compose -f devnet/docker-compose.yml exec -T anvil \
-  cast call --rpc-url http://localhost:8545 \
-  $ANVIL_TIA_ROUTER \
-  "quoteGasPayment(uint32)(uint256)" \
-  $CELESTIADEV_DOMAIN
+make -C devnet quote-anvil-transfer
 ```
 
 Expected result on this devnet:
@@ -130,16 +105,8 @@ Expected result on this devnet:
 Check starting balances:
 
 ```bash
-docker compose -f devnet/docker-compose.yml exec -T anvil \
-  cast call --rpc-url http://localhost:8545 \
-  $ANVIL_TIA_ROUTER \
-  "balanceOf(address)(uint256)" \
-  $ANVIL_DEFAULT
-
-docker compose -f devnet/docker-compose.yml exec -T celestia-validator \
-  celestia-appd query bank balances \
-  $CELESTIA_DEFAULT \
-  --node http://localhost:26657 -o json
+make -C devnet balance-anvil
+make -C devnet balance-celestia
 ```
 
 On a fresh devnet, the Anvil synthetic balance should be `0` and the Celestia default account starts with `1000000000000utia`.
@@ -149,22 +116,7 @@ On a fresh devnet, the Anvil synthetic balance should be `0` and the Celestia de
 Send `1 TIA` from `celestiadev` to the Anvil default account:
 
 ```bash
-docker compose -f devnet/docker-compose.yml exec -T celestia-validator \
-  celestia-appd tx warp transfer \
-  $CELESTIADEV_TIA_TOKEN_ID \
-  $ANVIL_DOMAIN \
-  $ANVIL_DEFAULT_RECIPIENT_B32 \
-  $AMOUNT_UNITS \
-  --from default \
-  --chain-id celestiadev \
-  --node http://localhost:26657 \
-  --home /home/celestia/.celestia-app \
-  --keyring-backend test \
-  --gas 350000 \
-  --fees 35000utia \
-  --max-hyperlane-fee 40000utia \
-  --yes \
-  -o json
+make -C devnet transfer-celestia
 ```
 
 Important:
@@ -175,10 +127,7 @@ Important:
 Query the tx after broadcast:
 
 ```bash
-docker compose -f devnet/docker-compose.yml exec -T celestia-validator \
-  celestia-appd query tx \
-  <CELESTIA_TX_HASH> \
-  --node http://localhost:26657 -o json
+make -C devnet query-celestia-tx TXHASH=<CELESTIA_TX_HASH>
 ```
 
 The successful tx used during validation was:
@@ -197,8 +146,8 @@ Expected success signals:
 Watch the validator and relayer:
 
 ```bash
-docker logs -f validator-celestiadev
-docker logs -f relayer
+make -C devnet logs-validator-celestiadev
+make -C devnet logs-relayer
 ```
 
 You should see the Celestia validator ingest the first leaf and the relayer eventually process the message.
@@ -206,11 +155,7 @@ You should see the Celestia validator ingest the first leaf and the relayer even
 Verify the Anvil synthetic balance:
 
 ```bash
-docker compose -f devnet/docker-compose.yml exec -T anvil \
-  cast call --rpc-url http://localhost:8545 \
-  $ANVIL_TIA_ROUTER \
-  "balanceOf(address)(uint256)" \
-  $ANVIL_DEFAULT
+make -C devnet balance-anvil
 ```
 
 Expected result:
@@ -226,8 +171,7 @@ For the return leg, the EVM recipient must be the raw 20-byte Celestia account b
 If you need to derive that value for a different Celestia account:
 
 ```bash
-docker compose -f devnet/docker-compose.yml exec -T celestia-validator \
-  celestia-appd debug addr <CELESTIA_BECH32_ADDRESS>
+make -C devnet debug-celestia-addr ADDR=<CELESTIA_BECH32_ADDRESS>
 ```
 
 For the devnet `default` account, the raw hex is:
@@ -239,14 +183,7 @@ For the devnet `default` account, the raw hex is:
 Send the synthetic token back to Celestia:
 
 ```bash
-docker compose -f devnet/docker-compose.yml exec -T anvil \
-  cast send --rpc-url http://localhost:8545 \
-  --private-key $ANVIL_DEFAULT_PK \
-  $ANVIL_TIA_ROUTER \
-  "transferRemote(uint32,bytes32,uint256)" \
-  $CELESTIADEV_DOMAIN \
-  $CELESTIA_DEFAULT_RECIPIENT_B32 \
-  $AMOUNT_UNITS
+make -C devnet transfer-anvil
 ```
 
 The validated return tx was:
@@ -264,8 +201,8 @@ Expected success signals on Anvil:
 Watch the Anvil validator and relayer:
 
 ```bash
-docker logs -f validator-anvil
-docker logs -f relayer
+make -C devnet logs-validator-anvil
+make -C devnet logs-relayer
 ```
 
 The relayer should identify the 1-of-1 validator set and build multisig metadata for destination `celestiadev`.
@@ -273,16 +210,8 @@ The relayer should identify the 1-of-1 validator set and build multisig metadata
 Verify final balances:
 
 ```bash
-docker compose -f devnet/docker-compose.yml exec -T anvil \
-  cast call --rpc-url http://localhost:8545 \
-  $ANVIL_TIA_ROUTER \
-  "balanceOf(address)(uint256)" \
-  $ANVIL_DEFAULT
-
-docker compose -f devnet/docker-compose.yml exec -T celestia-validator \
-  celestia-appd query bank balances \
-  $CELESTIA_DEFAULT \
-  --node http://localhost:26657 -o json
+make -C devnet balance-anvil
+make -C devnet balance-celestia
 ```
 
 Expected results after the round trip:
