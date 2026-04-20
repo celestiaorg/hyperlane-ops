@@ -1,5 +1,7 @@
 # Manual Warp Transfer (USDC Sepolia <-> Celestia <-> Eden)
 
+For the local Docker devnet flow between `celestiadev` and `anvil`, see [devnet/README.md](../devnet/README.md).
+
 This guide covers manual Warp transfers for:
 
 - `USDC/celestiatestnet-edentestnet-sepolia`
