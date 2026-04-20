@@ -16,6 +16,19 @@ Full documentation is available at [celestia.org.github.io/hyperlane-ops](https:
 
 The website is built using [mkdocs](https://www.mkdocs.org/) and served by GitHub pages.
 
+## Local Devnet
+
+This repository also includes a local Docker-based Hyperlane devnet under [devnet/](./devnet/).
+
+The devnet is isolated from the top-level registry and is intended for local testing with:
+
+- `anvil`
+- `celestiadev`
+- a 1-of-1 Hyperlane validator multisig bridge
+- a local Warp Route for `TIA`
+
+For setup, lifecycle commands, manual transfer commands, and balance verification steps, see [devnet/README.md](./devnet/README.md).
+
 ### Running the documentation site locally
 
 - Install Python 3 and `mkdocs-material` for local docs preview.
