@@ -1,0 +1,128 @@
+services:
+  celestia-init:
+    image: ghcr.io/celestiaorg/celestia-app-standalone:v8.0.2-mocha
+    container_name: celestia-init
+    entrypoint: /scripts/init.sh
+    volumes:
+      - ./testnet/celestia-app/init.sh:/scripts/init.sh:ro
+      - celestia-app:/home/celestia/.celestia-app
+    restart: "no"
+
+  celestia-validator:
+    image: ghcr.io/celestiaorg/celestia-app-standalone:v8.0.2-mocha
+    container_name: celestia-validator
+    ports:
+      - "26656:26656"
+      - "26657:26657"
+      - "1317:1317"
+      - "9090:9090"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bh=$(curl -sf http://localhost:26657/status | jq -r
+            '.result.sync_info.latest_block_height'); if [ \"$$bh\" -gt 1 ];
+            then exit 0; else exit 1; fi",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+    volumes:
+      - celestia-app:/home/celestia/.celestia-app
+    command: >
+      start --force-no-bbr --api.enable=true --api.address=tcp://0.0.0.0:1317
+      --home /home/celestia/.celestia-app
+    depends_on:
+      celestia-init:
+        condition: service_completed_successfully
+    networks:
+      - celestia-net
+
+  celestia-bridge:
+    image: ghcr.io/celestiaorg/celestia-node:v0.30.0-mocha
+    container_name: celestia-bridge
+    volumes:
+      - ./testnet/celestia-node/init.sh:/scripts/init.sh:ro
+      - celestia-bridge:/home/celestia
+    entrypoint: /scripts/init.sh
+    command: celestia bridge start --log.level.module share/discovery:fatal
+      --keyring.keyname node --rpc.skip-auth
+    ports:
+      - "26658:26658"
+      - "2121:2121"
+    healthcheck:
+      test: >
+        curl -sf -X POST http://localhost:26658 -H "Content-Type:
+        application/json" -d
+        '{"id":1,"jsonrpc":"2.0","method":"node.Ready","params":[]}' | grep true
+      interval: 10s
+      start_period: 10s
+    depends_on:
+      celestia-validator:
+        condition: service_healthy
+    networks:
+      - celestia-net
+
+  anvil:
+    # Lightweight standalone EVM chain for E2E testing
+    # This is a normal EVM chain, independent from Celestia (no DA posting)
+    # Connected to Celestia only via Hyperlane cross-chain messaging
+    image: ghcr.io/foundry-rs/foundry:latest
+    container_name: anvil
+    ports:
+      - "8545:8545" # rpc
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "cast block-number --rpc-url http://localhost:8545 > /dev/null 2>&1",
+        ]
+      interval: 5s
+      timeout: 3s
+      start_period: 2s
+    networks:
+      - celestia-net
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        anvil --host 0.0.0.0 --chain-id 1234 --block-time 1 --accounts 10 --balance 10000 --mnemonic "test test test test test test test test test test test junk"
+
+  hyperlane-init:
+    image: ghcr.io/celestiaorg/hyperlane-init:sha-9406639
+    platform: linux/amd64
+    container_name: hyperlane-init
+    volumes:
+      - ./testnet/hyperlane:/home/hyperlane/
+    working_dir: /home/hyperlane
+    entrypoint: "scripts/docker-entrypoint.sh"
+    depends_on:
+      celestia-validator:
+        condition: service_healthy
+      anvil:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - celestia-net
+
+  relayer:
+    image: gcr.io/abacus-labs-dev/hyperlane-agent:agents-v1.7.0
+    platform: linux/amd64
+    container_name: relayer
+    environment:
+      - CONFIG_FILES=/app/config/config.json
+    volumes:
+      - ./testnet/hyperlane/relayer-config.json:/app/config/config.json
+    command: "/app/relayer"
+    depends_on:
+      hyperlane-init:
+        condition: service_completed_successfully
+    networks:
+      - celestia-net
+
+volumes:
+  celestia-app:
+  celestia-bridge:
+
+networks:
+  celestia-net:
+    driver: bridge

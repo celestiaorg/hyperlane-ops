@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=../schema.json
+tokens:
+  - addressOrDenom: "0x726f757465725f61707000000000000000000000000000010000000000000000"
+    chainName: celestiadev
+    collateralAddressOrDenom: utia
+    connections:
+      - token: ethereum|rethlocal|0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44
+    decimals: 6
+    name: TIA
+    standard: CosmosNativeHypCollateral
+    symbol: TIA
+  - addressOrDenom: "0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44"
+    chainName: rethlocal
+    connections:
+      - token: cosmosnative|celestiadev|0x726f757465725f61707000000000000000000000000000010000000000000000
+    decimals: 6
+    name: wTIA
+    standard: EvmHypSynthetic
+    symbol: TIA
