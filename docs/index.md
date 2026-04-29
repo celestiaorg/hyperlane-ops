@@ -14,6 +14,7 @@ Please refer to the [Glossary](./glossary.md) to familiarize yourself with the v
 - [Warp Routes](warp-routes.md) 
 - [Add Chain to Existing Celestia Warp Route](warp-route-add-chain-celestia.md)
 - [Manual Warp Transfer](manual-warp-transfer.md)
+- [Static Aggregation Hook Deployment](static-aggregation-hook-deployment.md)
 - [Mocha Testnet](testnet-deployments.md)
 - [Relayer](relayer.md)
 - [Solidity tooling for HypNativeMinter](solidity-hypnativeminter.md)
