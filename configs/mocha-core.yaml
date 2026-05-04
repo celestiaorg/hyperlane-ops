@@ -1,11 +1,40 @@
 defaultHook:
-  address: "0x726f757465725f706f73745f6469737061746368000000000000000000000004"
+  address: "0x726f757465725f706f73745f6469737061746368000000040000000000000003"
+  beneficiary: celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j
+  oracleConfig:
+    edentestnet:
+      gasPrice: "1000000000"
+      tokenExchangeRate: "1"
+    nobletestnet:
+      gasPrice: "40000"
+      tokenExchangeRate: "1"
+    sepolia:
+      gasPrice: "1000000000"
+      tokenExchangeRate: "1"
+    xomarkettestnet:
+      gasPrice: "1000"
+      tokenExchangeRate: "1"
+  oracleKey: celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j
+  overhead:
+    edentestnet: 300000
+    nobletestnet: 50000
+    sepolia: 300000
+    xomarkettestnet: 100000
   owner: celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j
-  type: noopHook # Unsupported by the CLI, currently errors when trying to read this configuration from on-chain state
+  type: interchainGasPaymaster
 defaultIsm:
   address: "0x726f757465725f69736d00000000000000000000000000010000000000000000"
   domains:
-    xomarket:
+    edentestnet:
+      address: "0x726f757465725f69736d00000000000000000000000000000000000000000004"
+      type: testIsm
+    nobletestnet:
+      address: "0x726f757465725f69736d00000000000000000000000000000000000000000004"
+      type: testIsm
+    sepolia:
+      address: "0x726f757465725f69736d00000000000000000000000000000000000000000004"
+      type: testIsm
+    xomarkettestnet:
       address: "0x726f757465725f69736d0000000000000000000000000000000000000000000d"
       type: testIsm
   owner: celestia1lg0e9n4pt29lpq2k4ptue4ckw09dx0aujlpe4j
