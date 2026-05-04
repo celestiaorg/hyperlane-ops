@@ -1,0 +1,39 @@
+marketData:
+  provider: coingecko
+  cacheTtlSeconds: 60
+  staleAfterSeconds: 300
+  assets:
+    celestiatestnet: celestia
+    edentestnet: ethereum
+    sepolia: ethereum
+
+defaults:
+  minBpsChangeToWrite: 500
+  maxBpsChangePerUpdate: 5000
+  cooldownSeconds: 900
+  safetyMultiplierBps: 11000
+  gasSampleFreshnessSeconds: 120
+
+targets:
+  - originChain: celestiatestnet
+    remoteChain: edentestnet
+    enabled: true
+    gasOverhead: 174289
+    gas:
+      source: rpc
+      min: "1"
+      max: "1000000000000"
+    exchangeRate:
+      min: "1"
+      max: "1000000000000000"
+    write:
+      enabled: true
+      method: celestia-grpc
+      signerProfile: celestia-owner
+
+signers:
+  celestia-owner:
+    protocol: cosmosnative
+    from: owner
+    keyEnv: HYP_KEY_COSMOSNATIVE
+
