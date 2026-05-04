@@ -81,6 +81,7 @@ pub struct TxPlanEntry {
 pub fn target_artifact(
     target: &ReconciliationTarget,
     policy: PolicyArtifact,
+    proposed: Option<ProposedIgpConfig>,
     decision: DecisionArtifact,
 ) -> TargetPlanArtifact {
     TargetPlanArtifact {
@@ -93,7 +94,7 @@ pub fn target_artifact(
         configured_gas_overhead: target.config.gas_overhead,
         policy,
         current: None,
-        proposed: None,
+        proposed,
         tx: None,
         decision,
     }
@@ -142,16 +143,28 @@ pub fn render_summary(plan: &PlanArtifact) -> String {
         plan.git_sha.as_deref().unwrap_or("unknown")
     ));
     out.push_str(&format!("- Targets: {}\n\n", plan.targets.len()));
-    out.push_str("| Origin | Remote | Domain | IGP | Gas overhead | Decision |\n");
-    out.push_str("| --- | --- | ---: | --- | ---: | --- |\n");
+    out.push_str("| Origin | Remote | Domain | IGP | Gas price | Exchange rate | Gas overhead | Decision |\n");
+    out.push_str("| --- | --- | ---: | --- | ---: | ---: | ---: | --- |\n");
 
     for target in &plan.targets {
+        let gas_price = target
+            .proposed
+            .as_ref()
+            .map(|proposed| proposed.gas_price.as_str())
+            .unwrap_or("n/a");
+        let exchange_rate = target
+            .proposed
+            .as_ref()
+            .map(|proposed| proposed.token_exchange_rate.as_str())
+            .unwrap_or("n/a");
         out.push_str(&format!(
-            "| {} | {} | {} | {} | {} | {} |\n",
+            "| {} | {} | {} | {} | {} | {} | {} | {} |\n",
             target.origin_chain,
             target.remote_chain,
             target.remote_domain,
             target.igp_identifier.as_deref().unwrap_or("n/a"),
+            gas_price,
+            exchange_rate,
             target.configured_gas_overhead,
             target.decision.status
         ));

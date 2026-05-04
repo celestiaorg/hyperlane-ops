@@ -1,0 +1,32 @@
+{
+  "gitSha": "28d688883491bf33f656f88efa55fe05d8ff705c",
+  "targets": [
+    {
+      "originChain": "celestiatestnet",
+      "remoteChain": "edentestnet",
+      "remoteDomain": 2147483647,
+      "originProtocol": "cosmosnative",
+      "remoteProtocol": "ethereum",
+      "igpIdentifier": "0x726f757465725f706f73745f6469737061746368000000040000000000000003",
+      "configuredGasOverhead": 174289,
+      "policy": {
+        "minBpsChangeToWrite": 500,
+        "maxBpsChangePerUpdate": 5000,
+        "cooldownSeconds": 900,
+        "safetyMultiplierBps": 11000,
+        "gasSampleFreshnessSeconds": 120
+      },
+      "current": null,
+      "proposed": {
+        "gasPrice": "8",
+        "tokenExchangeRate": "73703194253401",
+        "gasOverhead": 174289
+      },
+      "tx": null,
+      "decision": {
+        "status": "unsupported_live_read",
+        "reason": "cosmosnative IGP reads for origin celestiatestnet"
+      }
+    }
+  ]
+}

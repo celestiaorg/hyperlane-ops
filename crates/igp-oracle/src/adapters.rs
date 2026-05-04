@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use rust_decimal::Decimal;
 
 use crate::{
     error::{IgpOracleError, Result},
@@ -35,12 +36,12 @@ pub trait ChainAdapter: Send + Sync {
 
 #[async_trait]
 pub trait GasAdapter: Send + Sync {
-    async fn remote_gas_price(&self, target: &ReconciliationTarget) -> Result<String>;
+    async fn remote_gas_price(&self, target: &ReconciliationTarget) -> Result<u128>;
 }
 
 #[async_trait]
 pub trait PriceAdapter: Send + Sync {
-    async fn native_token_price_usd(&self, chain_name: &str) -> Result<String>;
+    async fn native_token_price_usd(&self, chain_name: &str) -> Result<Decimal>;
 }
 
 #[derive(Debug, Default)]

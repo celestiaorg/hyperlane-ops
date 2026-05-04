@@ -1,0 +1,15 @@
+{
+  "gitSha": "28d688883491bf33f656f88efa55fe05d8ff705c",
+  "plans": [
+    {
+      "originChain": "celestiatestnet",
+      "remoteChain": "edentestnet",
+      "remoteDomain": 2147483647,
+      "decision": {
+        "status": "unsupported_live_read",
+        "reason": "cosmosnative IGP reads for origin celestiatestnet"
+      },
+      "tx": null
+    }
+  ]
+}

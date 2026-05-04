@@ -2,7 +2,7 @@
 
 `igp-oracle` is a one-shot dry-run CLI for IGP configuration reconciliation.
 
-Stage one resolves targets from the local Hyperlane registry, selects protocol-specific adapter skeletons, and writes review artifacts. It does not perform live on-chain reads, pricing requests, transaction generation, transaction submission, or notifications.
+The current dry-run resolves targets from the local Hyperlane registry, fetches market and gas data, computes proposed IGP values, selects protocol-specific adapter skeletons, and writes review artifacts. It does not perform live on-chain IGP reads, transaction generation, transaction submission, or notifications.
 
 ## Current Dry Run
 
@@ -25,4 +25,3 @@ Expected artifacts:
 - `/tmp/igp-oracle/tx-plan.json`
 
 `--write` is parsed but intentionally exits with code `40` in stage one.
-

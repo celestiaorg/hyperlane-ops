@@ -36,6 +36,12 @@ pub enum IgpOracleError {
     #[error("invalid target selection: {0}")]
     InvalidTarget(String),
 
+    #[error("data source error: {0}")]
+    DataSource(String),
+
+    #[error("policy error: {0}")]
+    Policy(String),
+
     #[error("unsupported protocol: {0}")]
     UnsupportedProtocol(String),
 
@@ -53,8 +59,9 @@ impl IgpOracleError {
             | Self::Registry(_)
             | Self::Io { .. }
             | Self::Yaml { .. }
-            | Self::Json { .. } => 20,
-            Self::InvalidTarget(_) | Self::UnsupportedProtocol(_) => 30,
+            | Self::Json { .. }
+            | Self::DataSource(_) => 20,
+            Self::InvalidTarget(_) | Self::UnsupportedProtocol(_) | Self::Policy(_) => 30,
             Self::UnsupportedWrite => 40,
             Self::UnsupportedLiveRead(_) => 30,
         }
