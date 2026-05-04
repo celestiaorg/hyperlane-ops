@@ -53,17 +53,17 @@ pub fn resolve_targets(
 fn matches_origin(target: &TargetConfig, args: &ReconcileArgs) -> bool {
     args.origin
         .as_ref()
-        .map_or(true, |origin| origin == &target.origin_chain)
+        .is_none_or(|origin| origin == &target.origin_chain)
 }
 
 fn matches_remote(target: &TargetConfig, args: &ReconcileArgs) -> bool {
     let chain_matches = args
         .remote_chain
         .as_ref()
-        .map_or(true, |remote| target.remote_chain.as_ref() == Some(remote));
+        .is_none_or(|remote| target.remote_chain.as_ref() == Some(remote));
     let domain_matches = args
         .remote_domain
-        .map_or(true, |domain| target.remote_domain == Some(domain));
+        .is_none_or(|domain| target.remote_domain == Some(domain));
 
     chain_matches && domain_matches
 }
@@ -90,8 +90,9 @@ mod tests {
     #[test]
     fn resolves_single_target() {
         let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
-        let config = UpdaterConfig::load(&repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"))
-            .expect("config should load");
+        let config =
+            UpdaterConfig::load(&repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"))
+                .expect("config should load");
         let registry = RegistryLoader::new(&repo_root);
         let args = ReconcileArgs {
             config: repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"),

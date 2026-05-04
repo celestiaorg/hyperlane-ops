@@ -150,9 +150,9 @@ IGP Gas Oracle
 The CLI should support one main reconciliation command:
 
 ```bash
-igp-oracle reconcile --config configs/igp-oracle.yaml --dry-run
-igp-oracle reconcile --config configs/igp-oracle.yaml --origin celestiatestnet --remote-chain edentestnet --dry-run
-igp-oracle reconcile --config configs/igp-oracle.yaml --origin celestiatestnet --remote-domain 2147483647 --write
+igp-oracle reconcile --config crates/igp-oracle/igp-oracle.example.yaml --dry-run
+igp-oracle reconcile --config crates/igp-oracle/igp-oracle.example.yaml --origin celestiatestnet --remote-chain edentestnet --dry-run
+igp-oracle reconcile --config crates/igp-oracle/igp-oracle.example.yaml --origin celestiatestnet --remote-domain 2147483647 --write
 ```
 
 Required flags:
