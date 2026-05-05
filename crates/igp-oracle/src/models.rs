@@ -176,4 +176,7 @@ pub struct ProposalComputation {
     pub remote_gas_price: String,
     pub origin_price_usd: String,
     pub remote_price_usd: String,
+    pub origin_native_token_decimals: u8,
+    pub remote_native_token_decimals: u8,
+    pub token_decimal_adjustment: String,
 }

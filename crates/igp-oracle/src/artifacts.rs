@@ -75,6 +75,9 @@ pub struct DecisionArtifact {
 pub struct ProposalInputsArtifact {
     pub origin_price_usd: String,
     pub remote_price_usd: String,
+    pub origin_native_token_decimals: u8,
+    pub remote_native_token_decimals: u8,
+    pub token_decimal_adjustment: String,
     pub remote_gas_price: String,
     pub price_provider: String,
     pub origin_market_asset: Option<String>,
@@ -162,6 +165,9 @@ fn proposal_inputs(
     ProposalInputsArtifact {
         origin_price_usd: proposal.origin_price_usd.clone(),
         remote_price_usd: proposal.remote_price_usd.clone(),
+        origin_native_token_decimals: proposal.origin_native_token_decimals,
+        remote_native_token_decimals: proposal.remote_native_token_decimals,
+        token_decimal_adjustment: proposal.token_decimal_adjustment.clone(),
         remote_gas_price: proposal.remote_gas_price.clone(),
         price_provider: config.market_data.provider.clone(),
         origin_market_asset: config.market_data.assets.get(&target.origin.name).cloned(),

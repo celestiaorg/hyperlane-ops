@@ -4,6 +4,7 @@ use rust_decimal::Decimal;
 use crate::{
     cosmosnative::query::CosmosNativeQueryClient,
     error::{IgpOracleError, Result},
+    evm::query::EvmIgpReader,
     models::{
         ChainProtocol, IgpConfigRead, ProposedIgpConfig, ReconciliationTarget, TxPlan, TxReceipt,
         TxSigner, VerificationResult,
@@ -184,10 +185,7 @@ impl ChainAdapter for EvmAdapter {
     }
 
     async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<IgpConfigRead> {
-        Err(IgpOracleError::UnsupportedLiveRead(format!(
-            "EVM IGP reads for origin {}",
-            target.origin.name
-        )))
+        EvmIgpReader::new()?.read_igp_config(target).await
     }
 
     async fn plan_update(

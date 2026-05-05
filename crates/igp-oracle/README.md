@@ -2,7 +2,7 @@
 
 `igp-oracle` is a one-shot dry-run CLI for IGP configuration reconciliation.
 
-The current dry-run resolves targets from the local Hyperlane registry, fetches market and gas data, reads cosmosnative destination gas configs through the Hyperlane protobuf gRPC query service, computes proposed IGP values, compares deltas, and writes review artifacts. It does not sign transactions, submit transactions, perform EVM on-chain reads, or send notifications.
+The current dry-run resolves targets from the local Hyperlane registry, fetches market and gas data, reads cosmosnative destination gas configs through the Hyperlane protobuf gRPC query service, reads EVM IGP configs through `eth_call` when an EVM IGP address is present in the registry, computes proposed IGP values, compares deltas, and writes review artifacts. It does not sign transactions, submit transactions, or send notifications.
 
 ## Current Dry Run
 
@@ -31,3 +31,5 @@ Expected artifacts:
 `--write` is parsed but intentionally exits with code `40` in stage one.
 
 For cosmosnative origins, the registry chain metadata must include a reachable `grpcUrls` endpoint for current on-chain reads. Dry-runs exit with code `10` when an update is recommended and `30` when a policy limit is exceeded.
+
+For EVM origins, the registry chain addresses must include an `interchainGasPaymaster` 20-byte EVM address and the chain metadata must include a reachable `rpcUrls` endpoint. The configured testnet EVM chains do not currently have deployed IGP addresses, so EVM live reads are covered by unit tests until registry fixtures exist.

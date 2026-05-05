@@ -5,6 +5,7 @@ pub mod config;
 pub mod cosmosnative;
 pub mod data;
 pub mod error;
+pub mod evm;
 pub mod models;
 pub mod policy;
 pub mod proto;

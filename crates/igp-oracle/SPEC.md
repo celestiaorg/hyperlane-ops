@@ -2,7 +2,7 @@
 
 Status: Draft v0.1
 
-Last updated: 2026-05-04
+Last updated: 2026-05-05
 
 ## Summary
 
@@ -124,12 +124,96 @@ For each origin chain and remote domain, the updater evaluates:
 The core pricing formula is:
 
 ```text
-tokenExchangeRate = remoteNativePriceUsd / originNativePriceUsd * 1e10
+tokenExchangeRate =
+  remoteNativePriceUsd
+  / originNativePriceUsd
+  * 10^(originNativeTokenDecimals - remoteNativeTokenDecimals)
+  * 1e10
 ```
 
 Then the updater applies configured safety margins, rounding rules, and clamps.
 
+The native token decimal adjustment is required. The IGP quote is charged in
+the origin chain's smallest native unit, while `gasPrice` is denominated in the
+remote chain's smallest native unit. For example, Celestia uses `utia` with 6
+decimals and Ethereum uses `wei` with 18 decimals. A Celestia-origin,
+Ethereum-remote exchange rate therefore includes a `10^(6 - 18)` factor before
+the Hyperlane `1e10` exchange-rate scale is applied.
+
 `gasOverhead` is not market data. It should be static policy in v1 unless an operator deliberately changes it.
+
+### On-Chain IGP Semantics
+
+The updater must model stored IGP config values, not just quote helper outputs.
+Both EVM and cosmosnative IGP implementations use the same economic equation:
+
+```text
+payment =
+  (applicationGasLimit + gasOverhead)
+  * gasPrice
+  * tokenExchangeRate
+  / 1e10
+```
+
+The resulting payment is denominated in the origin IGP's payment denom or native
+token smallest unit.
+
+Implementation notes from the EVM IGP:
+
+- `TOKEN_EXCHANGE_RATE_SCALE` is `1e10`.
+- `gasPrice` is the remote chain gas price in the remote native token's smallest unit.
+- `tokenExchangeRate` converts remote native units into origin native units using the `1e10` scale.
+- `destinationGasLimit(remoteDomain, gasLimit)` returns `gasOverhead + gasLimit`.
+- Current Hyperlane EVM `main` stores native-token gas oracles in `tokenGasOracles[NATIVE_TOKEN][remoteDomain]` and overhead in `destinationGasOverhead[remoteDomain]`; the compatibility getter `destinationGasConfigs(remoteDomain)` returns the native gas oracle and overhead.
+- Older deployed contracts may store both fields in the public `destinationGasConfigs` mapping. The EVM adapter must support the deployed ABI shape used by the target chain.
+- Public `quoteGasPayment` should not be used as the only full-dispatch verification method unless the caller has already included overhead in the supplied gas amount. Prefer `destinationGasLimit(...)` plus `getExchangeRateAndGasPrice(...)`, or the mailbox/hook quote path that applies overhead.
+
+Implementation notes from the cosmosnative IGP:
+
+- `QuoteGasPayment` loads `DestinationGasConfig` for `(igpId, destinationDomain)`.
+- It adds `GasOverhead` to the supplied gas limit before computing the payment.
+- It computes `destinationCost = gasLimitWithOverhead * GasOracle.GasPrice`.
+- It computes `amount = destinationCost * GasOracle.TokenExchangeRate / TokenExchangeRateScale`.
+- The resulting coin denom is the denom configured when the IGP was created.
+- `SetDestinationGasConfig` is owner-gated and stores `RemoteDomain`, `GasOracle`, and `GasOverhead`; it rejects missing gas oracle data.
+
+The reconciliation engine must therefore compare and propose the three stored
+config values directly:
+
+- `gasPrice`
+- `tokenExchangeRate`
+- `gasOverhead`
+
+It must not infer correctness from a single quote result unless the quote path's
+overhead behavior is known for that protocol adapter.
+
+### Celestia Mainnet Reference Configs
+
+`sample-configs.celestia.json` is a useful behavioral reference from a
+Celestia mainnet IGP query. It lives next to this spec in the `igp-oracle`
+crate:
+
+```bash
+celestia-appd q hyperlane hooks destination-gas-configs \
+  0x726f757465725f706f73745f6469737061746368000000040000000000000001 \
+  --node https://celestia-rpc.publicnode.com:443 -o json
+```
+
+Observed characteristics:
+
+- The queried IGP has 141 destination gas configs.
+- `remote_domain: 1` corresponds to Ethereum mainnet and is configured as:
+  - `token_exchange_rate: "101"`
+  - `gas_price: "300000000"`
+  - `gas_overhead: "174289"`
+- `117 / 141` entries use `gas_overhead: "174289"`, suggesting that overhead is often a broad operator policy default rather than a measured per-domain value.
+- `token_exchange_rate` values cluster around small integers such as `1`, `30`, and `101` for many EVM domains. This is expected once origin and remote native-token decimals are included in the exchange-rate calculation.
+- A Celestia-origin, Ethereum-remote value around `101` is plausible with current ETH/TIA market prices and a conservative safety buffer. Without the decimal adjustment, the computed exchange rate would be off by orders of magnitude.
+
+Use these mainnet values as fixtures and sanity checks for formula behavior, not
+as authoritative target values for every deployment. The owning operator appears
+to manage a broad, generated config set across many domains, including domains
+that may not be actively connected for a particular application.
 
 ## CLI Program
 
@@ -333,6 +417,12 @@ celestia-appd tx hyperlane hooks igp set-destination-gas-config \
 ```
 
 Dry-run output should include the exact command arguments and, where supported, a `--generate-only` transaction payload.
+
+The Rust implementation must not shell out to `celestia-appd` for live reads.
+Cosmosnative reads and transaction planning should use protobuf/gRPC clients
+generated or modeled from the Hyperlane Cosmos module definitions. CLI command
+forms may still be emitted as operator-facing reference artifacts for external
+manual execution.
 
 Write mode requirements:
 
@@ -552,7 +642,8 @@ Recommended Rust stack:
 - `reqwest` for HTTP
 - `tokio` for concurrent data fetches
 - `alloy` or `ethers-rs` for EVM reads and calldata generation
-- `cosmrs` or shell execution of `celestia-appd` for Celestia v1
+- `tonic` and `prost` for cosmosnative protobuf/gRPC reads
+- `cosmrs` or protobuf transaction builders for cosmosnative write payloads
 - `tracing` for structured logs
 - `thiserror` or `anyhow` for error handling
 

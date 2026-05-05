@@ -51,7 +51,12 @@ pub async fn compute_proposal(
     let gas_price = apply_bps_multiplier(remote_gas_price, defaults.safety_multiplier_bps)?;
     let gas_price = clamp_u128(gas_price, &target.config.gas.min, &target.config.gas.max)?;
 
-    let exchange_rate = (remote_price / origin_price) * Decimal::from(TOKEN_EXCHANGE_RATE_SCALE);
+    let token_decimal_adjustment = decimal_power_of_ten(
+        target.origin.native_token.decimals as i16 - target.remote.native_token.decimals as i16,
+    )?;
+    let exchange_rate = (remote_price / origin_price)
+        * token_decimal_adjustment
+        * Decimal::from(TOKEN_EXCHANGE_RATE_SCALE);
     let exchange_rate =
         apply_decimal_bps_multiplier(exchange_rate, defaults.safety_multiplier_bps)?;
     let exchange_rate = clamp_u128(
@@ -69,6 +74,9 @@ pub async fn compute_proposal(
         remote_gas_price: remote_gas_price.to_string(),
         origin_price_usd: origin_price.to_string(),
         remote_price_usd: remote_price.to_string(),
+        origin_native_token_decimals: target.origin.native_token.decimals,
+        remote_native_token_decimals: target.remote.native_token.decimals,
+        token_decimal_adjustment: token_decimal_adjustment.to_string(),
     })
 }
 
@@ -93,6 +101,27 @@ fn clamp_u128(value: u128, min: &str, max: &str) -> Result<u128> {
         )));
     }
     Ok(value.clamp(min, max))
+}
+
+fn decimal_power_of_ten(exponent: i16) -> Result<Decimal> {
+    let mut value = Decimal::ONE;
+    let ten = Decimal::from(10u64);
+
+    if exponent >= 0 {
+        for _ in 0..exponent {
+            value = value.checked_mul(ten).ok_or_else(|| {
+                IgpOracleError::Policy(format!("10^{exponent} overflows decimal arithmetic"))
+            })?;
+        }
+    } else {
+        for _ in 0..exponent.abs() {
+            value = value.checked_div(ten).ok_or_else(|| {
+                IgpOracleError::Policy(format!("10^{exponent} underflows decimal arithmetic"))
+            })?;
+        }
+    }
+
+    Ok(value)
 }
 
 pub fn clamp_config(min: &str, max: &str) -> ClampConfig {
@@ -359,6 +388,40 @@ mod tests {
         assert_eq!(proposed.gas_overhead, 174_289);
     }
 
+    #[tokio::test]
+    async fn computes_exchange_rate_with_native_token_decimals() {
+        let target = target_with_decimals(6, 18);
+        let defaults = DefaultsConfig {
+            min_bps_change_to_write: 500,
+            max_bps_change_per_update: 5000,
+            cooldown_seconds: 900,
+            safety_multiplier_bps: 10_000,
+            gas_sample_freshness_seconds: 120,
+        };
+        let mut prices = BTreeMap::new();
+        prices.insert(
+            "origin".to_string(),
+            Decimal::from_str_exact("0.25").unwrap(),
+        );
+        prices.insert("remote".to_string(), Decimal::from(2500));
+
+        let proposal = compute_proposal(
+            &target,
+            &defaults,
+            &StaticGasAdapter(300_000_000),
+            &StaticPriceAdapter(prices),
+        )
+        .await
+        .expect("proposal");
+
+        assert_eq!(proposal.proposed.gas_price, "300000000");
+        assert_eq!(proposal.proposed.token_exchange_rate, "100");
+        assert_eq!(proposal.proposed.gas_overhead, 174_289);
+        assert_eq!(proposal.origin_native_token_decimals, 6);
+        assert_eq!(proposal.remote_native_token_decimals, 18);
+        assert_eq!(proposal.token_decimal_adjustment, "0.000000000001");
+    }
+
     #[test]
     fn recommends_update_when_delta_exceeds_min_threshold() {
         let defaults = DefaultsConfig {
@@ -409,9 +472,13 @@ mod tests {
     }
 
     fn target() -> ReconciliationTarget {
+        target_with_decimals(18, 18)
+    }
+
+    fn target_with_decimals(origin_decimals: u8, remote_decimals: u8) -> ReconciliationTarget {
         ReconciliationTarget {
-            origin: chain("origin", ChainProtocol::CosmosNative, 1),
-            remote: chain("remote", ChainProtocol::Ethereum, 2),
+            origin: chain("origin", ChainProtocol::CosmosNative, 1, origin_decimals),
+            remote: chain("remote", ChainProtocol::Ethereum, 2, remote_decimals),
             origin_addresses: CoreAddresses::default(),
             config: TargetConfig {
                 origin_chain: "origin".to_string(),
@@ -434,7 +501,12 @@ mod tests {
         }
     }
 
-    fn chain(name: &str, protocol: ChainProtocol, domain_id: u32) -> ChainMetadata {
+    fn chain(
+        name: &str,
+        protocol: ChainProtocol,
+        domain_id: u32,
+        native_token_decimals: u8,
+    ) -> ChainMetadata {
         ChainMetadata {
             name: name.to_string(),
             domain_id,
@@ -443,7 +515,7 @@ mod tests {
             native_token: NativeToken {
                 name: "Token".to_string(),
                 symbol: "TKN".to_string(),
-                decimals: 18,
+                decimals: native_token_decimals,
                 denom: None,
             },
             rpc_urls: Vec::new(),

@@ -333,7 +333,7 @@ mod tests {
 
         let current = CurrentIgpConfig {
             gas_price: "110".to_string(),
-            token_exchange_rate: "22000000000".to_string(),
+            token_exchange_rate: "1".to_string(),
             gas_overhead: 174_289,
         };
         let adapter_factory = move |protocol| {
@@ -365,8 +365,11 @@ mod tests {
         assert!(plan.contains("\"current\": {"));
         assert!(plan.contains("\"deltas\": {"));
         assert!(plan.contains("\"gasPriceBps\": 0"));
+        assert!(plan.contains("\"originNativeTokenDecimals\": 6"));
+        assert!(plan.contains("\"remoteNativeTokenDecimals\": 18"));
+        assert!(plan.contains("\"tokenDecimalAdjustment\": \"0.000000000001\""));
         assert!(plan.contains("\"gasPrice\": \"110\""));
-        assert!(plan.contains("\"tokenExchangeRate\": \"22000000000\""));
+        assert!(plan.contains("\"tokenExchangeRate\": \"1\""));
         assert!(plan.contains("\"tx\": null"));
     }
 
@@ -393,7 +396,7 @@ mod tests {
         };
         let current = CurrentIgpConfig {
             gas_price: "100".to_string(),
-            token_exchange_rate: "22000000000".to_string(),
+            token_exchange_rate: "1".to_string(),
             gas_overhead: 174_289,
         };
         let adapter_factory = move |protocol| {

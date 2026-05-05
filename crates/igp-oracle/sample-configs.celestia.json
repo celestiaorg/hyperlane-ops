@@ -1,0 +1,1133 @@
+{
+  "destination_gas_configs": [
+    {
+      "remote_domain": 1,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "300000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 10,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 14,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "25000000001"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 42,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 56,
+      "gas_oracle": {
+        "token_exchange_rate": "30",
+        "gas_price": "687914551"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 58,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "2500000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 88,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 100,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 109,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "100716488369"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 122,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 130,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 137,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "225399111295"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 143,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "102000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 146,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "55000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 169,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "510827416"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 173,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "108900000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 177,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 196,
+      "gas_oracle": {
+        "token_exchange_rate": "3",
+        "gas_price": "6879145508"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 204,
+      "gas_oracle": {
+        "token_exchange_rate": "30",
+        "gas_price": "687914551"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 223,
+      "gas_oracle": {
+        "token_exchange_rate": "3186",
+        "gas_price": "6477539"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 227,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "45000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 239,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "450000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 250,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 252,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 288,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 291,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 324,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "114981781"
+      },
+      "gas_overhead": "348578"
+    },
+    {
+      "remote_domain": 360,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 369,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "226653443912088"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 466,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 480,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 592,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "779371350051"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 648,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 690,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 698,
+      "gas_oracle": {
+        "token_exchange_rate": "30",
+        "gas_price": "687914551"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 714,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 745,
+      "gas_oracle": {
+        "token_exchange_rate": "92213",
+        "gas_price": "77226"
+      },
+      "gas_overhead": "600000"
+    },
+    {
+      "remote_domain": 964,
+      "gas_oracle": {
+        "token_exchange_rate": "8",
+        "gas_price": "10000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 970,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "100000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 988,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 999,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1088,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1101,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "510827416"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1116,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "60000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1135,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1284,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "31250000000"
+      },
+      "gas_overhead": "697156"
+    },
+    {
+      "remote_domain": 1329,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1480,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1514,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1597,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "600000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1625,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "1800000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1868,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1923,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1983,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 2000,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "250000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 2020,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "21492605086"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 2741,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "114981781"
+      },
+      "gas_overhead": "348578"
+    },
+    {
+      "remote_domain": 2818,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 3338,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "100000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 3637,
+      "gas_oracle": {
+        "token_exchange_rate": "3186",
+        "gas_price": "6477539"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 4114,
+      "gas_oracle": {
+        "token_exchange_rate": "3038",
+        "gas_price": "6793100"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 4200,
+      "gas_oracle": {
+        "token_exchange_rate": "3186",
+        "gas_price": "6477539"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 4326,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "25561640"
+      },
+      "gas_overhead": "1742890"
+    },
+    {
+      "remote_domain": 5000,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 5031,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "11613159784"
+      },
+      "gas_overhead": "348578"
+    },
+    {
+      "remote_domain": 5330,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 5845,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 5888,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 6900,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "1000000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 7000,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 7560,
+      "gas_oracle": {
+        "token_exchange_rate": "100",
+        "gas_price": "206374366"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 7667,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "100000000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 8217,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "27500000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 8333,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 8453,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 9745,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 11820,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "27500000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 16661,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 21000,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "31250000000"
+      },
+      "gas_overhead": "697156"
+    },
+    {
+      "remote_domain": 24101,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "13100000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 25327,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 33139,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "25420690000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 34443,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 36900,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "1104000000000"
+      },
+      "gas_overhead": "348578"
+    },
+    {
+      "remote_domain": 42161,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 42170,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 42220,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "25001000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 43111,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 43114,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 48900,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 50104,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "9916508388529"
+      },
+      "gas_overhead": "348578"
+    },
+    {
+      "remote_domain": 52014,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 52924,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 57073,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 59144,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 60808,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 80094,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 81457,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "510827416"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 92278,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 98866,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "1000000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 124816,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 167000,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "510827416"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 175200,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 200901,
+      "gas_oracle": {
+        "token_exchange_rate": "3186",
+        "gas_price": "50000007"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 534352,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "1532483131"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 543210,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "60000000"
+      },
+      "gas_overhead": "1045734"
+    },
+    {
+      "remote_domain": 613419,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 660279,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 747474,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 984122,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1440000,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "275000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 2632500,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 4278608,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 7777777,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 9999999,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 50075007,
+      "gas_oracle": {
+        "token_exchange_rate": "10151163",
+        "gas_price": "1267"
+      },
+      "gas_overhead": "600000"
+    },
+    {
+      "remote_domain": 358974494,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "261882"
+      },
+      "gas_overhead": "170000000"
+    },
+    {
+      "remote_domain": 507150715,
+      "gas_oracle": {
+        "token_exchange_rate": "441270",
+        "gas_price": "29138"
+      },
+      "gas_overhead": "600000"
+    },
+    {
+      "remote_domain": 514051890,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "26450000"
+      },
+      "gas_overhead": "170000000"
+    },
+    {
+      "remote_domain": 666666666,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "120000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 888888888,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "510827416"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1000000747,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1000001750,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1000008008,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1000012617,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1000013371,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1000055244,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1000073017,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "20637436522"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1000088888,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "2501000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1128614981,
+      "gas_oracle": {
+        "token_exchange_rate": "10000",
+        "gas_price": "200"
+      },
+      "gas_overhead": "50000"
+    },
+    {
+      "remote_domain": 1264145989,
+      "gas_oracle": {
+        "token_exchange_rate": "96281377",
+        "gas_price": "74"
+      },
+      "gas_overhead": "600000"
+    },
+    {
+      "remote_domain": 1313161554,
+      "gas_oracle": {
+        "token_exchange_rate": "101",
+        "gas_price": "204331055"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1313817164,
+      "gas_oracle": {
+        "token_exchange_rate": "3470907",
+        "gas_price": "10000"
+      },
+      "gas_overhead": "600000"
+    },
+    {
+      "remote_domain": 1399811149,
+      "gas_oracle": {
+        "token_exchange_rate": "441270",
+        "gas_price": "50000"
+      },
+      "gas_overhead": "600000"
+    },
+    {
+      "remote_domain": 1408864445,
+      "gas_oracle": {
+        "token_exchange_rate": "10083502",
+        "gas_price": "1276"
+      },
+      "gas_overhead": "600000"
+    },
+    {
+      "remote_domain": 1633970780,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "50000000000"
+      },
+      "gas_overhead": "600000"
+    },
+    {
+      "remote_domain": 1634493807,
+      "gas_oracle": {
+        "token_exchange_rate": "388794",
+        "gas_price": "26457"
+      },
+      "gas_overhead": "400000"
+    },
+    {
+      "remote_domain": 1666600000,
+      "gas_oracle": {
+        "token_exchange_rate": "1",
+        "gas_price": "100000000000"
+      },
+      "gas_overhead": "174289"
+    },
+    {
+      "remote_domain": 1835625579,
+      "gas_oracle": {
+        "token_exchange_rate": "5649",
+        "gas_price": "1260605"
+      },
+      "gas_overhead": "600000"
+    },
+    {
+      "remote_domain": 1853125230,
+      "gas_oracle": {
+        "token_exchange_rate": "63647",
+        "gas_price": "111886"
+      },
+      "gas_overhead": "600000"
+    },
+    {
+      "remote_domain": 1936682104,
+      "gas_oracle": {
+        "token_exchange_rate": "396",
+        "gas_price": "32468772"
+      },
+      "gas_overhead": "600000"
+    }
+  ],
+  "pagination": null
+}

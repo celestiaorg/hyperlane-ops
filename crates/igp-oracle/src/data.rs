@@ -243,7 +243,7 @@ pub fn decimal_to_ceil_u128(value: Decimal) -> Result<u128> {
     })
 }
 
-fn http_client() -> Result<Client> {
+pub(crate) fn http_client() -> Result<Client> {
     Client::builder()
         .user_agent("igp-oracle/0.1")
         .build()
