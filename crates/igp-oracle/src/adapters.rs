@@ -2,10 +2,11 @@ use async_trait::async_trait;
 use rust_decimal::Decimal;
 
 use crate::{
+    cosmosnative::query::CosmosNativeQueryClient,
     error::{IgpOracleError, Result},
     models::{
-        ChainProtocol, CurrentIgpConfig, ProposedIgpConfig, ReconciliationTarget, TxPlan,
-        TxReceipt, VerificationResult,
+        ChainProtocol, IgpConfigRead, ProposedIgpConfig, ReconciliationTarget, TxPlan, TxReceipt,
+        TxSigner, VerificationResult,
     },
 };
 
@@ -13,7 +14,7 @@ use crate::{
 pub trait ChainAdapter: Send + Sync {
     fn protocol(&self) -> ChainProtocol;
 
-    async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<CurrentIgpConfig>;
+    async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<IgpConfigRead>;
 
     async fn plan_update(
         &self,
@@ -63,21 +64,98 @@ impl ChainAdapter for CosmosNativeAdapter {
         ChainProtocol::CosmosNative
     }
 
-    async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<CurrentIgpConfig> {
-        Err(IgpOracleError::UnsupportedLiveRead(format!(
-            "cosmosnative IGP reads for origin {}",
-            target.origin.name
-        )))
+    async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<IgpConfigRead> {
+        let igp_id = target
+            .origin_addresses
+            .interchain_gas_paymaster
+            .as_deref()
+            .ok_or_else(|| {
+                IgpOracleError::Registry(format!(
+                    "origin chain {} has no interchainGasPaymaster address",
+                    target.origin.name
+                ))
+            })?;
+        let endpoint = target
+            .origin
+            .grpc_urls
+            .first()
+            .ok_or_else(|| {
+                IgpOracleError::DataSource(format!(
+                    "origin chain {} has no grpcUrls entry",
+                    target.origin.name
+                ))
+            })?
+            .http
+            .as_str();
+
+        let (config, source) = CosmosNativeQueryClient::new(endpoint)
+            .destination_gas_config(&target.origin.name, igp_id, target.remote.domain_id)
+            .await?;
+
+        Ok(IgpConfigRead { config, source })
     }
 
     async fn plan_update(
         &self,
-        _target: &ReconciliationTarget,
-        _proposed: &ProposedIgpConfig,
+        target: &ReconciliationTarget,
+        proposed: &ProposedIgpConfig,
     ) -> Result<TxPlan> {
-        Err(IgpOracleError::UnsupportedLiveRead(
-            "cosmosnative tx planning".to_string(),
-        ))
+        let igp_id = target
+            .origin_addresses
+            .interchain_gas_paymaster
+            .as_deref()
+            .ok_or_else(|| {
+                IgpOracleError::Registry(format!(
+                    "origin chain {} has no interchainGasPaymaster address",
+                    target.origin.name
+                ))
+            })?;
+        let endpoint = target
+            .origin
+            .grpc_urls
+            .first()
+            .ok_or_else(|| {
+                IgpOracleError::DataSource(format!(
+                    "origin chain {} has no grpcUrls entry",
+                    target.origin.name
+                ))
+            })?
+            .http
+            .as_str();
+        let owner = CosmosNativeQueryClient::new(endpoint)
+            .igp_owner(&target.origin.name, igp_id)
+            .await?;
+
+        Ok(TxPlan {
+            protocol: "cosmosnative".to_string(),
+            action: "setDestinationGasConfig".to_string(),
+            message_type: "/hyperlane.core.post_dispatch.v1.MsgSetDestinationGasConfig"
+                .to_string(),
+            target: igp_id.to_string(),
+            selector: None,
+            calldata: None,
+            command: None,
+            signer: Some(TxSigner {
+                signer_profile: target.config.write.signer_profile.clone(),
+                address: Some(owner.clone()),
+            }),
+            message: serde_json::json!({
+                "owner": owner,
+                "igpId": igp_id,
+                "destinationGasConfig": {
+                    "remoteDomain": target.remote.domain_id,
+                    "gasOracle": {
+                        "tokenExchangeRate": proposed.token_exchange_rate.as_str(),
+                        "gasPrice": proposed.gas_price.as_str()
+                    },
+                    "gasOverhead": proposed.gas_overhead.to_string()
+                }
+            }),
+            notes: vec![
+                "review artifact only; transaction submission is not implemented".to_string(),
+                "values were generated from the dry-run proposal and must be recomputed before write mode".to_string(),
+            ],
+        })
     }
 
     async fn submit_update(
@@ -105,7 +183,7 @@ impl ChainAdapter for EvmAdapter {
         ChainProtocol::Ethereum
     }
 
-    async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<CurrentIgpConfig> {
+    async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<IgpConfigRead> {
         Err(IgpOracleError::UnsupportedLiveRead(format!(
             "EVM IGP reads for origin {}",
             target.origin.name

@@ -3,9 +3,12 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 
 use crate::{
-    config::DefaultsConfig,
+    config::{DefaultsConfig, UpdaterConfig},
     error::{create_dir_all, write, IgpOracleError, Result},
-    models::{CurrentIgpConfig, ProposedIgpConfig, ReconciliationTarget, TxPlan},
+    models::{
+        CurrentIgpConfig, IgpConfigRead, ProposalComputation, ProposedIgpConfig,
+        ReconciliationDelta, ReconciliationTarget, TxPlan,
+    },
 };
 
 #[derive(Debug, Clone, Serialize)]
@@ -26,8 +29,11 @@ pub struct TargetPlanArtifact {
     pub igp_identifier: Option<String>,
     pub configured_gas_overhead: u64,
     pub policy: PolicyArtifact,
+    pub inputs: Option<ProposalInputsArtifact>,
+    pub on_chain_read: Option<OnChainReadArtifact>,
     pub current: Option<CurrentIgpConfig>,
     pub proposed: Option<ProposedIgpConfig>,
+    pub deltas: Option<ReconciliationDelta>,
     pub tx: Option<TxPlan>,
     pub decision: DecisionArtifact,
 }
@@ -58,7 +64,31 @@ impl From<&DefaultsConfig> for PolicyArtifact {
 #[serde(rename_all = "camelCase")]
 pub struct DecisionArtifact {
     pub status: String,
+    pub code: String,
+    pub field: Option<String>,
+    pub max_delta_bps: Option<u128>,
     pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProposalInputsArtifact {
+    pub origin_price_usd: String,
+    pub remote_price_usd: String,
+    pub remote_gas_price: String,
+    pub price_provider: String,
+    pub origin_market_asset: Option<String>,
+    pub remote_market_asset: Option<String>,
+    pub gas_source: String,
+    pub remote_gas_endpoint: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OnChainReadArtifact {
+    pub protocol: String,
+    pub endpoint: Option<String>,
+    pub query: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -78,25 +108,85 @@ pub struct TxPlanEntry {
     pub tx: Option<TxPlan>,
 }
 
-pub fn target_artifact(
-    target: &ReconciliationTarget,
-    policy: PolicyArtifact,
-    proposed: Option<ProposedIgpConfig>,
-    decision: DecisionArtifact,
-) -> TargetPlanArtifact {
+pub struct TargetArtifactInput<'a> {
+    pub target: &'a ReconciliationTarget,
+    pub config: &'a UpdaterConfig,
+    pub policy: PolicyArtifact,
+    pub proposal: Option<ProposalComputation>,
+    pub current_read: Option<IgpConfigRead>,
+    pub deltas: Option<ReconciliationDelta>,
+    pub tx: Option<TxPlan>,
+    pub decision: DecisionArtifact,
+}
+
+pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
+    let inputs = input
+        .proposal
+        .as_ref()
+        .map(|proposal| proposal_inputs(input.target, input.config, proposal));
+    let on_chain_read = input
+        .current_read
+        .as_ref()
+        .map(|read| OnChainReadArtifact::from(&read.source));
+    let current = input.current_read.map(|read| read.config);
+    let proposed = input.proposal.map(|proposal| proposal.proposed);
+
     TargetPlanArtifact {
-        origin_chain: target.origin.name.clone(),
-        remote_chain: target.remote.name.clone(),
-        remote_domain: target.remote.domain_id,
-        origin_protocol: target.origin.protocol.as_str().to_string(),
-        remote_protocol: target.remote.protocol.as_str().to_string(),
-        igp_identifier: target.origin_addresses.interchain_gas_paymaster.clone(),
-        configured_gas_overhead: target.config.gas_overhead,
-        policy,
-        current: None,
+        origin_chain: input.target.origin.name.clone(),
+        remote_chain: input.target.remote.name.clone(),
+        remote_domain: input.target.remote.domain_id,
+        origin_protocol: input.target.origin.protocol.as_str().to_string(),
+        remote_protocol: input.target.remote.protocol.as_str().to_string(),
+        igp_identifier: input
+            .target
+            .origin_addresses
+            .interchain_gas_paymaster
+            .clone(),
+        configured_gas_overhead: input.target.config.gas_overhead,
+        policy: input.policy,
+        inputs,
+        on_chain_read,
+        current,
         proposed,
-        tx: None,
-        decision,
+        deltas: input.deltas,
+        tx: input.tx,
+        decision: input.decision,
+    }
+}
+
+fn proposal_inputs(
+    target: &ReconciliationTarget,
+    config: &UpdaterConfig,
+    proposal: &ProposalComputation,
+) -> ProposalInputsArtifact {
+    ProposalInputsArtifact {
+        origin_price_usd: proposal.origin_price_usd.clone(),
+        remote_price_usd: proposal.remote_price_usd.clone(),
+        remote_gas_price: proposal.remote_gas_price.clone(),
+        price_provider: config.market_data.provider.clone(),
+        origin_market_asset: config.market_data.assets.get(&target.origin.name).cloned(),
+        remote_market_asset: config.market_data.assets.get(&target.remote.name).cloned(),
+        gas_source: target.config.gas.source.clone(),
+        remote_gas_endpoint: target
+            .remote
+            .rpc_urls
+            .first()
+            .map(|entry| entry.http.clone())
+            .or_else(|| {
+                target.remote.gas_price.as_ref().map(|gas_price| {
+                    format!("registry gasPrice {}{}", gas_price.amount, gas_price.denom)
+                })
+            }),
+    }
+}
+
+impl From<&crate::models::OnChainReadSource> for OnChainReadArtifact {
+    fn from(source: &crate::models::OnChainReadSource) -> Self {
+        Self {
+            protocol: source.protocol.clone(),
+            endpoint: source.endpoint.clone(),
+            query: source.query.clone(),
+        }
     }
 }
 
@@ -143,8 +233,8 @@ pub fn render_summary(plan: &PlanArtifact) -> String {
         plan.git_sha.as_deref().unwrap_or("unknown")
     ));
     out.push_str(&format!("- Targets: {}\n\n", plan.targets.len()));
-    out.push_str("| Origin | Remote | Domain | IGP | Gas price | Exchange rate | Gas overhead | Decision |\n");
-    out.push_str("| --- | --- | ---: | --- | ---: | ---: | ---: | --- |\n");
+    out.push_str("| Origin | Remote | Domain | IGP | Gas price | Exchange rate | Gas overhead | Decision | Code | Driver |\n");
+    out.push_str("| --- | --- | ---: | --- | ---: | ---: | ---: | --- | --- | --- |\n");
 
     for target in &plan.targets {
         let gas_price = target
@@ -158,7 +248,7 @@ pub fn render_summary(plan: &PlanArtifact) -> String {
             .map(|proposed| proposed.token_exchange_rate.as_str())
             .unwrap_or("n/a");
         out.push_str(&format!(
-            "| {} | {} | {} | {} | {} | {} | {} | {} |\n",
+            "| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |\n",
             target.origin_chain,
             target.remote_chain,
             target.remote_domain,
@@ -166,7 +256,9 @@ pub fn render_summary(plan: &PlanArtifact) -> String {
             gas_price,
             exchange_rate,
             target.configured_gas_overhead,
-            target.decision.status
+            target.decision.status,
+            target.decision.code,
+            target.decision.field.as_deref().unwrap_or("n/a")
         ));
     }
 

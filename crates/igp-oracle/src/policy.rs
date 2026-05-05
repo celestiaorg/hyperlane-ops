@@ -5,7 +5,10 @@ use crate::{
     config::{ClampConfig, DefaultsConfig},
     data::{decimal_str_to_ceil_u128, decimal_to_ceil_u128},
     error::{IgpOracleError, Result},
-    models::{ProposedIgpConfig, ReconciliationTarget},
+    models::{
+        CurrentIgpConfig, ProposalComputation, ProposedIgpConfig, ReconciliationDelta,
+        ReconciliationTarget,
+    },
 };
 
 const TOKEN_EXCHANGE_RATE_SCALE: u64 = 10_000_000_000;
@@ -17,6 +20,19 @@ pub async fn compute_proposed_config(
     gas_adapter: &dyn GasAdapter,
     price_adapter: &dyn PriceAdapter,
 ) -> Result<ProposedIgpConfig> {
+    Ok(
+        compute_proposal(target, defaults, gas_adapter, price_adapter)
+            .await?
+            .proposed,
+    )
+}
+
+pub async fn compute_proposal(
+    target: &ReconciliationTarget,
+    defaults: &DefaultsConfig,
+    gas_adapter: &dyn GasAdapter,
+    price_adapter: &dyn PriceAdapter,
+) -> Result<ProposalComputation> {
     let remote_gas_price = gas_adapter.remote_gas_price(target).await?;
     let origin_price = price_adapter
         .native_token_price_usd(&target.origin.name)
@@ -44,10 +60,15 @@ pub async fn compute_proposed_config(
         &target.config.exchange_rate.max,
     )?;
 
-    Ok(ProposedIgpConfig {
-        gas_price: gas_price.to_string(),
-        token_exchange_rate: exchange_rate.to_string(),
-        gas_overhead: target.config.gas_overhead,
+    Ok(ProposalComputation {
+        proposed: ProposedIgpConfig {
+            gas_price: gas_price.to_string(),
+            token_exchange_rate: exchange_rate.to_string(),
+            gas_overhead: target.config.gas_overhead,
+        },
+        remote_gas_price: remote_gas_price.to_string(),
+        origin_price_usd: origin_price.to_string(),
+        remote_price_usd: remote_price.to_string(),
     })
 }
 
@@ -79,6 +100,199 @@ pub fn clamp_config(min: &str, max: &str) -> ClampConfig {
         min: min.to_string(),
         max: max.to_string(),
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReconciliationDecision {
+    pub status: DecisionStatus,
+    pub code: DecisionCode,
+    pub reason: String,
+    pub deltas: ReconciliationDelta,
+    pub field: Option<ReconciliationField>,
+    pub max_delta_bps: Option<u128>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DecisionStatus {
+    Noop,
+    UpdateRecommended,
+    PolicyViolation,
+}
+
+impl DecisionStatus {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Noop => "noop",
+            Self::UpdateRecommended => "update_recommended",
+            Self::PolicyViolation => "policy_violation",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DecisionCode {
+    Noop,
+    UpdateThresholdMet,
+    LargeDeltaRequiresManualReview,
+    ZeroCurrentValueRequiresManualReview,
+}
+
+impl DecisionCode {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Noop => "noop",
+            Self::UpdateThresholdMet => "update_threshold_met",
+            Self::LargeDeltaRequiresManualReview => "large_delta_requires_manual_review",
+            Self::ZeroCurrentValueRequiresManualReview => {
+                "zero_current_value_requires_manual_review"
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReconciliationField {
+    GasPrice,
+    TokenExchangeRate,
+    GasOverhead,
+}
+
+impl ReconciliationField {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::GasPrice => "gasPrice",
+            Self::TokenExchangeRate => "tokenExchangeRate",
+            Self::GasOverhead => "gasOverhead",
+        }
+    }
+}
+
+pub fn decide_reconciliation(
+    current: &CurrentIgpConfig,
+    proposed: &ProposedIgpConfig,
+    defaults: &DefaultsConfig,
+) -> Result<ReconciliationDecision> {
+    let current_gas_price = parse_u128(&current.gas_price, "current gasPrice")?;
+    let proposed_gas_price = parse_u128(&proposed.gas_price, "proposed gasPrice")?;
+    let current_exchange_rate =
+        parse_u128(&current.token_exchange_rate, "current tokenExchangeRate")?;
+    let proposed_exchange_rate =
+        parse_u128(&proposed.token_exchange_rate, "proposed tokenExchangeRate")?;
+
+    let deltas = ReconciliationDelta {
+        gas_price_bps: delta_bps(current_gas_price, proposed_gas_price),
+        token_exchange_rate_bps: delta_bps(current_exchange_rate, proposed_exchange_rate),
+        gas_overhead_bps: delta_bps(current.gas_overhead as u128, proposed.gas_overhead as u128),
+    };
+
+    if let Some(field) = zero_current_field(
+        current_gas_price,
+        current_exchange_rate,
+        current.gas_overhead,
+        proposed.gas_overhead,
+    ) {
+        return Ok(ReconciliationDecision {
+            status: DecisionStatus::PolicyViolation,
+            code: DecisionCode::ZeroCurrentValueRequiresManualReview,
+            reason: format!(
+                "current on-chain {} is zero; manual review required",
+                field.as_str()
+            ),
+            deltas,
+            field: Some(field),
+            max_delta_bps: None,
+        });
+    }
+
+    let (field, max_delta) = max_delta(&deltas).unwrap_or((ReconciliationField::GasPrice, 0));
+
+    if max_delta > defaults.max_bps_change_per_update as u128 {
+        return Ok(ReconciliationDecision {
+            status: DecisionStatus::PolicyViolation,
+            code: DecisionCode::LargeDeltaRequiresManualReview,
+            reason: format!(
+                "{} delta {max_delta} bps exceeds configured max {} bps",
+                field.as_str(),
+                defaults.max_bps_change_per_update
+            ),
+            deltas,
+            field: Some(field),
+            max_delta_bps: Some(max_delta),
+        });
+    }
+
+    if max_delta >= defaults.min_bps_change_to_write as u128 {
+        return Ok(ReconciliationDecision {
+            status: DecisionStatus::UpdateRecommended,
+            code: DecisionCode::UpdateThresholdMet,
+            reason: format!(
+                "{} delta {max_delta} bps meets configured write threshold {} bps",
+                field.as_str(),
+                defaults.min_bps_change_to_write
+            ),
+            deltas,
+            field: Some(field),
+            max_delta_bps: Some(max_delta),
+        });
+    }
+
+    Ok(ReconciliationDecision {
+        status: DecisionStatus::Noop,
+        code: DecisionCode::Noop,
+        reason: format!(
+            "{} delta {max_delta} bps is below configured write threshold {} bps",
+            field.as_str(),
+            defaults.min_bps_change_to_write
+        ),
+        deltas,
+        field: Some(field),
+        max_delta_bps: Some(max_delta),
+    })
+}
+
+fn parse_u128(value: &str, label: &str) -> Result<u128> {
+    value
+        .parse::<u128>()
+        .map_err(|source| IgpOracleError::Policy(format!("invalid {label} {value}: {source}")))
+}
+
+fn delta_bps(current: u128, proposed: u128) -> Option<u128> {
+    if current == 0 {
+        return None;
+    }
+    Some(current.abs_diff(proposed) * BPS_DENOMINATOR as u128 / current)
+}
+
+fn zero_current_field(
+    gas_price: u128,
+    token_exchange_rate: u128,
+    gas_overhead: u64,
+    proposed_gas_overhead: u64,
+) -> Option<ReconciliationField> {
+    if gas_price == 0 {
+        return Some(ReconciliationField::GasPrice);
+    }
+    if token_exchange_rate == 0 {
+        return Some(ReconciliationField::TokenExchangeRate);
+    }
+    if gas_overhead == 0 && proposed_gas_overhead > 0 {
+        return Some(ReconciliationField::GasOverhead);
+    }
+    None
+}
+
+fn max_delta(deltas: &ReconciliationDelta) -> Option<(ReconciliationField, u128)> {
+    [
+        (ReconciliationField::GasPrice, deltas.gas_price_bps),
+        (
+            ReconciliationField::TokenExchangeRate,
+            deltas.token_exchange_rate_bps,
+        ),
+        (ReconciliationField::GasOverhead, deltas.gas_overhead_bps),
+    ]
+    .into_iter()
+    .filter_map(|(field, delta)| delta.map(|delta| (field, delta)))
+    .max_by_key(|(_, delta)| *delta)
 }
 
 #[cfg(test)]
@@ -143,6 +357,55 @@ mod tests {
         assert_eq!(proposed.gas_price, "110");
         assert_eq!(proposed.token_exchange_rate, "22000000000");
         assert_eq!(proposed.gas_overhead, 174_289);
+    }
+
+    #[test]
+    fn recommends_update_when_delta_exceeds_min_threshold() {
+        let defaults = DefaultsConfig {
+            min_bps_change_to_write: 500,
+            max_bps_change_per_update: 5000,
+            cooldown_seconds: 900,
+            safety_multiplier_bps: 11_000,
+            gas_sample_freshness_seconds: 120,
+        };
+        let current = CurrentIgpConfig {
+            gas_price: "100".to_string(),
+            token_exchange_rate: "100".to_string(),
+            gas_overhead: 100,
+        };
+        let proposed = ProposedIgpConfig {
+            gas_price: "110".to_string(),
+            token_exchange_rate: "100".to_string(),
+            gas_overhead: 100,
+        };
+
+        let decision = decide_reconciliation(&current, &proposed, &defaults).expect("decision");
+        assert_eq!(decision.status, DecisionStatus::UpdateRecommended);
+        assert_eq!(decision.deltas.gas_price_bps, Some(1000));
+    }
+
+    #[test]
+    fn flags_policy_violation_when_delta_exceeds_max_threshold() {
+        let defaults = DefaultsConfig {
+            min_bps_change_to_write: 500,
+            max_bps_change_per_update: 5000,
+            cooldown_seconds: 900,
+            safety_multiplier_bps: 11_000,
+            gas_sample_freshness_seconds: 120,
+        };
+        let current = CurrentIgpConfig {
+            gas_price: "100".to_string(),
+            token_exchange_rate: "100".to_string(),
+            gas_overhead: 100,
+        };
+        let proposed = ProposedIgpConfig {
+            gas_price: "10000".to_string(),
+            token_exchange_rate: "100".to_string(),
+            gas_overhead: 100,
+        };
+
+        let decision = decide_reconciliation(&current, &proposed, &defaults).expect("decision");
+        assert_eq!(decision.status, DecisionStatus::PolicyViolation);
     }
 
     fn target() -> ReconciliationTarget {

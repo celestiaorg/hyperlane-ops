@@ -45,7 +45,7 @@ pub enum IgpOracleError {
     #[error("unsupported protocol: {0}")]
     UnsupportedProtocol(String),
 
-    #[error("live on-chain reads are not implemented in stage one: {0}")]
+    #[error("live on-chain read is unsupported for this adapter: {0}")]
     UnsupportedLiveRead(String),
 
     #[error("write mode is not implemented in stage one")]

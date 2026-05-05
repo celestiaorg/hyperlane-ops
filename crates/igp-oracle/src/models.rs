@@ -103,6 +103,21 @@ pub struct CurrentIgpConfig {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct IgpConfigRead {
+    pub config: CurrentIgpConfig,
+    pub source: OnChainReadSource,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OnChainReadSource {
+    pub protocol: String,
+    pub endpoint: Option<String>,
+    pub query: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProposedIgpConfig {
     pub gas_price: String,
     pub token_exchange_rate: String,
@@ -112,10 +127,24 @@ pub struct ProposedIgpConfig {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TxPlan {
+    pub protocol: String,
+    pub action: String,
+    pub message_type: String,
     pub target: String,
     pub selector: Option<String>,
     pub calldata: Option<String>,
     pub command: Option<Vec<String>>,
+    pub signer: Option<TxSigner>,
+    pub message: serde_json::Value,
+    #[serde(default)]
+    pub notes: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TxSigner {
+    pub signer_profile: String,
+    pub address: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -130,4 +159,21 @@ pub struct TxReceipt {
 pub struct VerificationResult {
     pub success: bool,
     pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReconciliationDelta {
+    pub gas_price_bps: Option<u128>,
+    pub token_exchange_rate_bps: Option<u128>,
+    pub gas_overhead_bps: Option<u128>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProposalComputation {
+    pub proposed: ProposedIgpConfig,
+    pub remote_gas_price: String,
+    pub origin_price_usd: String,
+    pub remote_price_usd: String,
 }
