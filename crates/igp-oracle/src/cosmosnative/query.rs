@@ -99,7 +99,7 @@ impl CosmosNativeQueryClient {
     }
 
     async fn connect(&self, chain_name: &str) -> Result<tonic::transport::Channel> {
-        Endpoint::from_shared(self.endpoint.clone())
+        Endpoint::new(self.endpoint.clone())
             .map_err(|source| {
                 IgpOracleError::DataSource(format!(
                     "invalid gRPC endpoint for {chain_name}: {source}"

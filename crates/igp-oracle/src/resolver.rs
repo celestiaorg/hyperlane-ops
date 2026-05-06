@@ -67,10 +67,24 @@ pub fn expand_configured_domains(
     configs: Vec<ConfiguredRemoteDomain>,
 ) -> Result<Vec<ExpandedTarget>> {
     let remote_domain_filter = remote_domain_filter(registry, args)?;
+    let is_unfiltered_sweep = remote_domain_filter.is_none();
     let mut expanded = Vec::new();
 
     for configured in configs {
         if remote_domain_filter.is_some_and(|domain| domain != configured.remote_domain) {
+            continue;
+        }
+
+        if is_unfiltered_sweep && configured.remote_domain == work_item.origin.domain_id {
+            expanded.push(ExpandedTarget::Skipped {
+                origin_chain: work_item.origin.name.clone(),
+                remote_domain: configured.remote_domain,
+                code: "self_domain".to_string(),
+                reason: format!(
+                    "remote domain {} is the origin domain and is skipped during sweep mode",
+                    configured.remote_domain
+                ),
+            });
             continue;
         }
 
@@ -224,5 +238,88 @@ mod tests {
             &expanded[1],
             ExpandedTarget::Skipped { remote_domain: 123_456, code, .. } if code == "missing_registry_metadata"
         ));
+    }
+
+    #[test]
+    fn sweep_skips_origin_domain_without_remote_filter() {
+        let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let config =
+            UpdaterConfig::load(&repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"))
+                .expect("config should load");
+        let registry = RegistryLoader::new(&repo_root);
+        let args = ReconcileArgs {
+            config: repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"),
+            registry: repo_root,
+            origin: Some("celestiatestnet".to_string()),
+            remote_chain: None,
+            remote_domain: None,
+            output_dir: PathBuf::from("artifacts"),
+            format: "markdown,json".to_string(),
+            dry_run: true,
+            write: false,
+        };
+        let work_item = resolve_origin_work_items(&config, &registry, &args)
+            .expect("work item should resolve")
+            .remove(0);
+        let configured = vec![configured_remote(work_item.origin.domain_id)];
+
+        let expanded = expand_configured_domains(&work_item, &registry, &args, configured)
+            .expect("domains should expand");
+
+        assert_eq!(expanded.len(), 1);
+        assert!(matches!(
+            &expanded[0],
+            ExpandedTarget::Skipped { remote_domain, code, .. }
+                if *remote_domain == 1_297_040_200 && code == "self_domain"
+        ));
+    }
+
+    #[test]
+    fn explicit_remote_filter_can_resolve_origin_domain() {
+        let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let config =
+            UpdaterConfig::load(&repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"))
+                .expect("config should load");
+        let registry = RegistryLoader::new(&repo_root);
+        let args = ReconcileArgs {
+            config: repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"),
+            registry: repo_root,
+            origin: Some("celestiatestnet".to_string()),
+            remote_chain: Some("celestiatestnet".to_string()),
+            remote_domain: None,
+            output_dir: PathBuf::from("artifacts"),
+            format: "markdown,json".to_string(),
+            dry_run: true,
+            write: false,
+        };
+        let work_item = resolve_origin_work_items(&config, &registry, &args)
+            .expect("work item should resolve")
+            .remove(0);
+        let configured = vec![configured_remote(work_item.origin.domain_id)];
+
+        let expanded = expand_configured_domains(&work_item, &registry, &args, configured)
+            .expect("domains should expand");
+
+        assert_eq!(expanded.len(), 1);
+        assert!(matches!(
+            &expanded[0],
+            ExpandedTarget::Reconcile { target, .. } if target.remote.name == "celestiatestnet"
+        ));
+    }
+
+    fn configured_remote(remote_domain: u32) -> ConfiguredRemoteDomain {
+        ConfiguredRemoteDomain {
+            remote_domain,
+            current: CurrentIgpConfig {
+                gas_price: "100".to_string(),
+                token_exchange_rate: "1".to_string(),
+                gas_overhead: 300_000,
+            },
+            source: OnChainReadSource {
+                protocol: "cosmosnative".to_string(),
+                endpoint: Some("test://grpc".to_string()),
+                query: "test-query".to_string(),
+            },
+        }
     }
 }

@@ -77,7 +77,7 @@ pub async fn run_reconcile_with_sources_and_adapter_factory(
                     current_read,
                 } => {
                     resolved_count += 1;
-                    let artifact = reconcile_target(
+                    let artifact = match reconcile_target(
                         *target,
                         current_read,
                         config,
@@ -85,7 +85,18 @@ pub async fn run_reconcile_with_sources_and_adapter_factory(
                         gas_adapter,
                         adapter.as_ref(),
                     )
-                    .await?;
+                    .await
+                    {
+                        Ok(artifact) => artifact,
+                        Err((target, current_read, err)) => error_target_artifact(
+                            &target,
+                            current_read,
+                            config,
+                            "data_source_error",
+                            "data_source_error",
+                            err.to_string(),
+                        ),
+                    };
                     target_artifacts.push(artifact);
                 }
                 ExpandedTarget::Skipped {
@@ -134,10 +145,20 @@ async fn reconcile_target(
     price_adapter: &dyn PriceAdapter,
     gas_adapter: &dyn GasAdapter,
     adapter: &dyn ChainAdapter,
-) -> Result<crate::artifacts::TargetPlanArtifact> {
-    let proposal = compute_proposal(&target, &config.defaults, gas_adapter, price_adapter).await?;
+) -> std::result::Result<
+    crate::artifacts::TargetPlanArtifact,
+    (
+        crate::models::ReconciliationTarget,
+        crate::models::IgpConfigRead,
+        IgpOracleError,
+    ),
+> {
+    let proposal = compute_proposal(&target, &config.defaults, gas_adapter, price_adapter)
+        .await
+        .map_err(|err| (target.clone(), current_read.clone(), err))?;
     let reconciliation =
-        decide_reconciliation(&current_read.config, &proposal.proposed, &config.defaults)?;
+        decide_reconciliation(&current_read.config, &proposal.proposed, &config.defaults)
+            .map_err(|err| (target.clone(), current_read.clone(), err))?;
     let deltas = Some(reconciliation.deltas);
     let decision = DecisionArtifact {
         status: reconciliation.status.as_str().to_string(),
@@ -150,7 +171,7 @@ async fn reconcile_target(
         match adapter.plan_update(&target, &proposal.proposed).await {
             Ok(plan) => Some(plan),
             Err(IgpOracleError::UnsupportedLiveRead(_)) => None,
-            Err(err) => return Err(err),
+            Err(err) => return Err((target, current_read, err)),
         }
     } else {
         None
@@ -168,6 +189,32 @@ async fn reconcile_target(
     }))
 }
 
+fn error_target_artifact(
+    target: &crate::models::ReconciliationTarget,
+    current_read: crate::models::IgpConfigRead,
+    config: &UpdaterConfig,
+    status: &str,
+    code: &str,
+    reason: String,
+) -> crate::artifacts::TargetPlanArtifact {
+    target_artifact(TargetArtifactInput {
+        target,
+        config,
+        policy: PolicyArtifact::from(&config.defaults),
+        proposal: None,
+        current_read: Some(current_read),
+        deltas: None,
+        tx: None,
+        decision: DecisionArtifact {
+            status: status.to_string(),
+            code: code.to_string(),
+            field: None,
+            max_delta_bps: None,
+            reason,
+        },
+    })
+}
+
 fn exit_code_for_plan(plan: &PlanArtifact) -> i32 {
     if plan
         .targets
@@ -175,6 +222,14 @@ fn exit_code_for_plan(plan: &PlanArtifact) -> i32 {
         .any(|target| target.decision.status == "policy_violation")
     {
         return 30;
+    }
+
+    if plan
+        .targets
+        .iter()
+        .any(|target| target.decision.status == "data_source_error")
+    {
+        return 20;
     }
 
     if plan
@@ -252,7 +307,7 @@ mod tests {
 
     struct StaticChainAdapter {
         protocol: ChainProtocol,
-        current: Option<CurrentIgpConfig>,
+        configs: Vec<ConfiguredRemoteDomain>,
     }
 
     #[async_trait]
@@ -266,28 +321,21 @@ mod tests {
             _origin: &ChainMetadata,
             _origin_addresses: &CoreAddresses,
         ) -> Result<Vec<ConfiguredRemoteDomain>> {
-            let config = self
-                .current
-                .clone()
-                .ok_or_else(|| IgpOracleError::UnsupportedLiveRead("test discovery".to_string()))?;
-            Ok(vec![ConfiguredRemoteDomain {
-                remote_domain: 2_147_483_647,
-                current: config,
-                source: OnChainReadSource {
-                    protocol: self.protocol.as_str().to_string(),
-                    endpoint: Some("test://endpoint".to_string()),
-                    query: "test-query".to_string(),
-                },
-            }])
+            Ok(self.configs.clone())
         }
 
         async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<IgpConfigRead> {
-            let config = self.current.clone().ok_or_else(|| {
-                IgpOracleError::UnsupportedLiveRead(format!(
-                    "test adapter for origin {}",
-                    target.origin.name
-                ))
-            })?;
+            let config = self
+                .configs
+                .iter()
+                .find(|config| config.remote_domain == target.remote.domain_id)
+                .map(|config| config.current.clone())
+                .ok_or_else(|| {
+                    IgpOracleError::UnsupportedLiveRead(format!(
+                        "test adapter for origin {}",
+                        target.origin.name
+                    ))
+                })?;
             Ok(IgpConfigRead {
                 config,
                 source: OnChainReadSource {
@@ -407,7 +455,7 @@ mod tests {
         let adapter_factory = move |protocol| {
             Box::new(StaticChainAdapter {
                 protocol,
-                current: Some(current.clone()),
+                configs: vec![configured_remote(2_147_483_647, current.clone())],
             }) as Box<dyn ChainAdapter>
         };
 
@@ -470,7 +518,7 @@ mod tests {
         let adapter_factory = move |protocol| {
             Box::new(StaticChainAdapter {
                 protocol,
-                current: Some(current.clone()),
+                configs: vec![configured_remote(2_147_483_647, current.clone())],
             }) as Box<dyn ChainAdapter>
         };
 
@@ -495,5 +543,72 @@ mod tests {
         let tx_plan =
             std::fs::read_to_string(output_dir.path().join("tx-plan.json")).expect("tx plan");
         assert!(tx_plan.contains("\"tx\": {"));
+    }
+
+    #[tokio::test]
+    async fn dry_run_records_target_data_source_errors_and_continues() {
+        let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let output_dir = tempdir().expect("tempdir");
+        let config =
+            UpdaterConfig::load(&repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"))
+                .expect("config should load");
+        let mut prices = BTreeMap::new();
+        prices.insert("celestiatestnet".to_string(), Decimal::from(2));
+        prices.insert("edentestnet".to_string(), Decimal::from(4));
+        let args = ReconcileArgs {
+            config: repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"),
+            registry: repo_root,
+            origin: Some("celestiatestnet".to_string()),
+            remote_chain: None,
+            remote_domain: None,
+            output_dir: output_dir.path().to_path_buf(),
+            format: "markdown,json".to_string(),
+            dry_run: true,
+            write: false,
+        };
+        let current = CurrentIgpConfig {
+            gas_price: "100".to_string(),
+            token_exchange_rate: "1".to_string(),
+            gas_overhead: 174_289,
+        };
+        let adapter_factory = move |protocol| {
+            Box::new(StaticChainAdapter {
+                protocol,
+                configs: vec![
+                    configured_remote(2_147_483_647, current.clone()),
+                    configured_remote(1_000_101, current.clone()),
+                ],
+            }) as Box<dyn ChainAdapter>
+        };
+
+        let code = run_reconcile_with_sources_and_adapter_factory(
+            args,
+            &config,
+            &StaticPriceAdapter(prices),
+            &StaticGasAdapter(100),
+            &adapter_factory,
+        )
+        .await
+        .expect("dry-run should write artifacts despite one bad target");
+
+        assert_eq!(code, 20);
+        let plan = std::fs::read_to_string(output_dir.path().join("igp-plan.json")).expect("plan");
+        assert!(plan.contains("\"remoteChain\": \"edentestnet\""));
+        assert!(plan.contains("\"remoteChain\": \"xomarkettestnet\""));
+        assert!(plan.contains("\"status\": \"data_source_error\""));
+        assert!(plan.contains("missing static price for xomarkettestnet"));
+        assert!(plan.contains("\"status\": \"update_recommended\""));
+    }
+
+    fn configured_remote(remote_domain: u32, current: CurrentIgpConfig) -> ConfiguredRemoteDomain {
+        ConfiguredRemoteDomain {
+            remote_domain,
+            current,
+            source: OnChainReadSource {
+                protocol: "cosmosnative".to_string(),
+                endpoint: Some("test://endpoint".to_string()),
+                query: "test-query".to_string(),
+            },
+        }
     }
 }

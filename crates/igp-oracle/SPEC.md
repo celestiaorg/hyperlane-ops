@@ -239,6 +239,17 @@ igp-oracle reconcile --config crates/igp-oracle/igp-oracle.example.yaml --origin
 igp-oracle reconcile --config crates/igp-oracle/igp-oracle.example.yaml --origin celestiatestnet --remote-domain 2147483647 --write
 ```
 
+When `--origin` is provided without `--remote-chain` or `--remote-domain`,
+the command runs in origin IGP sweep mode. Sweep mode queries the origin IGP for
+all configured destination gas configs, resolves only domains present in the
+local registry, and records skipped domains in the artifacts.
+
+Sweep mode must skip `remoteDomain == origin.domainId` with code
+`self_domain`. An origin chain's own domain is not a real cross-chain fee path
+and should not affect update decisions. Operators can still inspect this entry
+explicitly by passing `--remote-chain <origin>` or `--remote-domain
+<origin-domain-id>`.
+
 Required flags:
 
 - `--config <path>`
