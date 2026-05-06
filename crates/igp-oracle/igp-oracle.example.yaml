@@ -3,8 +3,10 @@ marketData:
   cacheTtlSeconds: 60
   staleAfterSeconds: 300
   assets:
+    arbitrum: ethereum
     celestiatestnet: celestia
     edentestnet: ethereum
+    ethereum: ethereum
     sepolia: ethereum
 
 defaults:

@@ -1,6 +1,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     str::FromStr,
+    sync::Mutex,
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -17,11 +18,13 @@ use crate::{
     models::{ChainProtocol, ReconciliationTarget},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CoinGeckoPriceAdapter {
     client: Client,
     assets: BTreeMap<String, String>,
+    cache_ttl_seconds: u64,
     stale_after_seconds: u64,
+    cache: Mutex<Option<CoinGeckoCacheEntry>>,
 }
 
 impl CoinGeckoPriceAdapter {
@@ -36,29 +39,53 @@ impl CoinGeckoPriceAdapter {
         Ok(Self {
             client: http_client()?,
             assets: config.assets.clone(),
+            cache_ttl_seconds: config.cache_ttl_seconds,
             stale_after_seconds: config.stale_after_seconds,
+            cache: Mutex::new(None),
         })
     }
-}
 
-#[async_trait]
-impl PriceAdapter for CoinGeckoPriceAdapter {
-    async fn native_token_price_usd(&self, chain_name: &str) -> Result<Decimal> {
-        let asset = self.assets.get(chain_name).ok_or_else(|| {
-            IgpOracleError::InvalidConfig(format!(
-                "missing marketData asset for chain {chain_name}"
-            ))
+    async fn prices(&self) -> Result<BTreeMap<String, CoinGeckoPrice>> {
+        let now = unix_now()?;
+        if let Some(cached) = self.cached_prices(now)? {
+            return cached;
+        }
+
+        let fetched = self.fetch_prices().await;
+        let response = match fetched {
+            Ok(prices) => CoinGeckoCachedResponse::Prices(prices),
+            Err(err) => CoinGeckoCachedResponse::Error(err.to_string()),
+        };
+
+        let mut cache = self.cache.lock().map_err(|_| {
+            IgpOracleError::DataSource("CoinGecko price cache lock was poisoned".to_string())
         })?;
+        *cache = Some(CoinGeckoCacheEntry {
+            fetched_at: now,
+            response,
+        });
 
-        let ids = self.assets.values().collect::<BTreeSet<_>>();
-        let ids = ids
-            .into_iter()
-            .map(String::as_str)
-            .collect::<Vec<_>>()
-            .join(",");
+        cache
+            .as_ref()
+            .expect("cache entry was just written")
+            .response
+            .to_result()
+    }
+
+    fn cached_prices(&self, now: u64) -> Result<Option<Result<BTreeMap<String, CoinGeckoPrice>>>> {
+        let cache = self.cache.lock().map_err(|_| {
+            IgpOracleError::DataSource("CoinGecko price cache lock was poisoned".to_string())
+        })?;
+        Ok(cache
+            .as_ref()
+            .filter(|entry| now.saturating_sub(entry.fetched_at) <= self.cache_ttl_seconds)
+            .map(|entry| entry.response.to_result()))
+    }
+
+    async fn fetch_prices(&self) -> Result<BTreeMap<String, CoinGeckoPrice>> {
+        let ids = asset_ids(&self.assets);
         let url = "https://api.coingecko.com/api/v3/simple/price";
-        let response: BTreeMap<String, CoinGeckoPrice> = self
-            .client
+        self.client
             .get(url)
             .query(&[
                 ("ids", ids.as_str()),
@@ -78,7 +105,20 @@ impl PriceAdapter for CoinGeckoPriceAdapter {
             .await
             .map_err(|source| {
                 IgpOracleError::DataSource(format!("CoinGecko response parse failed: {source}"))
-            })?;
+            })
+    }
+}
+
+#[async_trait]
+impl PriceAdapter for CoinGeckoPriceAdapter {
+    async fn native_token_price_usd(&self, chain_name: &str) -> Result<Decimal> {
+        let asset = self.assets.get(chain_name).ok_or_else(|| {
+            IgpOracleError::InvalidConfig(format!(
+                "missing marketData asset for chain {chain_name}"
+            ))
+        })?;
+
+        let response = self.prices().await?;
 
         let price = response.get(asset).ok_or_else(|| {
             IgpOracleError::DataSource(format!("CoinGecko did not return asset {asset}"))
@@ -103,6 +143,27 @@ impl PriceAdapter for CoinGeckoPriceAdapter {
         }
 
         Ok(price.usd)
+    }
+}
+
+#[derive(Debug, Clone)]
+struct CoinGeckoCacheEntry {
+    fetched_at: u64,
+    response: CoinGeckoCachedResponse,
+}
+
+#[derive(Debug, Clone)]
+enum CoinGeckoCachedResponse {
+    Prices(BTreeMap<String, CoinGeckoPrice>),
+    Error(String),
+}
+
+impl CoinGeckoCachedResponse {
+    fn to_result(&self) -> Result<BTreeMap<String, CoinGeckoPrice>> {
+        match self {
+            Self::Prices(prices) => Ok(prices.clone()),
+            Self::Error(error) => Err(IgpOracleError::DataSource(error.clone())),
+        }
     }
 }
 
@@ -259,6 +320,16 @@ fn unix_now() -> Result<u64> {
         .map_err(|source| IgpOracleError::DataSource(format!("system clock error: {source}")))
 }
 
+fn asset_ids(assets: &BTreeMap<String, String>) -> String {
+    assets
+        .values()
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .map(String::as_str)
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
 #[derive(Debug, Serialize)]
 struct JsonRpcRequest<'a, T> {
     jsonrpc: &'a str,
@@ -283,6 +354,17 @@ mod tests {
     use rust_decimal::Decimal;
 
     use super::*;
+
+    #[test]
+    fn coingecko_asset_ids_are_deduplicated_and_sorted() {
+        let assets = BTreeMap::from([
+            ("arbitrum".to_string(), "ethereum".to_string()),
+            ("celestia".to_string(), "celestia".to_string()),
+            ("ethereum".to_string(), "ethereum".to_string()),
+        ]);
+
+        assert_eq!(asset_ids(&assets), "celestia,ethereum");
+    }
 
     #[test]
     fn parses_evm_hex_gas_price() {

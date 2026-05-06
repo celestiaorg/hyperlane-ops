@@ -352,6 +352,7 @@ For remote cosmosnative chains:
 For token prices:
 
 - use CoinGecko or a configured market data provider
+- batch all configured CoinGecko asset IDs into one request per cache window
 - require fresh timestamps
 - reject missing, stale, zero, or outlier values
 - cache values only for the current run
