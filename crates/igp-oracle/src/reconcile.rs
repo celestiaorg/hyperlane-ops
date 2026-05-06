@@ -1,4 +1,4 @@
-use std::{path::Path, process::Command};
+use std::{collections::BTreeSet, path::Path, process::Command};
 
 use crate::{
     adapters::{adapter_for, ChainAdapter, GasAdapter, PriceAdapter},
@@ -19,11 +19,17 @@ use crate::{
 type ChainAdapterFactory = dyn Fn(ChainProtocol) -> Box<dyn ChainAdapter> + Sync;
 
 pub async fn run_reconcile(args: ReconcileArgs) -> Result<i32> {
-    let config = UpdaterConfig::load(&args.config)?;
-    let price_adapter = CoinGeckoPriceAdapter::new(&config.market_data)?;
-    let gas_adapter = ProtocolGasAdapter::new();
+    if args.write {
+        return Err(IgpOracleError::UnsupportedWrite);
+    }
 
-    run_reconcile_with_sources(args, &config, &price_adapter, &gas_adapter).await
+    let config = UpdaterConfig::load(&args.config)?;
+    let gas_adapter = ProtocolGasAdapter::new();
+    let prepared = prepare_reconciliation(&args, &config, &adapter_for).await?;
+    let price_adapter =
+        CoinGeckoPriceAdapter::new_scoped(&config.market_data, required_price_chains(&prepared))?;
+
+    reconcile_prepared(&args, &config, &price_adapter, &gas_adapter, prepared).await
 }
 
 pub async fn run_reconcile_with_sources(
@@ -53,12 +59,27 @@ pub async fn run_reconcile_with_sources_and_adapter_factory(
         return Err(IgpOracleError::UnsupportedWrite);
     }
 
-    let registry = RegistryLoader::new(&args.registry);
-    let work_items = resolve_origin_work_items(config, &registry, &args)?;
+    let prepared = prepare_reconciliation(&args, config, adapter_factory).await?;
+    reconcile_prepared(&args, config, price_adapter, gas_adapter, prepared).await
+}
 
-    let mut target_artifacts = Vec::new();
-    let mut skipped_targets = Vec::new();
-    let mut discovery = Vec::new();
+struct PreparedOrigin {
+    origin_chain: String,
+    igp_identifier: Option<String>,
+    protocol: String,
+    configured_count: usize,
+    adapter: Box<dyn ChainAdapter>,
+    expanded: Vec<ExpandedTarget>,
+}
+
+async fn prepare_reconciliation(
+    args: &ReconcileArgs,
+    config: &UpdaterConfig,
+    adapter_factory: &ChainAdapterFactory,
+) -> Result<Vec<PreparedOrigin>> {
+    let registry = RegistryLoader::new(&args.registry);
+    let work_items = resolve_origin_work_items(config, &registry, args)?;
+    let mut prepared = Vec::new();
 
     for work_item in work_items {
         let adapter = adapter_factory(work_item.origin.protocol);
@@ -66,11 +87,37 @@ pub async fn run_reconcile_with_sources_and_adapter_factory(
             .list_igp_destination_configs(&work_item.origin, &work_item.origin_addresses)
             .await?;
         let configured_count = configured.len();
-        let expanded = expand_configured_domains(&work_item, &registry, &args, configured)?;
+        let expanded = expand_configured_domains(&work_item, &registry, args, configured)?;
+
+        prepared.push(PreparedOrigin {
+            origin_chain: work_item.origin.name.clone(),
+            igp_identifier: work_item.origin_addresses.interchain_gas_paymaster.clone(),
+            protocol: work_item.origin.protocol.as_str().to_string(),
+            configured_count,
+            adapter,
+            expanded,
+        });
+    }
+
+    Ok(prepared)
+}
+
+async fn reconcile_prepared(
+    args: &ReconcileArgs,
+    config: &UpdaterConfig,
+    price_adapter: &dyn PriceAdapter,
+    gas_adapter: &dyn GasAdapter,
+    prepared: Vec<PreparedOrigin>,
+) -> Result<i32> {
+    let mut target_artifacts = Vec::new();
+    let mut skipped_targets = Vec::new();
+    let mut discovery = Vec::new();
+
+    for prepared_origin in prepared {
         let mut resolved_count = 0usize;
         let mut skipped_count = 0usize;
 
-        for expanded_target in expanded {
+        for expanded_target in prepared_origin.expanded {
             match expanded_target {
                 ExpandedTarget::Reconcile {
                     target,
@@ -83,19 +130,14 @@ pub async fn run_reconcile_with_sources_and_adapter_factory(
                         config,
                         price_adapter,
                         gas_adapter,
-                        adapter.as_ref(),
+                        prepared_origin.adapter.as_ref(),
                     )
                     .await
                     {
                         Ok(artifact) => artifact,
-                        Err((target, current_read, err)) => error_target_artifact(
-                            &target,
-                            current_read,
-                            config,
-                            "data_source_error",
-                            "data_source_error",
-                            err.to_string(),
-                        ),
+                        Err((target, current_read, err)) => {
+                            error_target_artifact(&target, current_read, config, &err)
+                        }
                     };
                     target_artifacts.push(artifact);
                 }
@@ -118,10 +160,10 @@ pub async fn run_reconcile_with_sources_and_adapter_factory(
         }
 
         discovery.push(DiscoveryArtifact {
-            origin_chain: work_item.origin.name.clone(),
-            igp_identifier: work_item.origin_addresses.interchain_gas_paymaster.clone(),
-            protocol: work_item.origin.protocol.as_str().to_string(),
-            configured_remote_domains: configured_count,
+            origin_chain: prepared_origin.origin_chain,
+            igp_identifier: prepared_origin.igp_identifier,
+            protocol: prepared_origin.protocol,
+            configured_remote_domains: prepared_origin.configured_count,
             resolved_remote_domains: resolved_count,
             skipped_remote_domains: skipped_count,
         });
@@ -136,6 +178,20 @@ pub async fn run_reconcile_with_sources_and_adapter_factory(
 
     write_artifacts(&args.output_dir, &plan)?;
     Ok(exit_code_for_plan(&plan))
+}
+
+fn required_price_chains(prepared: &[PreparedOrigin]) -> BTreeSet<String> {
+    prepared
+        .iter()
+        .flat_map(|origin| origin.expanded.iter())
+        .filter_map(|expanded| match expanded {
+            ExpandedTarget::Reconcile { target, .. } => {
+                Some([target.origin.name.clone(), target.remote.name.clone()])
+            }
+            ExpandedTarget::Skipped { .. } => None,
+        })
+        .flatten()
+        .collect()
 }
 
 async fn reconcile_target(
@@ -164,7 +220,9 @@ async fn reconcile_target(
         status: reconciliation.status.as_str().to_string(),
         code: reconciliation.code.as_str().to_string(),
         field: reconciliation.field.map(|field| field.as_str().to_string()),
-        max_delta_bps: reconciliation.max_delta_bps,
+        delta_bps: reconciliation.observed_delta_bps,
+        min_write_delta_bps: Some(config.defaults.min_bps_change_to_write),
+        max_allowed_delta_bps: Some(config.defaults.max_bps_change_per_update),
         reason: reconciliation.reason,
     };
     let tx = if decision.status != "noop" {
@@ -193,10 +251,9 @@ fn error_target_artifact(
     target: &crate::models::ReconciliationTarget,
     current_read: crate::models::IgpConfigRead,
     config: &UpdaterConfig,
-    status: &str,
-    code: &str,
-    reason: String,
+    err: &IgpOracleError,
 ) -> crate::artifacts::TargetPlanArtifact {
+    let (status, code) = target_error_classification(err);
     target_artifact(TargetArtifactInput {
         target,
         config,
@@ -209,25 +266,71 @@ fn error_target_artifact(
             status: status.to_string(),
             code: code.to_string(),
             field: None,
-            max_delta_bps: None,
-            reason,
+            delta_bps: None,
+            min_write_delta_bps: None,
+            max_allowed_delta_bps: None,
+            reason: err.to_string(),
         },
     })
 }
 
-fn exit_code_for_plan(plan: &PlanArtifact) -> i32 {
-    if plan
-        .targets
-        .iter()
-        .any(|target| target.decision.status == "policy_violation")
+fn target_error_classification(err: &IgpOracleError) -> (&'static str, &'static str) {
+    match err {
+        IgpOracleError::InvalidConfig(_)
+        | IgpOracleError::Registry(_)
+        | IgpOracleError::InvalidTarget(_)
+        | IgpOracleError::UnsupportedProtocol(_) => ("config_error", "config_error"),
+        IgpOracleError::Policy(_) => ("policy_error", "policy_error"),
+        IgpOracleError::UnsupportedLiveRead(_) => ("onchain_read_error", "onchain_read_error"),
+        IgpOracleError::DataSource(message) => classify_data_source_error(message),
+        IgpOracleError::Io { .. } | IgpOracleError::Yaml { .. } | IgpOracleError::Json { .. } => {
+            ("artifact_error", "artifact_error")
+        }
+        IgpOracleError::UnsupportedWrite => ("write_error", "write_error"),
+    }
+}
+
+fn classify_data_source_error(message: &str) -> (&'static str, &'static str) {
+    let normalized = message.to_ascii_lowercase();
+    if normalized.contains("coingecko")
+        || normalized.contains("price for asset")
+        || normalized.contains("missing static price")
     {
+        return ("market_data_error", "market_data_error");
+    }
+
+    if normalized.contains("eth_gasprice")
+        || normalized.contains("gasprice")
+        || normalized.contains("gas price")
+        || normalized.contains("remote gas")
+    {
+        return ("gas_data_error", "gas_data_error");
+    }
+
+    if normalized.contains("grpc")
+        || normalized.contains("igp")
+        || normalized.contains("destination gas config")
+    {
+        return ("onchain_read_error", "onchain_read_error");
+    }
+
+    ("data_source_error", "data_source_error")
+}
+
+fn exit_code_for_plan(plan: &PlanArtifact) -> i32 {
+    if plan.targets.iter().any(|target| {
+        matches!(
+            target.decision.status.as_str(),
+            "policy_violation" | "policy_error"
+        )
+    }) {
         return 30;
     }
 
     if plan
         .targets
         .iter()
-        .any(|target| target.decision.status == "data_source_error")
+        .any(|target| target.decision.status.ends_with("_error"))
     {
         return 20;
     }
@@ -476,7 +579,11 @@ mod tests {
         let plan = std::fs::read_to_string(output_dir.path().join("igp-plan.json")).expect("plan");
         assert!(plan.contains("\"status\": \"noop\""));
         assert!(plan.contains("\"code\": \"noop\""));
-        assert!(plan.contains("\"inputs\": {"));
+        assert!(plan.contains("\"deltaBps\": 0"));
+        assert!(plan.contains("\"minWriteDeltaBps\": 500"));
+        assert!(plan.contains("\"maxAllowedDeltaBps\": 5000"));
+        assert!(plan.contains("\"gas\": {"));
+        assert!(plan.contains("\"prices\": {"));
         assert!(plan.contains("\"onChainRead\": {"));
         assert!(plan.contains("\"current\": {"));
         assert!(plan.contains("\"deltas\": {"));
@@ -546,7 +653,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn dry_run_records_target_data_source_errors_and_continues() {
+    async fn dry_run_records_target_errors_by_category_and_continues() {
         let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
         let output_dir = tempdir().expect("tempdir");
         let config =
@@ -595,9 +702,44 @@ mod tests {
         let plan = std::fs::read_to_string(output_dir.path().join("igp-plan.json")).expect("plan");
         assert!(plan.contains("\"remoteChain\": \"edentestnet\""));
         assert!(plan.contains("\"remoteChain\": \"xomarkettestnet\""));
-        assert!(plan.contains("\"status\": \"data_source_error\""));
+        assert!(plan.contains("\"status\": \"market_data_error\""));
+        assert!(plan.contains("\"code\": \"market_data_error\""));
         assert!(plan.contains("missing static price for xomarkettestnet"));
         assert!(plan.contains("\"status\": \"update_recommended\""));
+    }
+
+    #[test]
+    fn classifies_target_errors_for_artifacts() {
+        assert_eq!(
+            target_error_classification(&IgpOracleError::InvalidConfig(
+                "missing mapping".to_string()
+            )),
+            ("config_error", "config_error")
+        );
+        assert_eq!(
+            target_error_classification(&IgpOracleError::DataSource(
+                "CoinGecko returned an error: 429".to_string()
+            )),
+            ("market_data_error", "market_data_error")
+        );
+        assert_eq!(
+            target_error_classification(&IgpOracleError::DataSource(
+                "eth_gasPrice HTTP error".to_string()
+            )),
+            ("gas_data_error", "gas_data_error")
+        );
+        assert_eq!(
+            target_error_classification(&IgpOracleError::DataSource(
+                "destination gas config gRPC query failed".to_string()
+            )),
+            ("onchain_read_error", "onchain_read_error")
+        );
+        assert_eq!(
+            target_error_classification(&IgpOracleError::Policy(
+                "invalid current gasPrice".to_string()
+            )),
+            ("policy_error", "policy_error")
+        );
     }
 
     fn configured_remote(remote_domain: u32, current: CurrentIgpConfig) -> ConfiguredRemoteDomain {

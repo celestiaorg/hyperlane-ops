@@ -309,6 +309,7 @@ defaults:
 
 targets:
   - originChain: celestiatestnet
+    remoteSelection: configuredOnOriginIgp
     enabled: true
     gas:
       source: rpc
@@ -330,6 +331,13 @@ signers:
 ```
 
 The config should be versioned in this repo, but secrets must only be read from environment variables or external secret managers.
+
+`remoteSelection: configuredOnOriginIgp` is the only supported configured
+operating mode. It means the origin IGP's on-chain destination gas config list
+is the source of truth for which remote domains exist. CLI flags such as
+`--remote-chain` and `--remote-domain` are runtime filters over that sweep; they
+narrow which resolved domains are evaluated for gas and market data during a
+single invocation.
 
 ## Data Sources
 
@@ -552,11 +560,23 @@ artifacts/
 - remote domain
 - current on-chain values
 - computed target values
+- gas source, sampled gas price, and gas endpoint/provenance
+- price provider, market asset IDs, sampled prices, native token decimals, and decimal adjustment
 - deltas in basis points
-- policy decision
+- policy decision with observed delta, write threshold, and max allowed delta as separate fields
 - data source timestamps
 - proposed transaction target
 - proposed calldata or command arguments
+
+Target-level errors should use specific decision statuses so workflow
+notifications can route them accurately:
+
+- `config_error`: invalid operator config or target setup
+- `market_data_error`: missing, stale, rate-limited, or invalid market prices
+- `gas_data_error`: remote gas source failure or invalid gas sample
+- `onchain_read_error`: origin IGP/gRPC/read-plan source failure
+- `policy_error`: local policy calculation failure
+- `data_source_error`: fallback for uncategorized data source failures
 
 The Markdown summary should be concise enough to paste into Slack.
 

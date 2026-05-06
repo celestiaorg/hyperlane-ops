@@ -138,7 +138,7 @@ pub struct ReconciliationDecision {
     pub reason: String,
     pub deltas: ReconciliationDelta,
     pub field: Option<ReconciliationField>,
-    pub max_delta_bps: Option<u128>,
+    pub observed_delta_bps: Option<u128>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -229,7 +229,7 @@ pub fn decide_reconciliation(
             ),
             deltas,
             field: Some(field),
-            max_delta_bps: None,
+            observed_delta_bps: None,
         });
     }
 
@@ -246,7 +246,7 @@ pub fn decide_reconciliation(
             ),
             deltas,
             field: Some(field),
-            max_delta_bps: Some(max_delta),
+            observed_delta_bps: Some(max_delta),
         });
     }
 
@@ -261,7 +261,7 @@ pub fn decide_reconciliation(
             ),
             deltas,
             field: Some(field),
-            max_delta_bps: Some(max_delta),
+            observed_delta_bps: Some(max_delta),
         });
     }
 
@@ -275,7 +275,7 @@ pub fn decide_reconciliation(
         ),
         deltas,
         field: Some(field),
-        max_delta_bps: Some(max_delta),
+        observed_delta_bps: Some(max_delta),
     })
 }
 
@@ -587,6 +587,7 @@ mod tests {
             origin_addresses: CoreAddresses::default(),
             config: TargetConfig {
                 origin_chain: "origin".to_string(),
+                remote_selection: crate::config::RemoteSelection::ConfiguredOnOriginIgp,
                 enabled: true,
                 gas: GasConfig {
                     source: "rpc".to_string(),

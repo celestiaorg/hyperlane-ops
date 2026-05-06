@@ -423,6 +423,7 @@ mod tests {
     fn test_target_config() -> TargetConfig {
         TargetConfig {
             origin_chain: "edentestnet".to_string(),
+            remote_selection: crate::config::RemoteSelection::ConfiguredOnOriginIgp,
             enabled: true,
             gas: GasConfig {
                 source: "rpc".to_string(),

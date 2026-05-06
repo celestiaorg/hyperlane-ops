@@ -22,6 +22,7 @@ use crate::{
 pub struct CoinGeckoPriceAdapter {
     client: Client,
     assets: BTreeMap<String, String>,
+    chain_scope: Option<BTreeSet<String>>,
     cache_ttl_seconds: u64,
     stale_after_seconds: u64,
     cache: Mutex<Option<CoinGeckoCacheEntry>>,
@@ -39,10 +40,20 @@ impl CoinGeckoPriceAdapter {
         Ok(Self {
             client: http_client()?,
             assets: config.assets.clone(),
+            chain_scope: None,
             cache_ttl_seconds: config.cache_ttl_seconds,
             stale_after_seconds: config.stale_after_seconds,
             cache: Mutex::new(None),
         })
+    }
+
+    pub fn new_scoped(
+        config: &MarketDataConfig,
+        chain_scope: impl IntoIterator<Item = String>,
+    ) -> Result<Self> {
+        let mut adapter = Self::new(config)?;
+        adapter.chain_scope = Some(chain_scope.into_iter().collect());
+        Ok(adapter)
     }
 
     async fn prices(&self) -> Result<BTreeMap<String, CoinGeckoPrice>> {
@@ -83,7 +94,11 @@ impl CoinGeckoPriceAdapter {
     }
 
     async fn fetch_prices(&self) -> Result<BTreeMap<String, CoinGeckoPrice>> {
-        let ids = asset_ids(&self.assets);
+        let ids = asset_ids(self.assets.iter().filter(|(chain, _)| {
+            self.chain_scope
+                .as_ref()
+                .is_none_or(|scope| scope.contains(*chain))
+        }));
         let url = "https://api.coingecko.com/api/v3/simple/price";
         self.client
             .get(url)
@@ -320,9 +335,10 @@ fn unix_now() -> Result<u64> {
         .map_err(|source| IgpOracleError::DataSource(format!("system clock error: {source}")))
 }
 
-fn asset_ids(assets: &BTreeMap<String, String>) -> String {
+fn asset_ids<'a>(assets: impl IntoIterator<Item = (&'a String, &'a String)>) -> String {
     assets
-        .values()
+        .into_iter()
+        .map(|(_, asset)| asset)
         .collect::<BTreeSet<_>>()
         .into_iter()
         .map(String::as_str)
@@ -363,7 +379,27 @@ mod tests {
             ("ethereum".to_string(), "ethereum".to_string()),
         ]);
 
-        assert_eq!(asset_ids(&assets), "celestia,ethereum");
+        assert_eq!(asset_ids(assets.iter()), "celestia,ethereum");
+    }
+
+    #[test]
+    fn coingecko_asset_ids_honor_chain_scope() {
+        let assets = BTreeMap::from([
+            ("arbitrum".to_string(), "ethereum".to_string()),
+            ("celestia".to_string(), "celestia".to_string()),
+            ("ethereum".to_string(), "ethereum".to_string()),
+            ("unused".to_string(), "bitcoin".to_string()),
+        ]);
+        let scope = BTreeSet::from(["celestia".to_string(), "ethereum".to_string()]);
+
+        assert_eq!(
+            asset_ids(
+                assets
+                    .iter()
+                    .filter(|(chain, _)| scope.contains(chain.as_str()))
+            ),
+            "celestia,ethereum"
+        );
     }
 
     #[test]

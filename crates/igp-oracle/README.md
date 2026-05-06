@@ -4,6 +4,11 @@
 
 The current dry-run starts from configured origin IGPs, discovers cosmosnative destination gas configs through the Hyperlane protobuf gRPC query service, resolves discovered remote domains through the local Hyperlane registry, fetches market and gas data, computes proposed IGP values, compares deltas, and writes review artifacts. It does not sign transactions, submit transactions, or send notifications.
 
+Configured targets use `remoteSelection: configuredOnOriginIgp`, so the origin
+IGP is the source of truth for remote domains. `--remote-chain` and
+`--remote-domain` are runtime filters over that sweep and narrow which resolved
+targets fetch gas and CoinGecko pricing data.
+
 ## Current Dry Run
 
 From the repository root:

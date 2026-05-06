@@ -33,7 +33,8 @@ pub struct TargetPlanArtifact {
     pub igp_identifier: Option<String>,
     pub gas_overhead: u64,
     pub policy: PolicyArtifact,
-    pub inputs: Option<ProposalInputsArtifact>,
+    pub gas: Option<GasInputsArtifact>,
+    pub prices: Option<PriceInputsArtifact>,
     pub on_chain_read: Option<OnChainReadArtifact>,
     pub current: Option<CurrentIgpConfig>,
     pub proposed: Option<ProposedIgpConfig>,
@@ -70,7 +71,9 @@ pub struct DecisionArtifact {
     pub status: String,
     pub code: String,
     pub field: Option<String>,
-    pub max_delta_bps: Option<u128>,
+    pub delta_bps: Option<u128>,
+    pub min_write_delta_bps: Option<u64>,
+    pub max_allowed_delta_bps: Option<u64>,
     pub reason: String,
 }
 
@@ -97,18 +100,23 @@ pub struct SkippedTargetArtifact {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ProposalInputsArtifact {
+pub struct GasInputsArtifact {
+    pub remote_gas_price: String,
+    pub gas_source: String,
+    pub remote_gas_endpoint: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PriceInputsArtifact {
+    pub price_provider: String,
+    pub origin_market_asset: Option<String>,
+    pub remote_market_asset: Option<String>,
     pub origin_price_usd: String,
     pub remote_price_usd: String,
     pub origin_native_token_decimals: u8,
     pub remote_native_token_decimals: u8,
     pub token_decimal_adjustment: String,
-    pub remote_gas_price: String,
-    pub price_provider: String,
-    pub origin_market_asset: Option<String>,
-    pub remote_market_asset: Option<String>,
-    pub gas_source: String,
-    pub remote_gas_endpoint: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -148,10 +156,14 @@ pub struct TargetArtifactInput<'a> {
 }
 
 pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
-    let inputs = input
+    let gas = input
         .proposal
         .as_ref()
-        .map(|proposal| proposal_inputs(input.target, input.config, proposal));
+        .map(|proposal| gas_inputs(input.target, proposal));
+    let prices = input
+        .proposal
+        .as_ref()
+        .map(|proposal| price_inputs(input.target, input.config, proposal));
     let on_chain_read = input
         .current_read
         .as_ref()
@@ -172,7 +184,8 @@ pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
             .clone(),
         gas_overhead: input.target.gas_overhead,
         policy: input.policy,
-        inputs,
+        gas,
+        prices,
         on_chain_read,
         current,
         proposed,
@@ -182,21 +195,9 @@ pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
     }
 }
 
-fn proposal_inputs(
-    target: &ReconciliationTarget,
-    config: &UpdaterConfig,
-    proposal: &ProposalComputation,
-) -> ProposalInputsArtifact {
-    ProposalInputsArtifact {
-        origin_price_usd: proposal.origin_price_usd.clone(),
-        remote_price_usd: proposal.remote_price_usd.clone(),
-        origin_native_token_decimals: proposal.origin_native_token_decimals,
-        remote_native_token_decimals: proposal.remote_native_token_decimals,
-        token_decimal_adjustment: proposal.token_decimal_adjustment.clone(),
+fn gas_inputs(target: &ReconciliationTarget, proposal: &ProposalComputation) -> GasInputsArtifact {
+    GasInputsArtifact {
         remote_gas_price: proposal.remote_gas_price.clone(),
-        price_provider: config.market_data.provider.clone(),
-        origin_market_asset: config.market_data.assets.get(&target.origin.name).cloned(),
-        remote_market_asset: config.market_data.assets.get(&target.remote.name).cloned(),
         gas_source: target.config.gas.source.clone(),
         remote_gas_endpoint: target
             .remote
@@ -208,6 +209,23 @@ fn proposal_inputs(
                     format!("registry gasPrice {}{}", gas_price.amount, gas_price.denom)
                 })
             }),
+    }
+}
+
+fn price_inputs(
+    target: &ReconciliationTarget,
+    config: &UpdaterConfig,
+    proposal: &ProposalComputation,
+) -> PriceInputsArtifact {
+    PriceInputsArtifact {
+        price_provider: config.market_data.provider.clone(),
+        origin_market_asset: config.market_data.assets.get(&target.origin.name).cloned(),
+        remote_market_asset: config.market_data.assets.get(&target.remote.name).cloned(),
+        origin_price_usd: proposal.origin_price_usd.clone(),
+        remote_price_usd: proposal.remote_price_usd.clone(),
+        origin_native_token_decimals: proposal.origin_native_token_decimals,
+        remote_native_token_decimals: proposal.remote_native_token_decimals,
+        token_decimal_adjustment: proposal.token_decimal_adjustment.clone(),
     }
 }
 

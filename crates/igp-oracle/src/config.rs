@@ -63,10 +63,17 @@ pub struct DefaultsConfig {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct TargetConfig {
     pub origin_chain: String,
+    pub remote_selection: RemoteSelection,
     pub enabled: bool,
     pub gas: GasConfig,
     pub exchange_rate: ClampConfig,
     pub write: WriteConfig,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RemoteSelection {
+    ConfiguredOnOriginIgp,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -124,6 +131,7 @@ defaults:
   gasSampleFreshnessSeconds: 120
 targets:
   - originChain: celestiatestnet
+    remoteSelection: configuredOnOriginIgp
     enabled: true
     gas:
       source: rpc
@@ -142,5 +150,9 @@ targets:
 
         assert_eq!(config.targets.len(), 1);
         assert_eq!(config.targets[0].origin_chain, "celestiatestnet");
+        assert_eq!(
+            config.targets[0].remote_selection,
+            RemoteSelection::ConfiguredOnOriginIgp
+        );
     }
 }

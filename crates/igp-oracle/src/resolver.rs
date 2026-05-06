@@ -145,6 +145,8 @@ fn remote_domain_filter(registry: &RegistryLoader, args: &ReconcileArgs) -> Resu
 mod tests {
     use std::path::PathBuf;
 
+    use serde::Deserialize;
+
     use crate::{
         config::UpdaterConfig,
         models::{CurrentIgpConfig, OnChainReadSource},
@@ -307,6 +309,68 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn expands_celestia_mainnet_sample_sweep_offline() {
+        let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let mut config =
+            UpdaterConfig::load(&repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"))
+                .expect("config should load");
+        config.targets[0].origin_chain = "celestia".to_string();
+        let registry = RegistryLoader::new(&repo_root);
+        let args = ReconcileArgs {
+            config: repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"),
+            registry: repo_root,
+            origin: Some("celestia".to_string()),
+            remote_chain: None,
+            remote_domain: None,
+            output_dir: PathBuf::from("artifacts"),
+            format: "markdown,json".to_string(),
+            dry_run: true,
+            write: false,
+        };
+        let work_item = resolve_origin_work_items(&config, &registry, &args)
+            .expect("work item should resolve")
+            .remove(0);
+        let configured = celestia_sample_configs();
+
+        let expanded = expand_configured_domains(&work_item, &registry, &args, configured)
+            .expect("domains should expand");
+
+        let resolved = expanded
+            .iter()
+            .filter_map(|target| match target {
+                ExpandedTarget::Reconcile {
+                    target,
+                    current_read,
+                } => Some((
+                    target.remote.domain_id,
+                    target.remote.name.as_str(),
+                    current_read.config.gas_price.as_str(),
+                    current_read.config.token_exchange_rate.as_str(),
+                    current_read.config.gas_overhead,
+                )),
+                ExpandedTarget::Skipped { .. } => None,
+            })
+            .collect::<Vec<_>>();
+        let skipped = expanded
+            .iter()
+            .filter_map(|target| match target {
+                ExpandedTarget::Skipped {
+                    remote_domain,
+                    code,
+                    ..
+                } => Some((*remote_domain, code.as_str())),
+                ExpandedTarget::Reconcile { .. } => None,
+            })
+            .collect::<Vec<_>>();
+
+        assert_eq!(expanded.len(), 141);
+        assert!(resolved.contains(&(1, "ethereum", "300000000", "101", 174_289)));
+        assert!(resolved.contains(&(42_161, "arbitrum", "204331055", "101", 174_289)));
+        assert!(skipped.contains(&(1_128_614_981, "self_domain")));
+        assert!(skipped.contains(&(10, "missing_registry_metadata")));
+    }
+
     fn configured_remote(remote_domain: u32) -> ConfiguredRemoteDomain {
         ConfiguredRemoteDomain {
             remote_domain,
@@ -321,5 +385,51 @@ mod tests {
                 query: "test-query".to_string(),
             },
         }
+    }
+
+    fn celestia_sample_configs() -> Vec<ConfiguredRemoteDomain> {
+        let sample: SampleDestinationGasConfigs =
+            serde_json::from_str(include_str!("../sample-configs.celestia.json"))
+                .expect("sample configs should parse");
+        let source = OnChainReadSource {
+            protocol: "cosmosnative".to_string(),
+            endpoint: Some("fixture://sample-configs.celestia.json".to_string()),
+            query: "fixture".to_string(),
+        };
+
+        sample
+            .destination_gas_configs
+            .into_iter()
+            .map(|config| ConfiguredRemoteDomain {
+                remote_domain: config.remote_domain,
+                current: CurrentIgpConfig {
+                    gas_price: config.gas_oracle.gas_price,
+                    token_exchange_rate: config.gas_oracle.token_exchange_rate,
+                    gas_overhead: config
+                        .gas_overhead
+                        .parse()
+                        .expect("sample gas overhead should parse"),
+                },
+                source: source.clone(),
+            })
+            .collect()
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct SampleDestinationGasConfigs {
+        destination_gas_configs: Vec<SampleDestinationGasConfig>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct SampleDestinationGasConfig {
+        remote_domain: u32,
+        gas_oracle: SampleGasOracle,
+        gas_overhead: String,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct SampleGasOracle {
+        token_exchange_rate: String,
+        gas_price: String,
     }
 }

@@ -18,6 +18,7 @@ defaults:
 
 targets:
   - originChain: celestiatestnet
+    remoteSelection: configuredOnOriginIgp
     enabled: true
     gas:
       source: rpc
