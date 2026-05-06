@@ -15,6 +15,7 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct PlanArtifact {
     pub git_sha: Option<String>,
+    pub policy: PolicyArtifact,
     #[serde(default)]
     pub discovery: Vec<DiscoveryArtifact>,
     #[serde(default)]
@@ -32,7 +33,6 @@ pub struct TargetPlanArtifact {
     pub remote_protocol: String,
     pub igp_identifier: Option<String>,
     pub gas_overhead: u64,
-    pub policy: PolicyArtifact,
     pub gas: Option<GasInputsArtifact>,
     pub prices: Option<PriceInputsArtifact>,
     pub on_chain_read: Option<OnChainReadArtifact>,
@@ -127,27 +127,9 @@ pub struct OnChainReadArtifact {
     pub query: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TxPlanArtifact {
-    pub git_sha: Option<String>,
-    pub plans: Vec<TxPlanEntry>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TxPlanEntry {
-    pub origin_chain: String,
-    pub remote_chain: String,
-    pub remote_domain: u32,
-    pub decision: DecisionArtifact,
-    pub tx: Option<TxPlan>,
-}
-
 pub struct TargetArtifactInput<'a> {
     pub target: &'a ReconciliationTarget,
     pub config: &'a UpdaterConfig,
-    pub policy: PolicyArtifact,
     pub proposal: Option<ProposalComputation>,
     pub current_read: Option<IgpConfigRead>,
     pub deltas: Option<ReconciliationDelta>,
@@ -183,7 +165,6 @@ pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
             .interchain_gas_paymaster
             .clone(),
         gas_overhead: input.target.gas_overhead,
-        policy: input.policy,
         gas,
         prices,
         on_chain_read,
@@ -239,16 +220,6 @@ impl From<&crate::models::OnChainReadSource> for OnChainReadArtifact {
     }
 }
 
-pub fn tx_plan_entry(target: &TargetPlanArtifact) -> TxPlanEntry {
-    TxPlanEntry {
-        origin_chain: target.origin_chain.clone(),
-        remote_chain: target.remote_chain.clone(),
-        remote_domain: target.remote_domain,
-        decision: target.decision.clone(),
-        tx: target.tx.clone(),
-    }
-}
-
 pub fn write_artifacts(output_dir: &Path, plan: &PlanArtifact) -> Result<()> {
     create_dir_all(output_dir.to_path_buf())?;
 
@@ -256,14 +227,18 @@ pub fn write_artifacts(output_dir: &Path, plan: &PlanArtifact) -> Result<()> {
     write(&summary_path, render_summary(plan))?;
 
     write_json(output_dir.join("igp-plan.json"), plan)?;
-
-    let tx_artifact = TxPlanArtifact {
-        git_sha: plan.git_sha.clone(),
-        plans: plan.targets.iter().map(tx_plan_entry).collect(),
-    };
-    write_json(output_dir.join("tx-plan.json"), &tx_artifact)?;
+    remove_legacy_tx_plan(output_dir)?;
 
     Ok(())
+}
+
+fn remove_legacy_tx_plan(output_dir: &Path) -> Result<()> {
+    let path = output_dir.join("tx-plan.json");
+    match std::fs::remove_file(&path) {
+        Ok(()) => Ok(()),
+        Err(source) if source.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(source) => Err(IgpOracleError::Io { path, source }),
+    }
 }
 
 fn write_json(path: PathBuf, value: &impl Serialize) -> Result<()> {

@@ -1,7 +1,7 @@
 use std::{collections::BTreeSet, path::Path, process::Command};
 
 use crate::{
-    adapters::{adapter_for, ChainAdapter, GasAdapter, PriceAdapter},
+    adapter::{adapter_for, ChainAdapter, GasAdapter, PriceAdapter},
     artifacts::{
         target_artifact, write_artifacts, DecisionArtifact, DiscoveryArtifact, PlanArtifact,
         PolicyArtifact, SkippedTargetArtifact, TargetArtifactInput,
@@ -171,6 +171,7 @@ async fn reconcile_prepared(
 
     let plan = PlanArtifact {
         git_sha: git_sha(&args.registry),
+        policy: PolicyArtifact::from(&config.defaults),
         discovery,
         skipped_targets,
         targets: target_artifacts,
@@ -238,7 +239,6 @@ async fn reconcile_target(
     Ok(target_artifact(TargetArtifactInput {
         target: &target,
         config,
-        policy: PolicyArtifact::from(&config.defaults),
         proposal: Some(proposal),
         current_read: Some(current_read),
         deltas,
@@ -257,7 +257,6 @@ fn error_target_artifact(
     target_artifact(TargetArtifactInput {
         target,
         config,
-        policy: PolicyArtifact::from(&config.defaults),
         proposal: None,
         current_read: Some(current_read),
         deltas: None,
@@ -377,7 +376,7 @@ mod tests {
     use tempfile::tempdir;
 
     use crate::{
-        adapters::{ChainAdapter, GasAdapter, PriceAdapter},
+        adapter::{ChainAdapter, GasAdapter, PriceAdapter},
         cli::ReconcileArgs,
         models::{
             ChainMetadata, ConfiguredRemoteDomain, CoreAddresses, CurrentIgpConfig, IgpConfigRead,
@@ -532,6 +531,8 @@ mod tests {
     async fn dry_run_writes_artifacts() {
         let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
         let output_dir = tempdir().expect("tempdir");
+        std::fs::write(output_dir.path().join("tx-plan.json"), "{}\n")
+            .expect("stale tx plan fixture");
         let config =
             UpdaterConfig::load(&repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"))
                 .expect("config should load");
@@ -574,9 +575,10 @@ mod tests {
         assert_eq!(code, 0);
         assert!(output_dir.path().join("igp-summary.md").exists());
         assert!(output_dir.path().join("igp-plan.json").exists());
-        assert!(output_dir.path().join("tx-plan.json").exists());
+        assert!(!output_dir.path().join("tx-plan.json").exists());
 
         let plan = std::fs::read_to_string(output_dir.path().join("igp-plan.json")).expect("plan");
+        assert!(plan.contains("\"policy\": {"));
         assert!(plan.contains("\"status\": \"noop\""));
         assert!(plan.contains("\"code\": \"noop\""));
         assert!(plan.contains("\"deltaBps\": 0"));
@@ -647,9 +649,7 @@ mod tests {
             "\"messageType\": \"/hyperlane.core.post_dispatch.v1.MsgSetDestinationGasConfig\""
         ));
         assert!(plan.contains("\"destinationGasConfig\""));
-        let tx_plan =
-            std::fs::read_to_string(output_dir.path().join("tx-plan.json")).expect("tx plan");
-        assert!(tx_plan.contains("\"tx\": {"));
+        assert!(!output_dir.path().join("tx-plan.json").exists());
     }
 
     #[tokio::test]

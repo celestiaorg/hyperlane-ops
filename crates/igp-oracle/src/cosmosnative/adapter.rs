@@ -1,69 +1,17 @@
 use async_trait::async_trait;
-use rust_decimal::Decimal;
 
 use crate::{
+    adapter::ChainAdapter,
     cosmosnative::query::CosmosNativeQueryClient,
     error::{IgpOracleError, Result},
-    evm::query::EvmIgpReader,
     models::{
         ChainMetadata, ChainProtocol, ConfiguredRemoteDomain, CoreAddresses, IgpConfigRead,
         ProposedIgpConfig, ReconciliationTarget, TxPlan, TxReceipt, TxSigner, VerificationResult,
     },
 };
 
-#[async_trait]
-pub trait ChainAdapter: Send + Sync {
-    fn protocol(&self) -> ChainProtocol;
-
-    async fn list_igp_destination_configs(
-        &self,
-        origin: &ChainMetadata,
-        origin_addresses: &CoreAddresses,
-    ) -> Result<Vec<ConfiguredRemoteDomain>>;
-
-    async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<IgpConfigRead>;
-
-    async fn plan_update(
-        &self,
-        target: &ReconciliationTarget,
-        proposed: &ProposedIgpConfig,
-    ) -> Result<TxPlan>;
-
-    async fn submit_update(
-        &self,
-        target: &ReconciliationTarget,
-        plan: &TxPlan,
-    ) -> Result<TxReceipt>;
-
-    async fn verify_update(
-        &self,
-        target: &ReconciliationTarget,
-        expected: &ProposedIgpConfig,
-    ) -> Result<VerificationResult>;
-}
-
-#[async_trait]
-pub trait GasAdapter: Send + Sync {
-    async fn remote_gas_price(&self, target: &ReconciliationTarget) -> Result<u128>;
-}
-
-#[async_trait]
-pub trait PriceAdapter: Send + Sync {
-    async fn native_token_price_usd(&self, chain_name: &str) -> Result<Decimal>;
-}
-
 #[derive(Debug, Default)]
 pub struct CosmosNativeAdapter;
-
-#[derive(Debug, Default)]
-pub struct EvmAdapter;
-
-pub fn adapter_for(protocol: ChainProtocol) -> Box<dyn ChainAdapter> {
-    match protocol {
-        ChainProtocol::CosmosNative => Box::<CosmosNativeAdapter>::default(),
-        ChainProtocol::Ethereum => Box::<EvmAdapter>::default(),
-    }
-}
 
 #[async_trait]
 impl ChainAdapter for CosmosNativeAdapter {
@@ -212,74 +160,5 @@ impl ChainAdapter for CosmosNativeAdapter {
         Err(IgpOracleError::UnsupportedLiveRead(
             "cosmosnative verification".to_string(),
         ))
-    }
-}
-
-#[async_trait]
-impl ChainAdapter for EvmAdapter {
-    fn protocol(&self) -> ChainProtocol {
-        ChainProtocol::Ethereum
-    }
-
-    async fn list_igp_destination_configs(
-        &self,
-        origin: &ChainMetadata,
-        _origin_addresses: &CoreAddresses,
-    ) -> Result<Vec<ConfiguredRemoteDomain>> {
-        Err(IgpOracleError::UnsupportedLiveRead(format!(
-            "EVM IGP destination config discovery is unsupported for origin {}",
-            origin.name
-        )))
-    }
-
-    async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<IgpConfigRead> {
-        EvmIgpReader::new()?.read_igp_config(target).await
-    }
-
-    async fn plan_update(
-        &self,
-        _target: &ReconciliationTarget,
-        _proposed: &ProposedIgpConfig,
-    ) -> Result<TxPlan> {
-        Err(IgpOracleError::UnsupportedLiveRead(
-            "EVM tx planning".to_string(),
-        ))
-    }
-
-    async fn submit_update(
-        &self,
-        _target: &ReconciliationTarget,
-        _plan: &TxPlan,
-    ) -> Result<TxReceipt> {
-        Err(IgpOracleError::UnsupportedWrite)
-    }
-
-    async fn verify_update(
-        &self,
-        _target: &ReconciliationTarget,
-        _expected: &ProposedIgpConfig,
-    ) -> Result<VerificationResult> {
-        Err(IgpOracleError::UnsupportedLiveRead(
-            "EVM verification".to_string(),
-        ))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::models::ChainProtocol;
-
-    use super::*;
-
-    #[test]
-    fn adapter_factory_returns_cosmosnative_adapter() {
-        let adapter = adapter_for(ChainProtocol::CosmosNative);
-        assert_eq!(adapter.protocol(), ChainProtocol::CosmosNative);
-    }
-
-    #[test]
-    fn adapter_factory_returns_evm_adapter() {
-        let adapter = adapter_for(ChainProtocol::Ethereum);
-        assert_eq!(adapter.protocol(), ChainProtocol::Ethereum);
     }
 }

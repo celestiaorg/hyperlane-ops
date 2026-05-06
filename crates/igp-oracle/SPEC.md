@@ -548,13 +548,14 @@ Each run should produce:
 artifacts/
   igp-summary.md
   igp-plan.json
-  tx-plan.json
 ```
 
-`igp-plan.json` should include:
+`igp-plan.json` is the canonical machine-readable artifact. It should include:
 
 - run ID
 - git commit SHA
+- run-level policy thresholds
+- discovery and skipped-domain results
 - origin chain
 - remote chain
 - remote domain
@@ -567,6 +568,11 @@ artifacts/
 - data source timestamps
 - proposed transaction target
 - proposed calldata or command arguments
+
+Transaction plan data should live on each target in `igp-plan.json`. A separate
+`tx-plan.json` should not be emitted by default because it duplicates a filtered
+view of the canonical plan. If a later workflow needs a transaction-only file,
+make it an explicit opt-in output.
 
 Target-level errors should use specific decision statuses so workflow
 notifications can route them accurately:

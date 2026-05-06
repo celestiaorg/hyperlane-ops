@@ -1,7 +1,7 @@
 use rust_decimal::Decimal;
 
 use crate::{
-    adapters::{GasAdapter, PriceAdapter},
+    adapter::{GasAdapter, PriceAdapter},
     config::{ClampConfig, DefaultsConfig},
     data::{decimal_str_to_ceil_u128, decimal_to_ceil_u128},
     error::{IgpOracleError, Result},
@@ -332,7 +332,7 @@ mod tests {
     use serde::Deserialize;
 
     use crate::{
-        adapters::{GasAdapter, PriceAdapter},
+        adapter::{GasAdapter, PriceAdapter},
         config::{DefaultsConfig, GasConfig, TargetConfig, WriteConfig},
         models::{
             ChainId, ChainMetadata, ChainProtocol, CoreAddresses, NativeToken, ReconciliationTarget,

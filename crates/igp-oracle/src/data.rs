@@ -12,7 +12,7 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    adapters::{GasAdapter, PriceAdapter},
+    adapter::{GasAdapter, PriceAdapter},
     config::MarketDataConfig,
     error::{IgpOracleError, Result},
     models::{ChainProtocol, ReconciliationTarget},

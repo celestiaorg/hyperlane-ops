@@ -1,4 +1,4 @@
-pub mod adapters;
+pub mod adapter;
 pub mod artifacts;
 pub mod cli;
 pub mod config;
