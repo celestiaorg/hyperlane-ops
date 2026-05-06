@@ -386,6 +386,7 @@ mod tests {
             ),
             origin_addresses: CoreAddresses::default(),
             config: test_target_config(),
+            gas_overhead: 1,
         };
 
         let err = EvmIgpReader::new()
@@ -422,10 +423,7 @@ mod tests {
     fn test_target_config() -> TargetConfig {
         TargetConfig {
             origin_chain: "edentestnet".to_string(),
-            remote_chain: Some("celestiatestnet".to_string()),
-            remote_domain: None,
             enabled: true,
-            gas_overhead: 1,
             gas: GasConfig {
                 source: "rpc".to_string(),
                 min: "1".to_string(),

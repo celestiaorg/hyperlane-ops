@@ -16,9 +16,7 @@ defaults:
 
 targets:
   - originChain: celestiatestnet
-    remoteChain: edentestnet
     enabled: true
-    gasOverhead: 174289
     gas:
       source: rpc
       min: "1"
@@ -36,4 +34,3 @@ signers:
     protocol: cosmosnative
     from: owner
     keyEnv: HYP_KEY_COSMOSNATIVE
-

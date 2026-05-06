@@ -6,14 +6,20 @@ use crate::{
     error::{IgpOracleError, Result},
     evm::query::EvmIgpReader,
     models::{
-        ChainProtocol, IgpConfigRead, ProposedIgpConfig, ReconciliationTarget, TxPlan, TxReceipt,
-        TxSigner, VerificationResult,
+        ChainMetadata, ChainProtocol, ConfiguredRemoteDomain, CoreAddresses, IgpConfigRead,
+        ProposedIgpConfig, ReconciliationTarget, TxPlan, TxReceipt, TxSigner, VerificationResult,
     },
 };
 
 #[async_trait]
 pub trait ChainAdapter: Send + Sync {
     fn protocol(&self) -> ChainProtocol;
+
+    async fn list_igp_destination_configs(
+        &self,
+        origin: &ChainMetadata,
+        origin_addresses: &CoreAddresses,
+    ) -> Result<Vec<ConfiguredRemoteDomain>>;
 
     async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<IgpConfigRead>;
 
@@ -63,6 +69,37 @@ pub fn adapter_for(protocol: ChainProtocol) -> Box<dyn ChainAdapter> {
 impl ChainAdapter for CosmosNativeAdapter {
     fn protocol(&self) -> ChainProtocol {
         ChainProtocol::CosmosNative
+    }
+
+    async fn list_igp_destination_configs(
+        &self,
+        origin: &ChainMetadata,
+        origin_addresses: &CoreAddresses,
+    ) -> Result<Vec<ConfiguredRemoteDomain>> {
+        let igp_id = origin_addresses
+            .interchain_gas_paymaster
+            .as_deref()
+            .ok_or_else(|| {
+                IgpOracleError::Registry(format!(
+                    "origin chain {} has no interchainGasPaymaster address",
+                    origin.name
+                ))
+            })?;
+        let endpoint = origin
+            .grpc_urls
+            .first()
+            .ok_or_else(|| {
+                IgpOracleError::DataSource(format!(
+                    "origin chain {} has no grpcUrls entry",
+                    origin.name
+                ))
+            })?
+            .http
+            .as_str();
+
+        CosmosNativeQueryClient::new(endpoint)
+            .destination_gas_configs(&origin.name, igp_id)
+            .await
     }
 
     async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<IgpConfigRead> {
@@ -182,6 +219,17 @@ impl ChainAdapter for CosmosNativeAdapter {
 impl ChainAdapter for EvmAdapter {
     fn protocol(&self) -> ChainProtocol {
         ChainProtocol::Ethereum
+    }
+
+    async fn list_igp_destination_configs(
+        &self,
+        origin: &ChainMetadata,
+        _origin_addresses: &CoreAddresses,
+    ) -> Result<Vec<ConfiguredRemoteDomain>> {
+        Err(IgpOracleError::UnsupportedLiveRead(format!(
+            "EVM IGP destination config discovery is unsupported for origin {}",
+            origin.name
+        )))
     }
 
     async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<IgpConfigRead> {

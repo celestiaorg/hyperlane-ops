@@ -29,6 +29,12 @@ impl RegistryLoader {
     }
 
     pub fn find_chain_by_domain(&self, domain: u32) -> Result<ChainMetadata> {
+        self.try_find_chain_by_domain(domain)?.ok_or_else(|| {
+            IgpOracleError::Registry(format!("no chain metadata found for domain {domain}"))
+        })
+    }
+
+    pub fn try_find_chain_by_domain(&self, domain: u32) -> Result<Option<ChainMetadata>> {
         let chains_dir = self.root.join("chains");
         let entries = std::fs::read_dir(&chains_dir).map_err(|source| IgpOracleError::Io {
             path: chains_dir.clone(),
@@ -59,13 +65,11 @@ impl RegistryLoader {
             let metadata =
                 parse_chain_metadata(&metadata_path, &read_to_string(metadata_path.clone())?)?;
             if metadata.domain_id == domain {
-                return Ok(metadata);
+                return Ok(Some(metadata));
             }
         }
 
-        Err(IgpOracleError::Registry(format!(
-            "no chain metadata found for domain {domain}"
-        )))
+        Ok(None)
     }
 
     fn chain_path(&self, chain: &str) -> PathBuf {

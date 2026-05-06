@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct UpdaterConfig {
     pub market_data: MarketDataConfig,
     pub defaults: DefaultsConfig,
@@ -40,7 +40,7 @@ impl UpdaterConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct MarketDataConfig {
     pub provider: String,
     pub cache_ttl_seconds: u64,
@@ -50,7 +50,7 @@ pub struct MarketDataConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct DefaultsConfig {
     pub min_bps_change_to_write: u64,
     pub max_bps_change_per_update: u64,
@@ -60,20 +60,17 @@ pub struct DefaultsConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct TargetConfig {
     pub origin_chain: String,
-    pub remote_chain: Option<String>,
-    pub remote_domain: Option<u32>,
     pub enabled: bool,
-    pub gas_overhead: u64,
     pub gas: GasConfig,
     pub exchange_rate: ClampConfig,
     pub write: WriteConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct GasConfig {
     pub source: String,
     pub min: String,
@@ -81,14 +78,14 @@ pub struct GasConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ClampConfig {
     pub min: String,
     pub max: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct WriteConfig {
     pub enabled: bool,
     pub method: String,
@@ -96,7 +93,7 @@ pub struct WriteConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SignerConfig {
     pub protocol: ChainProtocol,
     pub from: String,
@@ -127,9 +124,7 @@ defaults:
   gasSampleFreshnessSeconds: 120
 targets:
   - originChain: celestiatestnet
-    remoteChain: edentestnet
     enabled: true
-    gasOverhead: 174289
     gas:
       source: rpc
       min: "1"
@@ -147,9 +142,5 @@ targets:
 
         assert_eq!(config.targets.len(), 1);
         assert_eq!(config.targets[0].origin_chain, "celestiatestnet");
-        assert_eq!(
-            config.targets[0].remote_chain.as_deref(),
-            Some("edentestnet")
-        );
     }
 }

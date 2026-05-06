@@ -3,8 +3,8 @@ use std::{path::Path, process::Command};
 use crate::{
     adapters::{adapter_for, ChainAdapter, GasAdapter, PriceAdapter},
     artifacts::{
-        target_artifact, write_artifacts, DecisionArtifact, PlanArtifact, PolicyArtifact,
-        TargetArtifactInput,
+        target_artifact, write_artifacts, DecisionArtifact, DiscoveryArtifact, PlanArtifact,
+        PolicyArtifact, SkippedTargetArtifact, TargetArtifactInput,
     },
     cli::ReconcileArgs,
     config::UpdaterConfig,
@@ -13,7 +13,7 @@ use crate::{
     models::ChainProtocol,
     policy::{compute_proposal, decide_reconciliation},
     registry::RegistryLoader,
-    resolver::resolve_targets,
+    resolver::{expand_configured_domains, resolve_origin_work_items, ExpandedTarget},
 };
 
 type ChainAdapterFactory = dyn Fn(ChainProtocol) -> Box<dyn ChainAdapter> + Sync;
@@ -54,71 +54,118 @@ pub async fn run_reconcile_with_sources_and_adapter_factory(
     }
 
     let registry = RegistryLoader::new(&args.registry);
-    let targets = resolve_targets(config, &registry, &args)?;
+    let work_items = resolve_origin_work_items(config, &registry, &args)?;
 
     let mut target_artifacts = Vec::new();
-    for target in targets {
-        let proposal =
-            compute_proposal(&target, &config.defaults, gas_adapter, price_adapter).await?;
-        let adapter = adapter_factory(target.origin.protocol);
-        let (current_read, deltas, decision) = match adapter.read_igp_config(&target).await {
-            Ok(read) => {
-                let reconciliation =
-                    decide_reconciliation(&read.config, &proposal.proposed, &config.defaults)?;
-                (
-                    Some(read),
-                    Some(reconciliation.deltas),
-                    DecisionArtifact {
-                        status: reconciliation.status.as_str().to_string(),
-                        code: reconciliation.code.as_str().to_string(),
-                        field: reconciliation.field.map(|field| field.as_str().to_string()),
-                        max_delta_bps: reconciliation.max_delta_bps,
-                        reason: reconciliation.reason,
-                    },
-                )
-            }
-            Err(IgpOracleError::UnsupportedLiveRead(reason)) => (
-                None,
-                None,
-                DecisionArtifact {
-                    status: "unsupported_live_read".to_string(),
-                    code: "unsupported_live_read".to_string(),
-                    field: None,
-                    max_delta_bps: None,
-                    reason,
-                },
-            ),
-            Err(err) => return Err(err),
-        };
-        let tx = if current_read.is_some() && decision.status != "noop" {
-            match adapter.plan_update(&target, &proposal.proposed).await {
-                Ok(plan) => Some(plan),
-                Err(IgpOracleError::UnsupportedLiveRead(_)) => None,
-                Err(err) => return Err(err),
-            }
-        } else {
-            None
-        };
+    let mut skipped_targets = Vec::new();
+    let mut discovery = Vec::new();
 
-        target_artifacts.push(target_artifact(TargetArtifactInput {
-            target: &target,
-            config,
-            policy: PolicyArtifact::from(&config.defaults),
-            proposal: Some(proposal),
-            current_read,
-            deltas,
-            tx,
-            decision,
-        }));
+    for work_item in work_items {
+        let adapter = adapter_factory(work_item.origin.protocol);
+        let configured = adapter
+            .list_igp_destination_configs(&work_item.origin, &work_item.origin_addresses)
+            .await?;
+        let configured_count = configured.len();
+        let expanded = expand_configured_domains(&work_item, &registry, &args, configured)?;
+        let mut resolved_count = 0usize;
+        let mut skipped_count = 0usize;
+
+        for expanded_target in expanded {
+            match expanded_target {
+                ExpandedTarget::Reconcile {
+                    target,
+                    current_read,
+                } => {
+                    resolved_count += 1;
+                    let artifact = reconcile_target(
+                        *target,
+                        current_read,
+                        config,
+                        price_adapter,
+                        gas_adapter,
+                        adapter.as_ref(),
+                    )
+                    .await?;
+                    target_artifacts.push(artifact);
+                }
+                ExpandedTarget::Skipped {
+                    origin_chain,
+                    remote_domain,
+                    code,
+                    reason,
+                } => {
+                    skipped_count += 1;
+                    skipped_targets.push(SkippedTargetArtifact {
+                        origin_chain,
+                        remote_domain,
+                        status: "skipped".to_string(),
+                        code,
+                        reason,
+                    });
+                }
+            }
+        }
+
+        discovery.push(DiscoveryArtifact {
+            origin_chain: work_item.origin.name.clone(),
+            igp_identifier: work_item.origin_addresses.interchain_gas_paymaster.clone(),
+            protocol: work_item.origin.protocol.as_str().to_string(),
+            configured_remote_domains: configured_count,
+            resolved_remote_domains: resolved_count,
+            skipped_remote_domains: skipped_count,
+        });
     }
 
     let plan = PlanArtifact {
         git_sha: git_sha(&args.registry),
+        discovery,
+        skipped_targets,
         targets: target_artifacts,
     };
 
     write_artifacts(&args.output_dir, &plan)?;
     Ok(exit_code_for_plan(&plan))
+}
+
+async fn reconcile_target(
+    target: crate::models::ReconciliationTarget,
+    current_read: crate::models::IgpConfigRead,
+    config: &UpdaterConfig,
+    price_adapter: &dyn PriceAdapter,
+    gas_adapter: &dyn GasAdapter,
+    adapter: &dyn ChainAdapter,
+) -> Result<crate::artifacts::TargetPlanArtifact> {
+    let proposal = compute_proposal(&target, &config.defaults, gas_adapter, price_adapter).await?;
+    let reconciliation =
+        decide_reconciliation(&current_read.config, &proposal.proposed, &config.defaults)?;
+    let deltas = Some(reconciliation.deltas);
+    let decision = DecisionArtifact {
+        status: reconciliation.status.as_str().to_string(),
+        code: reconciliation.code.as_str().to_string(),
+        field: reconciliation.field.map(|field| field.as_str().to_string()),
+        max_delta_bps: reconciliation.max_delta_bps,
+        reason: reconciliation.reason,
+    };
+    let tx = if decision.status != "noop" {
+        match adapter.plan_update(&target, &proposal.proposed).await {
+            Ok(plan) => Some(plan),
+            Err(IgpOracleError::UnsupportedLiveRead(_)) => None,
+            Err(err) => return Err(err),
+        }
+    } else {
+        None
+    };
+
+    Ok(target_artifact(TargetArtifactInput {
+        target: &target,
+        config,
+        policy: PolicyArtifact::from(&config.defaults),
+        proposal: Some(proposal),
+        current_read: Some(current_read),
+        deltas,
+        tx,
+        decision,
+    }))
 }
 
 fn exit_code_for_plan(plan: &PlanArtifact) -> i32 {
@@ -175,8 +222,9 @@ mod tests {
         adapters::{ChainAdapter, GasAdapter, PriceAdapter},
         cli::ReconcileArgs,
         models::{
-            CurrentIgpConfig, IgpConfigRead, OnChainReadSource, ProposedIgpConfig,
-            ReconciliationTarget, TxPlan, TxReceipt, TxSigner, VerificationResult,
+            ChainMetadata, ConfiguredRemoteDomain, CoreAddresses, CurrentIgpConfig, IgpConfigRead,
+            OnChainReadSource, ProposedIgpConfig, ReconciliationTarget, TxPlan, TxReceipt,
+            TxSigner, VerificationResult,
         },
     };
 
@@ -211,6 +259,26 @@ mod tests {
     impl ChainAdapter for StaticChainAdapter {
         fn protocol(&self) -> ChainProtocol {
             self.protocol
+        }
+
+        async fn list_igp_destination_configs(
+            &self,
+            _origin: &ChainMetadata,
+            _origin_addresses: &CoreAddresses,
+        ) -> Result<Vec<ConfiguredRemoteDomain>> {
+            let config = self
+                .current
+                .clone()
+                .ok_or_else(|| IgpOracleError::UnsupportedLiveRead("test discovery".to_string()))?;
+            Ok(vec![ConfiguredRemoteDomain {
+                remote_domain: 2_147_483_647,
+                current: config,
+                source: OnChainReadSource {
+                    protocol: self.protocol.as_str().to_string(),
+                    endpoint: Some("test://endpoint".to_string()),
+                    query: "test-query".to_string(),
+                },
+            }])
         }
 
         async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<IgpConfigRead> {

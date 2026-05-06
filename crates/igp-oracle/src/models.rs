@@ -91,6 +91,7 @@ pub struct ReconciliationTarget {
     pub remote: ChainMetadata,
     pub origin_addresses: CoreAddresses,
     pub config: TargetConfig,
+    pub gas_overhead: u64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -105,6 +106,14 @@ pub struct CurrentIgpConfig {
 #[serde(rename_all = "camelCase")]
 pub struct IgpConfigRead {
     pub config: CurrentIgpConfig,
+    pub source: OnChainReadSource,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfiguredRemoteDomain {
+    pub remote_domain: u32,
+    pub current: CurrentIgpConfig,
     pub source: OnChainReadSource,
 }
 

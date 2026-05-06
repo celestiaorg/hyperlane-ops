@@ -15,6 +15,10 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct PlanArtifact {
     pub git_sha: Option<String>,
+    #[serde(default)]
+    pub discovery: Vec<DiscoveryArtifact>,
+    #[serde(default)]
+    pub skipped_targets: Vec<SkippedTargetArtifact>,
     pub targets: Vec<TargetPlanArtifact>,
 }
 
@@ -27,7 +31,7 @@ pub struct TargetPlanArtifact {
     pub origin_protocol: String,
     pub remote_protocol: String,
     pub igp_identifier: Option<String>,
-    pub configured_gas_overhead: u64,
+    pub gas_overhead: u64,
     pub policy: PolicyArtifact,
     pub inputs: Option<ProposalInputsArtifact>,
     pub on_chain_read: Option<OnChainReadArtifact>,
@@ -67,6 +71,27 @@ pub struct DecisionArtifact {
     pub code: String,
     pub field: Option<String>,
     pub max_delta_bps: Option<u128>,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiscoveryArtifact {
+    pub origin_chain: String,
+    pub igp_identifier: Option<String>,
+    pub protocol: String,
+    pub configured_remote_domains: usize,
+    pub resolved_remote_domains: usize,
+    pub skipped_remote_domains: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SkippedTargetArtifact {
+    pub origin_chain: String,
+    pub remote_domain: u32,
+    pub status: String,
+    pub code: String,
     pub reason: String,
 }
 
@@ -145,7 +170,7 @@ pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
             .origin_addresses
             .interchain_gas_paymaster
             .clone(),
-        configured_gas_overhead: input.target.config.gas_overhead,
+        gas_overhead: input.target.gas_overhead,
         policy: input.policy,
         inputs,
         on_chain_read,
@@ -239,6 +264,26 @@ pub fn render_summary(plan: &PlanArtifact) -> String {
         plan.git_sha.as_deref().unwrap_or("unknown")
     ));
     out.push_str(&format!("- Targets: {}\n\n", plan.targets.len()));
+    if !plan.discovery.is_empty() {
+        let discovered: usize = plan
+            .discovery
+            .iter()
+            .map(|discovery| discovery.configured_remote_domains)
+            .sum();
+        let resolved: usize = plan
+            .discovery
+            .iter()
+            .map(|discovery| discovery.resolved_remote_domains)
+            .sum();
+        let skipped: usize = plan
+            .discovery
+            .iter()
+            .map(|discovery| discovery.skipped_remote_domains)
+            .sum();
+        out.push_str(&format!(
+            "- Discovered domains: {discovered}\n- Resolved domains: {resolved}\n- Skipped domains: {skipped}\n\n"
+        ));
+    }
     out.push_str("| Origin | Remote | Domain | IGP | Gas price | Exchange rate | Gas overhead | Decision | Code | Driver |\n");
     out.push_str("| --- | --- | ---: | --- | ---: | ---: | ---: | --- | --- | --- |\n");
 
@@ -261,7 +306,7 @@ pub fn render_summary(plan: &PlanArtifact) -> String {
             target.igp_identifier.as_deref().unwrap_or("n/a"),
             gas_price,
             exchange_rate,
-            target.configured_gas_overhead,
+            target.gas_overhead,
             target.decision.status,
             target.decision.code,
             target.decision.field.as_deref().unwrap_or("n/a")

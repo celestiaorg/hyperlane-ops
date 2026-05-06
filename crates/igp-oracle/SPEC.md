@@ -119,7 +119,7 @@ For each origin chain and remote domain, the updater evaluates:
 
 - `gasPrice`: remote chain gas price in remote native units
 - `tokenExchangeRate`: remote native token quoted in origin native token, scaled by `1e10`
-- `gasOverhead`: operator policy value for the remote domain
+- `gasOverhead`: current on-chain overhead for the remote domain, preserved by sweep mode unless a future override policy changes it
 
 The core pricing formula is:
 
@@ -140,7 +140,7 @@ decimals and Ethereum uses `wei` with 18 decimals. A Celestia-origin,
 Ethereum-remote exchange rate therefore includes a `10^(6 - 18)` factor before
 the Hyperlane `1e10` exchange-rate scale is applied.
 
-`gasOverhead` is not market data. It should be static policy in v1 unless an operator deliberately changes it.
+`gasOverhead` is not market data. Sweep mode preserves the current on-chain value in v1 so the updater does not accidentally normalize domain-specific overhead exceptions.
 
 ### On-Chain IGP Semantics
 
@@ -298,9 +298,7 @@ defaults:
 
 targets:
   - originChain: celestiatestnet
-    remoteChain: edentestnet
     enabled: true
-    gasOverhead: 174289
     gas:
       source: rpc
       min: "1"
@@ -310,7 +308,7 @@ targets:
       max: "1000000000000000"
     write:
       enabled: true
-      method: celestia-appd
+      method: celestia-grpc
       signerProfile: celestia-owner
 
 signers:

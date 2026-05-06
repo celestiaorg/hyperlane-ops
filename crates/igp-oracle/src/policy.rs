@@ -69,7 +69,7 @@ pub async fn compute_proposal(
         proposed: ProposedIgpConfig {
             gas_price: gas_price.to_string(),
             token_exchange_rate: exchange_rate.to_string(),
-            gas_overhead: target.config.gas_overhead,
+            gas_overhead: target.gas_overhead,
         },
         remote_gas_price: remote_gas_price.to_string(),
         origin_price_usd: origin_price.to_string(),
@@ -329,6 +329,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use async_trait::async_trait;
+    use serde::Deserialize;
 
     use crate::{
         adapters::{GasAdapter, PriceAdapter},
@@ -358,6 +359,24 @@ mod tests {
                 IgpOracleError::DataSource(format!("missing static price for {chain_name}"))
             })
         }
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct SampleConfigs {
+        destination_gas_configs: Vec<SampleDestinationGasConfig>,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct SampleDestinationGasConfig {
+        remote_domain: u32,
+        gas_oracle: SampleGasOracle,
+        gas_overhead: String,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct SampleGasOracle {
+        token_exchange_rate: String,
+        gas_price: String,
     }
 
     #[tokio::test]
@@ -423,6 +442,87 @@ mod tests {
     }
 
     #[test]
+    fn parses_celestia_sample_domain_one_reference_config() {
+        let sample = celestia_sample_configs();
+        let domain_one = sample
+            .destination_gas_configs
+            .iter()
+            .find(|config| config.remote_domain == 1)
+            .expect("domain 1 should exist");
+
+        assert_eq!(sample.destination_gas_configs.len(), 141);
+        assert_eq!(domain_one.gas_oracle.token_exchange_rate, "101");
+        assert_eq!(domain_one.gas_oracle.gas_price, "300000000");
+        assert_eq!(domain_one.gas_overhead, "174289");
+    }
+
+    #[test]
+    fn celestia_sample_overhead_is_reference_policy_not_universal_target() {
+        let sample = celestia_sample_configs();
+        let default_overhead_count = sample
+            .destination_gas_configs
+            .iter()
+            .filter(|config| config.gas_overhead == "174289")
+            .count();
+
+        assert_eq!(default_overhead_count, 117);
+        assert!(default_overhead_count < sample.destination_gas_configs.len());
+    }
+
+    #[tokio::test]
+    async fn decimal_adjusted_proposal_matches_celestia_sample_order_of_magnitude() {
+        let sample = celestia_sample_configs();
+        let domain_one = sample
+            .destination_gas_configs
+            .iter()
+            .find(|config| config.remote_domain == 1)
+            .expect("domain 1 should exist");
+        let reference_exchange_rate = domain_one
+            .gas_oracle
+            .token_exchange_rate
+            .parse::<u128>()
+            .expect("reference exchange rate should parse");
+        let reference_gas_price = domain_one
+            .gas_oracle
+            .gas_price
+            .parse::<u128>()
+            .expect("reference gas price should parse");
+
+        let target = target_with_decimals(6, 18);
+        let defaults = DefaultsConfig {
+            min_bps_change_to_write: 500,
+            max_bps_change_per_update: 5000,
+            cooldown_seconds: 900,
+            safety_multiplier_bps: 10_000,
+            gas_sample_freshness_seconds: 120,
+        };
+        let mut prices = BTreeMap::new();
+        prices.insert(
+            "origin".to_string(),
+            Decimal::from_str_exact("0.25").unwrap(),
+        );
+        prices.insert("remote".to_string(), Decimal::from(2500));
+
+        let proposal = compute_proposal(
+            &target,
+            &defaults,
+            &StaticGasAdapter(reference_gas_price),
+            &StaticPriceAdapter(prices),
+        )
+        .await
+        .expect("proposal");
+        let proposed_exchange_rate = proposal
+            .proposed
+            .token_exchange_rate
+            .parse::<u128>()
+            .expect("proposed exchange rate should parse");
+
+        assert_eq!(proposal.proposed.gas_price, "300000000");
+        assert_eq!(proposal.proposed.gas_overhead, 174_289);
+        assert!(proposed_exchange_rate.abs_diff(reference_exchange_rate) <= 1);
+    }
+
+    #[test]
     fn recommends_update_when_delta_exceeds_min_threshold() {
         let defaults = DefaultsConfig {
             min_bps_change_to_write: 500,
@@ -475,6 +575,11 @@ mod tests {
         target_with_decimals(18, 18)
     }
 
+    fn celestia_sample_configs() -> SampleConfigs {
+        serde_json::from_str(include_str!("../sample-configs.celestia.json"))
+            .expect("sample configs should parse")
+    }
+
     fn target_with_decimals(origin_decimals: u8, remote_decimals: u8) -> ReconciliationTarget {
         ReconciliationTarget {
             origin: chain("origin", ChainProtocol::CosmosNative, 1, origin_decimals),
@@ -482,10 +587,7 @@ mod tests {
             origin_addresses: CoreAddresses::default(),
             config: TargetConfig {
                 origin_chain: "origin".to_string(),
-                remote_chain: Some("remote".to_string()),
-                remote_domain: None,
                 enabled: true,
-                gas_overhead: 174_289,
                 gas: GasConfig {
                     source: "rpc".to_string(),
                     min: "1".to_string(),
@@ -498,6 +600,7 @@ mod tests {
                     signer_profile: "owner".to_string(),
                 },
             },
+            gas_overhead: 174_289,
         }
     }
 
