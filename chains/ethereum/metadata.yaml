@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=../schema.json
+blockExplorers:
+  - apiKey: GP69JEAP2W7YFJT9ZJTEPGQT6Y6KMW44ZN
+    apiUrl: https://api.etherscan.io/v2/api?chainid=1
+    family: etherscan
+    name: Etherscan
+    url: https://etherscan.io
+  - apiUrl: https://eth.blockscout.com/api
+    family: blockscout
+    name: Blockscout
+    url: https://blockscout.com/eth/mainnet
+  - apiUrl: https://api.routescan.io/v2/network/mainnet/evm/1/etherscan/api
+    family: routescan
+    name: Ethereum Explorer
+    url: https://1.routescan.io
+blocks:
+  confirmations: 2
+  estimateBlockTime: 13
+  reorgPeriod: 15
+chainId: 1
+deployer:
+  name: Abacus Works
+  url: https://www.hyperlane.xyz
+displayName: Ethereum
+domainId: 1
+gasCurrencyCoinGeckoId: ethereum
+gnosisSafeTransactionServiceUrl: https://api.safe.global/tx-service/eth
+name: ethereum
+nativeToken:
+  decimals: 18
+  name: Ether
+  symbol: ETH
+protocol: ethereum
+rpcUrls:
+  - http: https://ethereum.publicnode.com
+  - http: https://eth.drpc.org
+  - http: https://rpc.flashbots.net
+  - http: https://eth.blockrazor.xyz
+  - http: https://eth-pokt.nodies.app
+technicalStack: other

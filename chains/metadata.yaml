@@ -1,3 +1,39 @@
+arbitrum:
+  blockExplorers:
+    - apiKey: GP69JEAP2W7YFJT9ZJTEPGQT6Y6KMW44ZN
+      apiUrl: https://api.etherscan.io/v2/api?chainid=42161
+      family: etherscan
+      name: Arbiscan
+      url: https://arbiscan.io
+  blocks:
+    confirmations: 1
+    estimateBlockTime: 0.25
+    reorgPeriod: 5
+  chainId: 42161
+  deployer:
+    name: Abacus Works
+    url: https://www.hyperlane.xyz
+  displayName: Arbitrum
+  domainId: 42161
+  gasCurrencyCoinGeckoId: ethereum
+  gnosisSafeTransactionServiceUrl: https://api.safe.global/tx-service/arb1
+  index:
+    # Arbitrum Nitro flavored chains record the L1 block number they were deployed at,
+    # not the L2 block number. See https://docs.arbitrum.io/build-decentralized-apps/arbitrum-vs-ethereum/block-numbers-and-time#ethereum-block-numbers-within-arbitrum.
+    # This is the block that the Mailbox was deployed at:
+    # https://arbiscan.io/tx/0x946b241bfa1465d8de7247c155a533d2ee9437a2763a0399f1ca458f13b5efa5
+    from: 143649797
+  name: arbitrum
+  nativeToken:
+    decimals: 18
+    name: Ether
+    symbol: ETH
+  protocol: ethereum
+  rpcUrls:
+    - http: https://arb1.arbitrum.io/rpc
+    - http: https://arbitrum.rpc.subquery.network/public
+    - http: https://arbitrum.drpc.org
+  technicalStack: arbitrumnitro
 arbitrumsepolia:
   blockExplorers:
     - apiKey: QAI5SWBNHJSFAN6KMS9RC5JGFKV2IYD2Z5
@@ -72,6 +108,46 @@ edentestnet:
   protocol: ethereum
   rpcUrls:
     - http: https://eden-rpc-proxy-production.up.railway.app/rpc
+  technicalStack: other
+ethereum:
+  blockExplorers:
+    - apiKey: GP69JEAP2W7YFJT9ZJTEPGQT6Y6KMW44ZN
+      apiUrl: https://api.etherscan.io/v2/api?chainid=1
+      family: etherscan
+      name: Etherscan
+      url: https://etherscan.io
+    - apiUrl: https://eth.blockscout.com/api
+      family: blockscout
+      name: Blockscout
+      url: https://blockscout.com/eth/mainnet
+    - apiUrl: https://api.routescan.io/v2/network/mainnet/evm/1/etherscan/api
+      family: routescan
+      name: Ethereum Explorer
+      url: https://1.routescan.io
+  blocks:
+    confirmations: 2
+    estimateBlockTime: 13
+    reorgPeriod: 15
+  chainId: 1
+  deployer:
+    name: Abacus Works
+    url: https://www.hyperlane.xyz
+  displayName: Ethereum
+  domainId: 1
+  gasCurrencyCoinGeckoId: ethereum
+  gnosisSafeTransactionServiceUrl: https://api.safe.global/tx-service/eth
+  name: ethereum
+  nativeToken:
+    decimals: 18
+    name: Ether
+    symbol: ETH
+  protocol: ethereum
+  rpcUrls:
+    - http: https://ethereum.publicnode.com
+    - http: https://eth.drpc.org
+    - http: https://rpc.flashbots.net
+    - http: https://eth.blockrazor.xyz
+    - http: https://eth-pokt.nodies.app
   technicalStack: other
 nobletestnet:
   bech32Prefix: noble

@@ -127,6 +127,34 @@ mod tests {
     }
 
     #[test]
+    fn parses_ethereum_metadata() {
+        let metadata = parse_chain_metadata(
+            Path::new("metadata.yaml"),
+            include_str!("../../../chains/ethereum/metadata.yaml"),
+        )
+        .expect("metadata should parse");
+
+        assert_eq!(metadata.name, "ethereum");
+        assert_eq!(metadata.protocol, ChainProtocol::Ethereum);
+        assert_eq!(metadata.domain_id, 1);
+        assert_eq!(metadata.native_token.symbol, "ETH");
+    }
+
+    #[test]
+    fn parses_arbitrum_metadata() {
+        let metadata = parse_chain_metadata(
+            Path::new("metadata.yaml"),
+            include_str!("../../../chains/arbitrum/metadata.yaml"),
+        )
+        .expect("metadata should parse");
+
+        assert_eq!(metadata.name, "arbitrum");
+        assert_eq!(metadata.protocol, ChainProtocol::Ethereum);
+        assert_eq!(metadata.domain_id, 42_161);
+        assert_eq!(metadata.native_token.symbol, "ETH");
+    }
+
+    #[test]
     fn parses_interchain_gas_paymaster_address() {
         let addresses = parse_core_addresses(
             Path::new("addresses.yaml"),
