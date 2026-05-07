@@ -33,7 +33,8 @@ pub async fn compute_proposal(
     gas_adapter: &dyn GasAdapter,
     price_adapter: &dyn PriceAdapter,
 ) -> Result<ProposalComputation> {
-    let remote_gas_price = gas_adapter.remote_gas_price(target).await?;
+    let gas_sample = gas_adapter.remote_gas_price(target).await?;
+    let remote_gas_price = decimal_str_to_ceil_u128(&gas_sample.sampled_gas_price)?;
     let origin_price = price_adapter
         .native_token_price_usd(&target.origin.name)
         .await?;
@@ -71,7 +72,7 @@ pub async fn compute_proposal(
             token_exchange_rate: exchange_rate.to_string(),
             gas_overhead: target.gas_overhead,
         },
-        remote_gas_price: remote_gas_price.to_string(),
+        gas: gas_sample,
         origin_price_usd: origin_price.to_string(),
         remote_price_usd: remote_price.to_string(),
         origin_native_token_decimals: target.origin.native_token.decimals,
@@ -335,7 +336,8 @@ mod tests {
         adapter::{GasAdapter, PriceAdapter},
         config::{DefaultsConfig, GasConfig, TargetConfig, WriteConfig},
         models::{
-            ChainId, ChainMetadata, ChainProtocol, CoreAddresses, NativeToken, ReconciliationTarget,
+            ChainId, ChainMetadata, ChainProtocol, CoreAddresses, GasPriceSample, NativeToken,
+            ReconciliationTarget,
         },
     };
 
@@ -345,8 +347,17 @@ mod tests {
 
     #[async_trait]
     impl GasAdapter for StaticGasAdapter {
-        async fn remote_gas_price(&self, _target: &ReconciliationTarget) -> Result<u128> {
-            Ok(self.0)
+        async fn remote_gas_price(&self, target: &ReconciliationTarget) -> Result<GasPriceSample> {
+            Ok(GasPriceSample {
+                source: "test".to_string(),
+                remote_chain: target.remote.name.clone(),
+                raw_amount: Some(self.0.to_string()),
+                raw_denom: None,
+                sampled_gas_price: self.0.to_string(),
+                rounding: None,
+                reason: None,
+                endpoint: None,
+            })
         }
     }
 

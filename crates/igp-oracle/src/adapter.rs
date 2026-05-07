@@ -6,8 +6,9 @@ use crate::{
     error::Result,
     evm::adapter::EvmAdapter,
     models::{
-        ChainMetadata, ChainProtocol, ConfiguredRemoteDomain, CoreAddresses, IgpConfigRead,
-        ProposedIgpConfig, ReconciliationTarget, TxPlan, TxReceipt, VerificationResult,
+        ChainMetadata, ChainProtocol, ConfiguredRemoteDomain, CoreAddresses, GasPriceSample,
+        IgpConfigRead, ProposedIgpConfig, ReconciliationTarget, TxPlan, TxReceipt,
+        VerificationResult,
     },
 };
 
@@ -44,7 +45,7 @@ pub trait ChainAdapter: Send + Sync {
 
 #[async_trait]
 pub trait GasAdapter: Send + Sync {
-    async fn remote_gas_price(&self, target: &ReconciliationTarget) -> Result<u128>;
+    async fn remote_gas_price(&self, target: &ReconciliationTarget) -> Result<GasPriceSample>;
 }
 
 #[async_trait]

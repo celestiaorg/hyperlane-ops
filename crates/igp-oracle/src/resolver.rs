@@ -5,7 +5,7 @@ use crate::{
     models::{
         ChainMetadata, ConfiguredRemoteDomain, CoreAddresses, IgpConfigRead, ReconciliationTarget,
     },
-    registry::RegistryLoader,
+    registry::RegistryIndex,
 };
 
 #[derive(Debug, Clone)]
@@ -31,7 +31,7 @@ pub enum ExpandedTarget {
 
 pub fn resolve_origin_work_items(
     config: &UpdaterConfig,
-    registry: &RegistryLoader,
+    registry: &RegistryIndex,
     args: &ReconcileArgs,
 ) -> Result<Vec<OriginWorkItem>> {
     let mut work_items = Vec::new();
@@ -41,8 +41,8 @@ pub fn resolve_origin_work_items(
             continue;
         }
 
-        let origin = registry.load_chain_metadata(&target.origin_chain)?;
-        let origin_addresses = registry.load_core_addresses(&target.origin_chain)?;
+        let origin = registry.chain_metadata(&target.origin_chain)?;
+        let origin_addresses = registry.core_addresses(&target.origin_chain)?;
 
         work_items.push(OriginWorkItem {
             origin,
@@ -62,7 +62,7 @@ pub fn resolve_origin_work_items(
 
 pub fn expand_configured_domains(
     work_item: &OriginWorkItem,
-    registry: &RegistryLoader,
+    registry: &RegistryIndex,
     args: &ReconcileArgs,
     configs: Vec<ConfiguredRemoteDomain>,
 ) -> Result<Vec<ExpandedTarget>> {
@@ -88,7 +88,7 @@ pub fn expand_configured_domains(
             continue;
         }
 
-        match registry.try_find_chain_by_domain(configured.remote_domain)? {
+        match registry.try_chain_by_domain(configured.remote_domain) {
             Some(remote) => {
                 let current_read = IgpConfigRead {
                     config: configured.current.clone(),
@@ -126,7 +126,7 @@ fn matches_origin(target: &TargetConfig, args: &ReconcileArgs) -> bool {
         .is_none_or(|origin| origin == &target.origin_chain)
 }
 
-fn remote_domain_filter(registry: &RegistryLoader, args: &ReconcileArgs) -> Result<Option<u32>> {
+fn remote_domain_filter(registry: &RegistryIndex, args: &ReconcileArgs) -> Result<Option<u32>> {
     if let Some(domain) = args.remote_domain {
         return Ok(Some(domain));
     }
@@ -135,7 +135,7 @@ fn remote_domain_filter(registry: &RegistryLoader, args: &ReconcileArgs) -> Resu
         .as_ref()
         .map(|chain| {
             registry
-                .load_chain_metadata(chain)
+                .chain_metadata(chain)
                 .map(|metadata| metadata.domain_id)
         })
         .transpose()
@@ -150,7 +150,7 @@ mod tests {
     use crate::{
         config::UpdaterConfig,
         models::{CurrentIgpConfig, OnChainReadSource},
-        registry::RegistryLoader,
+        registry::RegistryIndex,
     };
 
     use super::*;
@@ -161,7 +161,7 @@ mod tests {
         let config =
             UpdaterConfig::load(&repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"))
                 .expect("config should load");
-        let registry = RegistryLoader::new(&repo_root);
+        let registry = RegistryIndex::load(&repo_root).expect("registry should index");
         let args = ReconcileArgs {
             config: repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"),
             registry: repo_root,
@@ -187,7 +187,7 @@ mod tests {
         let config =
             UpdaterConfig::load(&repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"))
                 .expect("config should load");
-        let registry = RegistryLoader::new(&repo_root);
+        let registry = RegistryIndex::load(&repo_root).expect("registry should index");
         let args = ReconcileArgs {
             config: repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"),
             registry: repo_root,
@@ -248,7 +248,7 @@ mod tests {
         let config =
             UpdaterConfig::load(&repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"))
                 .expect("config should load");
-        let registry = RegistryLoader::new(&repo_root);
+        let registry = RegistryIndex::load(&repo_root).expect("registry should index");
         let args = ReconcileArgs {
             config: repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"),
             registry: repo_root,
@@ -282,7 +282,7 @@ mod tests {
         let config =
             UpdaterConfig::load(&repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"))
                 .expect("config should load");
-        let registry = RegistryLoader::new(&repo_root);
+        let registry = RegistryIndex::load(&repo_root).expect("registry should index");
         let args = ReconcileArgs {
             config: repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"),
             registry: repo_root,
@@ -316,7 +316,7 @@ mod tests {
             UpdaterConfig::load(&repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"))
                 .expect("config should load");
         config.targets[0].origin_chain = "celestia".to_string();
-        let registry = RegistryLoader::new(&repo_root);
+        let registry = RegistryIndex::load(&repo_root).expect("registry should index");
         let args = ReconcileArgs {
             config: repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"),
             registry: repo_root,

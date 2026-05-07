@@ -15,7 +15,7 @@ use crate::{
     adapter::{GasAdapter, PriceAdapter},
     config::MarketDataConfig,
     error::{IgpOracleError, Result},
-    models::{ChainProtocol, ReconciliationTarget},
+    models::{ChainProtocol, GasPriceSample, ReconciliationTarget},
 };
 
 #[derive(Debug)]
@@ -210,7 +210,7 @@ impl Default for ProtocolGasAdapter {
 
 #[async_trait]
 impl GasAdapter for ProtocolGasAdapter {
-    async fn remote_gas_price(&self, target: &ReconciliationTarget) -> Result<u128> {
+    async fn remote_gas_price(&self, target: &ReconciliationTarget) -> Result<GasPriceSample> {
         match target.remote.protocol {
             ChainProtocol::Ethereum => self.evm_gas_price(target).await,
             ChainProtocol::CosmosNative => registry_cosmos_gas_price(target),
@@ -219,7 +219,7 @@ impl GasAdapter for ProtocolGasAdapter {
 }
 
 impl ProtocolGasAdapter {
-    async fn evm_gas_price(&self, target: &ReconciliationTarget) -> Result<u128> {
+    async fn evm_gas_price(&self, target: &ReconciliationTarget) -> Result<GasPriceSample> {
         let rpc_url = target
             .remote
             .rpc_urls
@@ -273,16 +273,35 @@ impl ProtocolGasAdapter {
             )));
         }
 
-        parse_hex_u128(response.result.as_deref().ok_or_else(|| {
+        let raw_amount = response.result.ok_or_else(|| {
             IgpOracleError::DataSource(format!(
                 "eth_gasPrice response for {} had no result",
                 target.remote.name
             ))
-        })?)
+        })?;
+        let sampled_gas_price = parse_hex_u128(&raw_amount)?;
+
+        Ok(GasPriceSample {
+            source: "rpc".to_string(),
+            remote_chain: target.remote.name.clone(),
+            raw_amount: Some(raw_amount),
+            raw_denom: Some(
+                target
+                    .remote
+                    .native_token
+                    .denom
+                    .clone()
+                    .unwrap_or_else(|| target.remote.native_token.symbol.clone()),
+            ),
+            sampled_gas_price: sampled_gas_price.to_string(),
+            rounding: None,
+            reason: None,
+            endpoint: Some(rpc_url),
+        })
     }
 }
 
-fn registry_cosmos_gas_price(target: &ReconciliationTarget) -> Result<u128> {
+fn registry_cosmos_gas_price(target: &ReconciliationTarget) -> Result<GasPriceSample> {
     let gas_price = target.remote.gas_price.as_ref().ok_or_else(|| {
         IgpOracleError::DataSource(format!(
             "remote cosmosnative chain {} has no gasPrice metadata",
@@ -290,7 +309,26 @@ fn registry_cosmos_gas_price(target: &ReconciliationTarget) -> Result<u128> {
         ))
     })?;
 
-    decimal_str_to_ceil_u128(&gas_price.amount)
+    let sampled_gas_price = decimal_str_to_ceil_u128(&gas_price.amount)?;
+    let rounding = if gas_price.amount.contains('.') {
+        Some("ceil".to_string())
+    } else {
+        None
+    };
+    let reason = rounding.as_ref().map(|_| {
+        "IGP gasPrice is an integer; fractional registry gasPrice was rounded up".to_string()
+    });
+
+    Ok(GasPriceSample {
+        source: "registry".to_string(),
+        remote_chain: target.remote.name.clone(),
+        raw_amount: Some(gas_price.amount.clone()),
+        raw_denom: Some(gas_price.denom.clone()),
+        sampled_gas_price: sampled_gas_price.to_string(),
+        rounding,
+        reason,
+        endpoint: None,
+    })
 }
 
 pub fn parse_hex_u128(value: &str) -> Result<u128> {
@@ -369,6 +407,15 @@ struct JsonRpcError {
 mod tests {
     use rust_decimal::Decimal;
 
+    use crate::{
+        config::{GasConfig, RemoteSelection, TargetConfig, WriteConfig},
+        models::{
+            ChainId, ChainMetadata, ChainProtocol, CoreAddresses, MetadataGasPrice, NativeToken,
+            ReconciliationTarget,
+        },
+        policy::clamp_config,
+    };
+
     use super::*;
 
     #[test]
@@ -414,8 +461,86 @@ mod tests {
     }
 
     #[test]
+    fn cosmos_registry_gas_sample_records_fractional_rounding() {
+        let target = test_target_with_remote_gas_price("0.002", "utia");
+
+        let sample = registry_cosmos_gas_price(&target).expect("gas sample");
+
+        assert_eq!(sample.source, "registry");
+        assert_eq!(sample.remote_chain, "celestia");
+        assert_eq!(sample.raw_amount.as_deref(), Some("0.002"));
+        assert_eq!(sample.raw_denom.as_deref(), Some("utia"));
+        assert_eq!(sample.sampled_gas_price, "1");
+        assert_eq!(sample.rounding.as_deref(), Some("ceil"));
+        assert_eq!(
+            sample.reason.as_deref(),
+            Some("IGP gasPrice is an integer; fractional registry gasPrice was rounded up")
+        );
+    }
+
+    #[test]
     fn rejects_negative_decimal() {
         let err = decimal_to_ceil_u128(Decimal::from(-1)).expect_err("negative should fail");
         assert!(matches!(err, IgpOracleError::DataSource(_)));
+    }
+
+    fn test_target_with_remote_gas_price(amount: &str, denom: &str) -> ReconciliationTarget {
+        ReconciliationTarget {
+            origin: ChainMetadata {
+                name: "ethereum".to_string(),
+                domain_id: 1,
+                chain_id: ChainId::Number(1),
+                protocol: ChainProtocol::Ethereum,
+                native_token: NativeToken {
+                    name: "Ether".to_string(),
+                    symbol: "ETH".to_string(),
+                    decimals: 18,
+                    denom: None,
+                },
+                rpc_urls: vec![],
+                grpc_urls: vec![],
+                rest_urls: vec![],
+                gas_price: None,
+                bech32_prefix: None,
+            },
+            remote: ChainMetadata {
+                name: "celestia".to_string(),
+                domain_id: 1_128_614_981,
+                chain_id: ChainId::String("celestia".to_string()),
+                protocol: ChainProtocol::CosmosNative,
+                native_token: NativeToken {
+                    name: "Celestia".to_string(),
+                    symbol: "TIA".to_string(),
+                    decimals: 6,
+                    denom: Some("utia".to_string()),
+                },
+                rpc_urls: vec![],
+                grpc_urls: vec![],
+                rest_urls: vec![],
+                gas_price: Some(MetadataGasPrice {
+                    amount: amount.to_string(),
+                    denom: denom.to_string(),
+                }),
+                bech32_prefix: Some("celestia".to_string()),
+            },
+            origin_addresses: CoreAddresses::default(),
+            config: TargetConfig {
+                origin_chain: "ethereum".to_string(),
+                remote_selection: RemoteSelection::ConfiguredOnOriginIgp,
+                enabled: true,
+                gas: GasConfig {
+                    source: "registry".to_string(),
+                    min: "1".to_string(),
+                    max: "1000000000000".to_string(),
+                },
+                exchange_rate: clamp_config("1", "1000000000000000000000000000000"),
+                write: WriteConfig {
+                    enabled: false,
+                    method: "evm".to_string(),
+                    signer_profile: "test".to_string(),
+                },
+            },
+            gas_overhead: 10_000,
+        }
     }
 }

@@ -40,6 +40,7 @@ pub struct TargetPlanArtifact {
     pub proposed: Option<ProposedIgpConfig>,
     pub deltas: Option<ReconciliationDelta>,
     pub tx: Option<TxPlan>,
+    pub tx_plan_error: Option<TxPlanErrorArtifact>,
     pub decision: DecisionArtifact,
 }
 
@@ -79,6 +80,13 @@ pub struct DecisionArtifact {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct TxPlanErrorArtifact {
+    pub code: String,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DiscoveryArtifact {
     pub origin_chain: String,
     pub igp_identifier: Option<String>,
@@ -101,9 +109,15 @@ pub struct SkippedTargetArtifact {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GasInputsArtifact {
-    pub remote_gas_price: String,
-    pub gas_source: String,
-    pub remote_gas_endpoint: Option<String>,
+    pub source: String,
+    pub remote_chain: String,
+    pub raw_amount: Option<String>,
+    pub raw_denom: Option<String>,
+    pub sampled_gas_price: String,
+    pub proposed_gas_price: String,
+    pub rounding: Option<String>,
+    pub reason: Option<String>,
+    pub endpoint: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -134,14 +148,12 @@ pub struct TargetArtifactInput<'a> {
     pub current_read: Option<IgpConfigRead>,
     pub deltas: Option<ReconciliationDelta>,
     pub tx: Option<TxPlan>,
+    pub tx_plan_error: Option<TxPlanErrorArtifact>,
     pub decision: DecisionArtifact,
 }
 
 pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
-    let gas = input
-        .proposal
-        .as_ref()
-        .map(|proposal| gas_inputs(input.target, proposal));
+    let gas = input.proposal.as_ref().map(gas_inputs);
     let prices = input
         .proposal
         .as_ref()
@@ -172,24 +184,22 @@ pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
         proposed,
         deltas: input.deltas,
         tx: input.tx,
+        tx_plan_error: input.tx_plan_error,
         decision: input.decision,
     }
 }
 
-fn gas_inputs(target: &ReconciliationTarget, proposal: &ProposalComputation) -> GasInputsArtifact {
+fn gas_inputs(proposal: &ProposalComputation) -> GasInputsArtifact {
     GasInputsArtifact {
-        remote_gas_price: proposal.remote_gas_price.clone(),
-        gas_source: target.config.gas.source.clone(),
-        remote_gas_endpoint: target
-            .remote
-            .rpc_urls
-            .first()
-            .map(|entry| entry.http.clone())
-            .or_else(|| {
-                target.remote.gas_price.as_ref().map(|gas_price| {
-                    format!("registry gasPrice {}{}", gas_price.amount, gas_price.denom)
-                })
-            }),
+        source: proposal.gas.source.clone(),
+        remote_chain: proposal.gas.remote_chain.clone(),
+        raw_amount: proposal.gas.raw_amount.clone(),
+        raw_denom: proposal.gas.raw_denom.clone(),
+        sampled_gas_price: proposal.gas.sampled_gas_price.clone(),
+        proposed_gas_price: proposal.proposed.gas_price.clone(),
+        rounding: proposal.gas.rounding.clone(),
+        reason: proposal.gas.reason.clone(),
+        endpoint: proposal.gas.endpoint.clone(),
     }
 }
 

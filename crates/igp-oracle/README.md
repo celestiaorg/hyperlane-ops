@@ -158,17 +158,24 @@ Each run writes two files:
 - discovery results
 - skipped domains
 - current on-chain values
-- gas and market price inputs
+- gas inputs, including raw amount/denom, sampled integer gas price, proposed gas price, and rounding details
+- market price inputs used for `tokenExchangeRate`
 - proposed values
 - deltas
 - decision status and code
 - review-only transaction plan data when available
+- transaction planning errors when evaluation succeeds but tx payload construction fails
 
 `igp-summary.md` is the human-readable review artifact intended for GitHub step
 summaries and notification bodies.
 
 `tx-plan.json` is not emitted by default. Transaction plan data lives on each
 target in `igp-plan.json`.
+
+For cosmosnative remotes, registry gas prices may be fractional, while on-chain
+IGP `gasPrice` is an integer. The plan records the raw value, the rounded sample,
+and the rounding reason so `tokenExchangeRate` can remain a meaningful
+market-derived value.
 
 ## Exit Codes
 

@@ -135,6 +135,19 @@ pub struct ProposedIgpConfig {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct GasPriceSample {
+    pub source: String,
+    pub remote_chain: String,
+    pub raw_amount: Option<String>,
+    pub raw_denom: Option<String>,
+    pub sampled_gas_price: String,
+    pub rounding: Option<String>,
+    pub reason: Option<String>,
+    pub endpoint: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TxPlan {
     pub protocol: String,
     pub action: String,
@@ -182,7 +195,7 @@ pub struct ReconciliationDelta {
 #[serde(rename_all = "camelCase")]
 pub struct ProposalComputation {
     pub proposed: ProposedIgpConfig,
-    pub remote_gas_price: String,
+    pub gas: GasPriceSample,
     pub origin_price_usd: String,
     pub remote_price_usd: String,
     pub origin_native_token_decimals: u8,

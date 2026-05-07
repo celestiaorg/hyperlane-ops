@@ -121,6 +121,10 @@ For each origin chain and remote domain, the updater evaluates:
 - `tokenExchangeRate`: remote native token quoted in origin native token, scaled by `1e10`
 - `gasOverhead`: current on-chain overhead for the remote domain, preserved by sweep mode unless a future override policy changes it
 
+`tokenExchangeRate` should remain market-derived and meaningful. If the final
+quote needs operational padding, prefer adjusting gas policy or overhead rather
+than distorting the token exchange rate.
+
 The core pricing formula is:
 
 ```text
@@ -353,6 +357,9 @@ For remote EVM chains:
 For remote cosmosnative chains:
 
 - start with `chains/<chain>/metadata.yaml` gas price when fixed or policy-based
+- preserve the raw metadata value in artifacts
+- round fractional values up because on-chain IGP `gasPrice` is an integer
+- include the rounding mode and reason in artifacts
 - add direct chain query support later if needed
 
 ### Token Prices
@@ -562,17 +569,24 @@ artifacts/
 - current on-chain values
 - computed target values
 - gas source, sampled gas price, and gas endpoint/provenance
+- raw gas amount/denom, sampled integer gas price, final proposed gas price, and rounding policy where applicable
 - price provider, market asset IDs, sampled prices, native token decimals, and decimal adjustment
 - deltas in basis points
 - policy decision with observed delta, write threshold, and max allowed delta as separate fields
 - data source timestamps
 - proposed transaction target
 - proposed calldata or command arguments
+- transaction planning error details when reconciliation succeeds but tx payload construction fails
 
 Transaction plan data should live on each target in `igp-plan.json`. A separate
 `tx-plan.json` should not be emitted by default because it duplicates a filtered
 view of the canonical plan. If a later workflow needs a transaction-only file,
 make it an explicit opt-in output.
+
+Tx planning failures must not erase successful dry-run evaluation data. If a
+target has current values, proposal inputs, proposed values, deltas, and an
+`update_recommended` or `policy_violation` decision, those fields should remain
+in the artifact and the tx failure should be recorded in `txPlanError`.
 
 Target-level errors should use specific decision statuses so workflow
 notifications can route them accurately:

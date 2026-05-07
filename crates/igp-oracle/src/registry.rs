@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 use crate::{
     error::{read_to_string, IgpOracleError, Result},
@@ -8,6 +11,13 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct RegistryLoader {
     root: PathBuf,
+}
+
+#[derive(Debug, Clone)]
+pub struct RegistryIndex {
+    metadata_by_name: BTreeMap<String, ChainMetadata>,
+    metadata_by_domain: BTreeMap<u32, String>,
+    addresses_by_name: BTreeMap<String, CoreAddresses>,
 }
 
 impl RegistryLoader {
@@ -77,6 +87,108 @@ impl RegistryLoader {
     }
 }
 
+impl RegistryIndex {
+    pub fn load(root: impl Into<PathBuf>) -> Result<Self> {
+        let loader = RegistryLoader::new(root);
+        let chains_dir = loader.root.join("chains");
+        let entries = std::fs::read_dir(&chains_dir).map_err(|source| IgpOracleError::Io {
+            path: chains_dir.clone(),
+            source,
+        })?;
+
+        let mut metadata_by_name = BTreeMap::new();
+        let mut metadata_by_domain = BTreeMap::new();
+        let mut addresses_by_name = BTreeMap::new();
+
+        for entry in entries {
+            let entry = entry.map_err(|source| IgpOracleError::Io {
+                path: chains_dir.clone(),
+                source,
+            })?;
+            if !entry
+                .file_type()
+                .map_err(|source| IgpOracleError::Io {
+                    path: entry.path(),
+                    source,
+                })?
+                .is_dir()
+            {
+                continue;
+            }
+
+            let chain_dir = entry.path();
+            let metadata_path = chain_dir.join("metadata.yaml");
+            if !metadata_path.exists() {
+                continue;
+            }
+
+            let metadata =
+                parse_chain_metadata(&metadata_path, &read_to_string(metadata_path.clone())?)?;
+            let name = metadata.name.clone();
+
+            if metadata_by_name.contains_key(&name) {
+                return Err(IgpOracleError::Registry(format!(
+                    "duplicate chain metadata name {name}"
+                )));
+            }
+
+            if let Some(existing_name) = metadata_by_domain.get(&metadata.domain_id) {
+                return Err(IgpOracleError::Registry(format!(
+                    "duplicate domain {} for chains {} and {}",
+                    metadata.domain_id, existing_name, name
+                )));
+            }
+
+            let addresses_path = chain_dir.join("addresses.yaml");
+            let addresses = if addresses_path.exists() {
+                parse_core_addresses(&addresses_path, &read_to_string(addresses_path.clone())?)?
+            } else {
+                CoreAddresses::default()
+            };
+            metadata_by_domain.insert(metadata.domain_id, name.clone());
+            metadata_by_name.insert(name.clone(), metadata);
+            addresses_by_name.insert(name, addresses);
+        }
+
+        Ok(Self {
+            metadata_by_name,
+            metadata_by_domain,
+            addresses_by_name,
+        })
+    }
+
+    pub fn chain_metadata(&self, chain: &str) -> Result<ChainMetadata> {
+        self.metadata_by_name
+            .get(chain)
+            .cloned()
+            .ok_or_else(|| IgpOracleError::Registry(format!("no chain metadata found for {chain}")))
+    }
+
+    pub fn core_addresses(&self, chain: &str) -> Result<CoreAddresses> {
+        self.addresses_by_name
+            .get(chain)
+            .cloned()
+            .ok_or_else(|| IgpOracleError::Registry(format!("no chain metadata found for {chain}")))
+    }
+
+    pub fn chain_by_domain(&self, domain: u32) -> Result<ChainMetadata> {
+        self.try_chain_by_domain(domain).ok_or_else(|| {
+            IgpOracleError::Registry(format!("no chain metadata found for domain {domain}"))
+        })
+    }
+
+    pub fn try_chain_by_domain(&self, domain: u32) -> Option<ChainMetadata> {
+        self.metadata_by_domain
+            .get(&domain)
+            .and_then(|name| self.metadata_by_name.get(name))
+            .cloned()
+    }
+
+    pub fn chain_count(&self) -> usize {
+        self.metadata_by_name.len()
+    }
+}
+
 pub fn parse_chain_metadata(path: &Path, raw: &str) -> Result<ChainMetadata> {
     serde_yaml::from_str(raw).map_err(|source| IgpOracleError::Yaml {
         path: path.to_path_buf(),
@@ -93,7 +205,7 @@ pub fn parse_core_addresses(path: &Path, raw: &str) -> Result<CoreAddresses> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
     use crate::models::ChainProtocol;
 
@@ -166,5 +278,48 @@ mod tests {
             addresses.interchain_gas_paymaster.as_deref(),
             Some("0x726f757465725f706f73745f6469737061746368000000040000000000000003")
         );
+    }
+
+    #[test]
+    fn registry_index_resolves_by_name_and_domain() {
+        let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+
+        let index = RegistryIndex::load(&repo_root).expect("registry should index");
+
+        assert!(index.chain_count() >= 4);
+        assert_eq!(
+            index
+                .chain_metadata("ethereum")
+                .expect("ethereum metadata")
+                .domain_id,
+            1
+        );
+        assert_eq!(
+            index
+                .try_chain_by_domain(42_161)
+                .expect("arbitrum domain")
+                .name,
+            "arbitrum"
+        );
+        assert_eq!(
+            index
+                .core_addresses("celestiatestnet")
+                .expect("celestiatestnet addresses")
+                .interchain_gas_paymaster
+                .as_deref(),
+            Some("0x726f757465725f706f73745f6469737061746368000000040000000000000003")
+        );
+    }
+
+    #[test]
+    fn registry_index_reports_unknown_chain() {
+        let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let index = RegistryIndex::load(&repo_root).expect("registry should index");
+
+        let err = index
+            .chain_metadata("missing-chain")
+            .expect_err("missing chain should fail");
+
+        assert!(matches!(err, IgpOracleError::Registry(_)));
     }
 }

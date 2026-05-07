@@ -4,7 +4,7 @@ use crate::{
     adapter::{adapter_for, ChainAdapter, GasAdapter, PriceAdapter},
     artifacts::{
         target_artifact, write_artifacts, DecisionArtifact, DiscoveryArtifact, PlanArtifact,
-        PolicyArtifact, SkippedTargetArtifact, TargetArtifactInput,
+        PolicyArtifact, SkippedTargetArtifact, TargetArtifactInput, TxPlanErrorArtifact,
     },
     cli::ReconcileArgs,
     config::UpdaterConfig,
@@ -12,7 +12,7 @@ use crate::{
     error::{IgpOracleError, Result},
     models::ChainProtocol,
     policy::{compute_proposal, decide_reconciliation},
-    registry::RegistryLoader,
+    registry::RegistryIndex,
     resolver::{expand_configured_domains, resolve_origin_work_items, ExpandedTarget},
 };
 
@@ -77,7 +77,7 @@ async fn prepare_reconciliation(
     config: &UpdaterConfig,
     adapter_factory: &ChainAdapterFactory,
 ) -> Result<Vec<PreparedOrigin>> {
-    let registry = RegistryLoader::new(&args.registry);
+    let registry = RegistryIndex::load(&args.registry)?;
     let work_items = resolve_origin_work_items(config, &registry, args)?;
     let mut prepared = Vec::new();
 
@@ -226,14 +226,22 @@ async fn reconcile_target(
         max_allowed_delta_bps: Some(config.defaults.max_bps_change_per_update),
         reason: reconciliation.reason,
     };
-    let tx = if decision.status != "noop" {
+    let (tx, tx_plan_error) = if decision.status != "noop" {
         match adapter.plan_update(&target, &proposal.proposed).await {
-            Ok(plan) => Some(plan),
-            Err(IgpOracleError::UnsupportedLiveRead(_)) => None,
-            Err(err) => return Err((target, current_read, err)),
+            Ok(plan) => (Some(plan), None),
+            Err(err) => {
+                let (_, code) = target_error_classification(&err);
+                (
+                    None,
+                    Some(TxPlanErrorArtifact {
+                        code: code.to_string(),
+                        reason: err.to_string(),
+                    }),
+                )
+            }
         }
     } else {
-        None
+        (None, None)
     };
 
     Ok(target_artifact(TargetArtifactInput {
@@ -243,6 +251,7 @@ async fn reconcile_target(
         current_read: Some(current_read),
         deltas,
         tx,
+        tx_plan_error,
         decision,
     }))
 }
@@ -261,6 +270,7 @@ fn error_target_artifact(
         current_read: Some(current_read),
         deltas: None,
         tx: None,
+        tx_plan_error: None,
         decision: DecisionArtifact {
             status: status.to_string(),
             code: code.to_string(),
@@ -379,9 +389,9 @@ mod tests {
         adapter::{ChainAdapter, GasAdapter, PriceAdapter},
         cli::ReconcileArgs,
         models::{
-            ChainMetadata, ConfiguredRemoteDomain, CoreAddresses, CurrentIgpConfig, IgpConfigRead,
-            OnChainReadSource, ProposedIgpConfig, ReconciliationTarget, TxPlan, TxReceipt,
-            TxSigner, VerificationResult,
+            ChainMetadata, ConfiguredRemoteDomain, CoreAddresses, CurrentIgpConfig, GasPriceSample,
+            IgpConfigRead, OnChainReadSource, ProposedIgpConfig, ReconciliationTarget, TxPlan,
+            TxReceipt, TxSigner, VerificationResult,
         },
     };
 
@@ -391,8 +401,17 @@ mod tests {
 
     #[async_trait]
     impl GasAdapter for StaticGasAdapter {
-        async fn remote_gas_price(&self, _target: &ReconciliationTarget) -> Result<u128> {
-            Ok(self.0)
+        async fn remote_gas_price(&self, target: &ReconciliationTarget) -> Result<GasPriceSample> {
+            Ok(GasPriceSample {
+                source: "test".to_string(),
+                remote_chain: target.remote.name.clone(),
+                raw_amount: Some(self.0.to_string()),
+                raw_denom: None,
+                sampled_gas_price: self.0.to_string(),
+                rounding: None,
+                reason: None,
+                endpoint: None,
+            })
         }
     }
 
@@ -410,6 +429,7 @@ mod tests {
     struct StaticChainAdapter {
         protocol: ChainProtocol,
         configs: Vec<ConfiguredRemoteDomain>,
+        fail_plan_update: bool,
     }
 
     #[async_trait]
@@ -453,6 +473,12 @@ mod tests {
             target: &ReconciliationTarget,
             proposed: &ProposedIgpConfig,
         ) -> Result<TxPlan> {
+            if self.fail_plan_update {
+                return Err(IgpOracleError::DataSource(
+                    "test tx plan source failed".to_string(),
+                ));
+            }
+
             Ok(TxPlan {
                 protocol: self.protocol.as_str().to_string(),
                 action: "setDestinationGasConfig".to_string(),
@@ -560,6 +586,7 @@ mod tests {
             Box::new(StaticChainAdapter {
                 protocol,
                 configs: vec![configured_remote(2_147_483_647, current.clone())],
+                fail_plan_update: false,
             }) as Box<dyn ChainAdapter>
         };
 
@@ -590,6 +617,9 @@ mod tests {
         assert!(plan.contains("\"current\": {"));
         assert!(plan.contains("\"deltas\": {"));
         assert!(plan.contains("\"gasPriceBps\": 0"));
+        assert!(plan.contains("\"sampledGasPrice\": \"100\""));
+        assert!(plan.contains("\"proposedGasPrice\": \"110\""));
+        assert!(plan.contains("\"source\": \"test\""));
         assert!(plan.contains("\"originNativeTokenDecimals\": 6"));
         assert!(plan.contains("\"remoteNativeTokenDecimals\": 18"));
         assert!(plan.contains("\"tokenDecimalAdjustment\": \"0.000000000001\""));
@@ -628,6 +658,7 @@ mod tests {
             Box::new(StaticChainAdapter {
                 protocol,
                 configs: vec![configured_remote(2_147_483_647, current.clone())],
+                fail_plan_update: false,
             }) as Box<dyn ChainAdapter>
         };
 
@@ -650,6 +681,59 @@ mod tests {
         ));
         assert!(plan.contains("\"destinationGasConfig\""));
         assert!(!output_dir.path().join("tx-plan.json").exists());
+    }
+
+    #[tokio::test]
+    async fn dry_run_keeps_proposal_when_tx_planning_fails() {
+        let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let output_dir = tempdir().expect("tempdir");
+        let config =
+            UpdaterConfig::load(&repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"))
+                .expect("config should load");
+        let mut prices = BTreeMap::new();
+        prices.insert("celestiatestnet".to_string(), Decimal::from(2));
+        prices.insert("edentestnet".to_string(), Decimal::from(4));
+        let args = ReconcileArgs {
+            config: repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"),
+            registry: repo_root,
+            origin: Some("celestiatestnet".to_string()),
+            remote_chain: Some("edentestnet".to_string()),
+            remote_domain: None,
+            output_dir: output_dir.path().to_path_buf(),
+            format: "markdown,json".to_string(),
+            dry_run: true,
+            write: false,
+        };
+        let current = CurrentIgpConfig {
+            gas_price: "100".to_string(),
+            token_exchange_rate: "1".to_string(),
+            gas_overhead: 174_289,
+        };
+        let adapter_factory = move |protocol| {
+            Box::new(StaticChainAdapter {
+                protocol,
+                configs: vec![configured_remote(2_147_483_647, current.clone())],
+                fail_plan_update: true,
+            }) as Box<dyn ChainAdapter>
+        };
+
+        let code = run_reconcile_with_sources_and_adapter_factory(
+            args,
+            &config,
+            &StaticPriceAdapter(prices),
+            &StaticGasAdapter(100),
+            &adapter_factory,
+        )
+        .await
+        .expect("dry-run should preserve evaluated proposal");
+
+        assert_eq!(code, 10);
+        let plan = std::fs::read_to_string(output_dir.path().join("igp-plan.json")).expect("plan");
+        assert!(plan.contains("\"status\": \"update_recommended\""));
+        assert!(plan.contains("\"proposed\": {"));
+        assert!(plan.contains("\"tx\": null"));
+        assert!(plan.contains("\"txPlanError\": {"));
+        assert!(plan.contains("test tx plan source failed"));
     }
 
     #[tokio::test]
@@ -685,6 +769,7 @@ mod tests {
                     configured_remote(2_147_483_647, current.clone()),
                     configured_remote(1_000_101, current.clone()),
                 ],
+                fail_plan_update: false,
             }) as Box<dyn ChainAdapter>
         };
 
