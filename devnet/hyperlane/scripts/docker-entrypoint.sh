@@ -69,6 +69,7 @@ echo "Syncing agent config with freshly deployed anvil addresses..."
 export ANVIL_MAILBOX="$(yaml_value mailbox ./registry/chains/anvil/addresses.yaml)"
 export ANVIL_MERKLE_TREE_HOOK="$(yaml_value merkleTreeHook ./registry/chains/anvil/addresses.yaml)"
 export ANVIL_VALIDATOR_ANNOUNCE="$(yaml_value validatorAnnounce ./registry/chains/anvil/addresses.yaml)"
+export ANVIL_INTERCHAIN_GAS_PAYMASTER="$(yaml_value interchainGasPaymaster ./registry/chains/anvil/addresses.yaml)"
 export ANVIL_PROXY_ADMIN="$(yaml_value proxyAdmin ./registry/chains/anvil/addresses.yaml)"
 export ANVIL_TEST_RECIPIENT="$(yaml_value testRecipient ./registry/chains/anvil/addresses.yaml)"
 export ANVIL_INTERCHAIN_ACCOUNT_ROUTER="$(yaml_value interchainAccountRouter ./registry/chains/anvil/addresses.yaml)"
@@ -83,6 +84,7 @@ const anvil = config.chains.anvil;
 anvil.mailbox = process.env.ANVIL_MAILBOX;
 anvil.merkleTreeHook = process.env.ANVIL_MERKLE_TREE_HOOK;
 anvil.validatorAnnounce = process.env.ANVIL_VALIDATOR_ANNOUNCE;
+anvil.interchainGasPaymaster = process.env.ANVIL_INTERCHAIN_GAS_PAYMASTER;
 anvil.proxyAdmin = process.env.ANVIL_PROXY_ADMIN;
 anvil.testRecipient = process.env.ANVIL_TEST_RECIPIENT;
 anvil.interchainAccountRouter = process.env.ANVIL_INTERCHAIN_ACCOUNT_ROUTER;

@@ -96,11 +96,11 @@ Quote the EVM-origin Hyperlane fee:
 make -C devnet quote-anvil-transfer
 ```
 
-Expected result on this devnet:
+Expected result on this devnet is a non-zero `uint256` payment in Anvil wei
+because Anvil uses an interchain gas paymaster as its default hook.
 
-```text
-0
-```
+The `transfer-anvil` make target quotes this value and passes it as
+`msg.value` automatically.
 
 Check starting balances:
 

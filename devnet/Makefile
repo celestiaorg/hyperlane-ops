@@ -137,11 +137,15 @@ debug-celestia-addr:
 		celestia-appd debug addr $(ADDR)
 
 transfer-anvil:
-	@$(COMPOSE) exec -T anvil \
+	@$(COMPOSE) exec -T anvil sh -c 'HYP_FEE=$$(cast call --rpc-url http://localhost:8545 \
+		$(ANVIL_TIA_ROUTER) \
+		"quoteGasPayment(uint32)(uint256)" \
+		$(CELESTIADEV_DOMAIN)); \
 		cast send --rpc-url http://localhost:8545 \
 		--private-key $(ANVIL_DEFAULT_PK) \
+		--value "$$HYP_FEE" \
 		$(ANVIL_TIA_ROUTER) \
 		"transferRemote(uint32,bytes32,uint256)" \
 		$(CELESTIADEV_DOMAIN) \
 		$(CELESTIA_DEFAULT_RECIPIENT_B32) \
-		$(AMOUNT_UNITS)
+		$(AMOUNT_UNITS)'

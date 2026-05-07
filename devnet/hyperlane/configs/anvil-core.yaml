@@ -1,10 +1,13 @@
 defaultHook:
-  address: "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82"
   beneficiary: "0xaF9053bB6c4346381C77C2FeD279B17ABAfCDf4d"
-  maxProtocolFee: "0"
+  oracleConfig:
+    celestiadev:
+      gasPrice: "1"
+      tokenExchangeRate: "1600000000000000000"
   owner: "0xaF9053bB6c4346381C77C2FeD279B17ABAfCDf4d"
-  protocolFee: "0"
-  type: protocolFee
+  overhead:
+    celestiadev: 10000
+  type: interchainGasPaymaster
 defaultIsm:
   address: "0xb0279Db6a2F1E01fbC8483FCCef0Be2bC6299cC3"
   domains:
