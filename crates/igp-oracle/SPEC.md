@@ -248,6 +248,19 @@ the command runs in origin IGP sweep mode. Sweep mode queries the origin IGP for
 all configured destination gas configs, resolves only domains present in the
 local registry, and records skipped domains in the artifacts.
 
+EVM origins are the exception to automatic discovery. Solidity IGP contracts use
+mapping storage for destination configs, so configured domains cannot be
+enumerated with a normal view call. For EVM origins, operators must either:
+
+- configure `remoteSelection.domains` with the domain IDs to evaluate
+- pass `--remote-chain <chain>` or `--remote-domain <domainId>` for a one-off
+  direct read
+
+If an EVM origin uses `remoteSelection: configuredOnOriginIgp` without a runtime
+remote filter, the command must fail during target selection with a clear
+operator action. Event-log based discovery may be added later, but it is not
+part of the current strategy.
+
 Sweep mode must skip `remoteDomain == origin.domainId` with code
 `self_domain`. An origin chain's own domain is not a real cross-chain fee path
 and should not affect update decisions. Operators can still inspect this entry
@@ -275,6 +288,13 @@ Useful write-mode flags:
 - `--confirm-tx-targets`
 
 `--write` must be mutually exclusive with implicit defaults. Operators should have to ask for writes explicitly.
+`--generate-only` is only valid with `--write`; it recomputes the plan and emits
+write grouping metadata without signing or submitting a transaction.
+Generate-only must validate the configured signer profile before emitting a
+ready write plan. EVM targets require an exact address match against
+`StorageGasOracle.owner()`. Cosmosnative targets require the signer profile and
+protocol to match; if `from` is a local key alias rather than a bech32 address,
+the artifact should record that the key alias was not address-verified.
 
 ### Exit Codes
 
@@ -316,6 +336,7 @@ targets:
     remoteSelection: configuredOnOriginIgp
     enabled: true
     gas:
+      mode: sample
       source: rpc
       min: "1"
       max: "1000000000000"
@@ -336,12 +357,40 @@ signers:
 
 The config should be versioned in this repo, but secrets must only be read from environment variables or external secret managers.
 
-`remoteSelection: configuredOnOriginIgp` is the only supported configured
-operating mode. It means the origin IGP's on-chain destination gas config list
-is the source of truth for which remote domains exist. CLI flags such as
-`--remote-chain` and `--remote-domain` are runtime filters over that sweep; they
-narrow which resolved domains are evaluated for gas and market data during a
-single invocation.
+`gas.mode` controls whether gas prices are recomputed or preserved:
+
+- `sample`, the default, samples the remote gas source and proposes a new
+  `gasPrice` after safety multiplier and clamps
+- `preserve` skips remote gas sampling and proposes the current on-chain
+  `gasPrice` unchanged
+
+Preserve mode is useful when operators want the dry-run to answer only whether
+market prices imply a `tokenExchangeRate` update, while keeping gas price and
+gas overhead as operational policy values.
+
+`remoteSelection: configuredOnOriginIgp` is the default configured operating
+mode for origins whose adapters can enumerate destination gas configs. It means
+the origin IGP's on-chain destination gas config list is the source of truth for
+which remote domains exist. CLI flags such as `--remote-chain` and
+`--remote-domain` are runtime filters over that sweep; they narrow which
+resolved domains are evaluated for gas and market data during a single
+invocation.
+
+For EVM origins, use an explicit domain list when multiple domains should be
+evaluated:
+
+```yaml
+targets:
+  - originChain: ethereum
+    remoteSelection:
+      domains:
+        - 1128614981
+        - 42161
+```
+
+The CLI filters still apply to this configured list. Unknown domains are
+skipped with `missing_registry_metadata`, and origin-domain self entries are
+skipped during unfiltered runs with `self_domain`.
 
 ## Data Sources
 
@@ -471,8 +520,17 @@ The updater must not assume that a chain has a writable IGP just because a mailb
 
 Write mode may only call allowlisted selectors such as:
 
+- `StorageGasOracle.setRemoteGasData`
 - `StorageGasOracle.setRemoteGasDataConfigs`
 - `InterchainGasPaymaster.setDestinationGasConfigs`
+
+Dry-run transaction planning should prefer `StorageGasOracle.setRemoteGasData`
+for single-target EVM recommendations. This keeps the generated calldata scoped
+to `tokenExchangeRate` and `gasPrice` and preserves the already-configured IGP
+gas oracle address and gas overhead. Updates to EVM `gasOverhead` or
+`gasOracle` require the separate `InterchainGasPaymaster.setDestinationGasConfigs`
+path and must fail closed until that path has explicit ownership and selector
+checks.
 
 If the current default hook is `protocolFee`, if the IGP is nested in an aggregation or routing hook that cannot be safely resolved, or if ownership cannot be validated, the updater must fail closed.
 
@@ -545,7 +603,12 @@ Behavior:
 10. Upload final audit artifacts.
 11. Notify Slack or IM with success, failure, or generated transaction details.
 
-Write mode should be scoped to one origin and one remote target at first. Batch writes can be added after single-target operations are proven.
+Write mode should be scoped to one origin at first. For cosmosnative origins,
+generate-only mode may include multiple remote domains because those updates can
+be represented as a single Cosmos transaction with multiple
+`MsgSetDestinationGasConfig` messages. For EVM origins, generate-only mode must
+remain single-target until batching is explicitly implemented around the EVM
+`setRemoteGasDataConfigs` path.
 
 ## Artifact Format
 
@@ -577,6 +640,9 @@ artifacts/
 - proposed transaction target
 - proposed calldata or command arguments
 - transaction planning error details when reconciliation succeeds but tx payload construction fails
+- generate-only write grouping metadata, including whether the plan is modeled
+  as a single EVM call or a single Cosmos transaction with multiple messages
+- signer authorization metadata for each generate-only write target
 
 Transaction plan data should live on each target in `igp-plan.json`. A separate
 `tx-plan.json` should not be emitted by default because it duplicates a filtered
@@ -758,12 +824,13 @@ Exit criteria:
 Deliver:
 
 - IGP and gas oracle discovery
-- ownership validation
-- dry-run transaction planning for EVM targets
+- dry-run transaction planning for `StorageGasOracle.setRemoteGasData`
+- ownership validation before submission
 
 Exit criteria:
 
-- operators can review proposed EVM IGP updates without writing
+- operators can review proposed EVM IGP token exchange rate and gas price
+  updates without writing
 
 ### Phase 5: EVM Write Support
 

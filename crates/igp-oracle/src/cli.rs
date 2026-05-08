@@ -43,6 +43,9 @@ pub struct ReconcileArgs {
 
     #[arg(long)]
     pub write: bool,
+
+    #[arg(long)]
+    pub generate_only: bool,
 }
 
 impl ReconcileArgs {

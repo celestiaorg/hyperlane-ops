@@ -16,6 +16,8 @@ use crate::{
 pub struct PlanArtifact {
     pub git_sha: Option<String>,
     pub policy: PolicyArtifact,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub write_plan: Option<WritePlanArtifact>,
     #[serde(default)]
     pub discovery: Vec<DiscoveryArtifact>,
     #[serde(default)]
@@ -32,6 +34,8 @@ pub struct TargetPlanArtifact {
     pub origin_protocol: String,
     pub remote_protocol: String,
     pub igp_identifier: Option<String>,
+    pub write_enabled: bool,
+    pub write_method: String,
     pub gas_overhead: u64,
     pub gas: Option<GasInputsArtifact>,
     pub prices: Option<PriceInputsArtifact>,
@@ -87,6 +91,39 @@ pub struct TxPlanErrorArtifact {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct WritePlanArtifact {
+    pub mode: String,
+    pub status: String,
+    pub protocol: String,
+    pub origin_chain: String,
+    pub transaction_model: String,
+    pub target_count: usize,
+    pub message_count: usize,
+    pub targets: Vec<WritePlanTargetArtifact>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WritePlanTargetArtifact {
+    pub remote_chain: String,
+    pub remote_domain: u32,
+    pub action: String,
+    pub target: String,
+    pub selector: Option<String>,
+    pub signer_authorization: SignerAuthorizationArtifact,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SignerAuthorizationArtifact {
+    pub signer_profile: String,
+    pub configured_signer: String,
+    pub authorized_signer: Option<String>,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DiscoveryArtifact {
     pub origin_chain: String,
     pub igp_identifier: Option<String>,
@@ -109,6 +146,7 @@ pub struct SkippedTargetArtifact {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GasInputsArtifact {
+    pub mode: String,
     pub source: String,
     pub remote_chain: String,
     pub raw_amount: Option<String>,
@@ -153,7 +191,10 @@ pub struct TargetArtifactInput<'a> {
 }
 
 pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
-    let gas = input.proposal.as_ref().map(gas_inputs);
+    let gas = input
+        .proposal
+        .as_ref()
+        .map(|proposal| gas_inputs(input.target, proposal));
     let prices = input
         .proposal
         .as_ref()
@@ -176,6 +217,8 @@ pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
             .origin_addresses
             .interchain_gas_paymaster
             .clone(),
+        write_enabled: input.target.config.write.enabled,
+        write_method: input.target.config.write.method.clone(),
         gas_overhead: input.target.gas_overhead,
         gas,
         prices,
@@ -189,17 +232,32 @@ pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
     }
 }
 
-fn gas_inputs(proposal: &ProposalComputation) -> GasInputsArtifact {
-    GasInputsArtifact {
-        source: proposal.gas.source.clone(),
-        remote_chain: proposal.gas.remote_chain.clone(),
-        raw_amount: proposal.gas.raw_amount.clone(),
-        raw_denom: proposal.gas.raw_denom.clone(),
-        sampled_gas_price: proposal.gas.sampled_gas_price.clone(),
-        proposed_gas_price: proposal.proposed.gas_price.clone(),
-        rounding: proposal.gas.rounding.clone(),
-        reason: proposal.gas.reason.clone(),
-        endpoint: proposal.gas.endpoint.clone(),
+fn gas_inputs(target: &ReconciliationTarget, proposal: &ProposalComputation) -> GasInputsArtifact {
+    match proposal.gas.as_ref() {
+        Some(sample) => GasInputsArtifact {
+            mode: proposal.gas_mode.clone(),
+            source: sample.source.clone(),
+            remote_chain: sample.remote_chain.clone(),
+            raw_amount: sample.raw_amount.clone(),
+            raw_denom: sample.raw_denom.clone(),
+            sampled_gas_price: sample.sampled_gas_price.clone(),
+            proposed_gas_price: proposal.proposed.gas_price.clone(),
+            rounding: sample.rounding.clone(),
+            reason: sample.reason.clone(),
+            endpoint: sample.endpoint.clone(),
+        },
+        None => GasInputsArtifact {
+            mode: proposal.gas_mode.clone(),
+            source: "onchain".to_string(),
+            remote_chain: target.remote.name.clone(),
+            raw_amount: None,
+            raw_denom: None,
+            sampled_gas_price: proposal.proposed.gas_price.clone(),
+            proposed_gas_price: proposal.proposed.gas_price.clone(),
+            rounding: None,
+            reason: Some("gasPrice preserved from current on-chain config".to_string()),
+            endpoint: None,
+        },
     }
 }
 

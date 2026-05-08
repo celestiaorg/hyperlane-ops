@@ -195,7 +195,8 @@ pub struct ReconciliationDelta {
 #[serde(rename_all = "camelCase")]
 pub struct ProposalComputation {
     pub proposed: ProposedIgpConfig,
-    pub gas: GasPriceSample,
+    pub gas: Option<GasPriceSample>,
+    pub gas_mode: String,
     pub origin_price_usd: String,
     pub remote_price_usd: String,
     pub origin_native_token_decimals: u8,

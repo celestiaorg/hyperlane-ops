@@ -21,6 +21,12 @@ pub enum ExpandedTarget {
         target: Box<ReconciliationTarget>,
         current_read: IgpConfigRead,
     },
+    ReadError {
+        target: Box<ReconciliationTarget>,
+        status: String,
+        code: String,
+        reason: String,
+    },
     Skipped {
         origin_chain: String,
         remote_domain: u32,
@@ -66,7 +72,7 @@ pub fn expand_configured_domains(
     args: &ReconcileArgs,
     configs: Vec<ConfiguredRemoteDomain>,
 ) -> Result<Vec<ExpandedTarget>> {
-    let remote_domain_filter = remote_domain_filter(registry, args)?;
+    let remote_domain_filter = selected_remote_domain_filter(registry, args)?;
     let is_unfiltered_sweep = remote_domain_filter.is_none();
     let mut expanded = Vec::new();
 
@@ -126,7 +132,10 @@ fn matches_origin(target: &TargetConfig, args: &ReconcileArgs) -> bool {
         .is_none_or(|origin| origin == &target.origin_chain)
 }
 
-fn remote_domain_filter(registry: &RegistryIndex, args: &ReconcileArgs) -> Result<Option<u32>> {
+pub fn selected_remote_domain_filter(
+    registry: &RegistryIndex,
+    args: &ReconcileArgs,
+) -> Result<Option<u32>> {
     if let Some(domain) = args.remote_domain {
         return Ok(Some(domain));
     }
@@ -172,6 +181,7 @@ mod tests {
             format: "markdown,json".to_string(),
             dry_run: true,
             write: false,
+            generate_only: false,
         };
 
         let work_items =
@@ -198,6 +208,7 @@ mod tests {
             format: "markdown,json".to_string(),
             dry_run: true,
             write: false,
+            generate_only: false,
         };
         let work_item = resolve_origin_work_items(&config, &registry, &args)
             .expect("work item should resolve")
@@ -259,6 +270,7 @@ mod tests {
             format: "markdown,json".to_string(),
             dry_run: true,
             write: false,
+            generate_only: false,
         };
         let work_item = resolve_origin_work_items(&config, &registry, &args)
             .expect("work item should resolve")
@@ -293,6 +305,7 @@ mod tests {
             format: "markdown,json".to_string(),
             dry_run: true,
             write: false,
+            generate_only: false,
         };
         let work_item = resolve_origin_work_items(&config, &registry, &args)
             .expect("work item should resolve")
@@ -327,6 +340,7 @@ mod tests {
             format: "markdown,json".to_string(),
             dry_run: true,
             write: false,
+            generate_only: false,
         };
         let work_item = resolve_origin_work_items(&config, &registry, &args)
             .expect("work item should resolve")
@@ -349,7 +363,7 @@ mod tests {
                     current_read.config.token_exchange_rate.as_str(),
                     current_read.config.gas_overhead,
                 )),
-                ExpandedTarget::Skipped { .. } => None,
+                ExpandedTarget::ReadError { .. } | ExpandedTarget::Skipped { .. } => None,
             })
             .collect::<Vec<_>>();
         let skipped = expanded
@@ -360,7 +374,7 @@ mod tests {
                     code,
                     ..
                 } => Some((*remote_domain, code.as_str())),
-                ExpandedTarget::Reconcile { .. } => None,
+                ExpandedTarget::ReadError { .. } | ExpandedTarget::Reconcile { .. } => None,
             })
             .collect::<Vec<_>>();
 

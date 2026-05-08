@@ -21,6 +21,7 @@ targets:
     remoteSelection: configuredOnOriginIgp
     enabled: true
     gas:
+      mode: sample
       source: rpc
       min: "1"
       max: "1000000000000"
@@ -31,6 +32,29 @@ targets:
       enabled: true
       method: celestia-grpc
       signerProfile: celestia-owner
+
+  # EVM IGP destination configs are not enumerable through ordinary contract
+  # reads. Use an explicit domain list for multi-domain EVM-origin dry runs, or
+  # keep configuredOnOriginIgp and pass --remote-chain/--remote-domain for a
+  # one-off direct read.
+  # - originChain: ethereum
+  #   remoteSelection:
+  #     domains:
+  #       - 1128614981
+  #       - 42161
+  #   enabled: false
+  #   gas:
+  #     mode: preserve
+  #     source: rpc
+  #     min: "1"
+  #     max: "1000000000000"
+  #   exchangeRate:
+  #     min: "1"
+  #     max: "1000000000000000000000000000"
+  #   write:
+  #     enabled: false
+  #     method: evm
+  #     signerProfile: ethereum-owner
 
 signers:
   celestia-owner:

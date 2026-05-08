@@ -9,10 +9,14 @@ use crate::{
 
 const DESTINATION_GAS_CONFIGS: &str = "destinationGasConfigs(uint32)";
 const DESTINATION_GAS_LIMIT: &str = "destinationGasLimit(uint32,uint256)";
+const OWNER: &str = "owner()";
 const REMOTE_GAS_DATA: &str = "remoteGasData(uint32)";
 const DESTINATION_GAS_CONFIGS_SELECTOR: [u8; 4] = [0x43, 0xc4, 0x67, 0xc0];
 const DESTINATION_GAS_LIMIT_SELECTOR: [u8; 4] = [0x26, 0xd5, 0xb1, 0xa6];
+const OWNER_SELECTOR: [u8; 4] = [0x8d, 0xa5, 0xcb, 0x5b];
 const REMOTE_GAS_DATA_SELECTOR: [u8; 4] = [0xb0, 0x8e, 0x56, 0xd0];
+pub(crate) const SET_REMOTE_GAS_DATA: &str = "setRemoteGasData((uint32,uint128,uint128))";
+pub(crate) const SET_REMOTE_GAS_DATA_SELECTOR: [u8; 4] = [0xf3, 0xa1, 0x49, 0x5f];
 const EVM_IGP_QUERY: &str =
     "eth_call: destinationGasConfigs(uint32), destinationGasLimit(uint32,uint256), remoteGasData(uint32)";
 
@@ -28,7 +32,10 @@ impl EvmIgpReader {
         })
     }
 
-    pub async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<IgpConfigRead> {
+    pub async fn read_destination_gas_config(
+        &self,
+        target: &ReconciliationTarget,
+    ) -> Result<EvmDestinationGasConfig> {
         let igp_address = target
             .origin_addresses
             .interchain_gas_paymaster
@@ -67,22 +74,44 @@ impl EvmIgpReader {
         let gas_overhead = self
             .read_destination_gas_overhead(endpoint, &igp_address, remote_domain)
             .await?;
+
+        Ok(EvmDestinationGasConfig {
+            endpoint: endpoint.to_string(),
+            igp_address,
+            gas_oracle,
+            gas_overhead,
+        })
+    }
+
+    pub async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<IgpConfigRead> {
+        let destination_config = self.read_destination_gas_config(target).await?;
         let remote_gas_data = self
-            .read_remote_gas_data(endpoint, &gas_oracle, remote_domain)
+            .read_remote_gas_data(
+                &destination_config.endpoint,
+                &destination_config.gas_oracle,
+                target.remote.domain_id,
+            )
             .await?;
 
         Ok(IgpConfigRead {
             config: CurrentIgpConfig {
                 gas_price: remote_gas_data.gas_price.to_string(),
                 token_exchange_rate: remote_gas_data.token_exchange_rate.to_string(),
-                gas_overhead,
+                gas_overhead: destination_config.gas_overhead,
             },
             source: OnChainReadSource {
                 protocol: "ethereum".to_string(),
-                endpoint: Some(endpoint.to_string()),
+                endpoint: Some(destination_config.endpoint),
                 query: EVM_IGP_QUERY.to_string(),
             },
         })
+    }
+
+    pub async fn read_owner(&self, endpoint: &str, contract_address: &str) -> Result<String> {
+        let output = self
+            .eth_call(endpoint, contract_address, &encode_call(OWNER))
+            .await?;
+        decode_address_word(&output, 0, "owner")
     }
 
     async fn read_destination_gas_oracle(
@@ -169,6 +198,14 @@ impl EvmIgpReader {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EvmDestinationGasConfig {
+    pub endpoint: String,
+    pub igp_address: String,
+    pub gas_oracle: String,
+    pub gas_overhead: u64,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct RemoteGasData {
     token_exchange_rate: u128,
@@ -218,6 +255,10 @@ fn encode_u32_call(signature: &str, value: u32) -> String {
     encode_hex(&bytes)
 }
 
+fn encode_call(signature: &str) -> String {
+    encode_hex(&selector(signature))
+}
+
 fn encode_u32_u256_call(signature: &str, first: u32, second: u128) -> String {
     let mut bytes = Vec::with_capacity(4 + 64);
     bytes.extend_from_slice(&selector(signature));
@@ -226,11 +267,26 @@ fn encode_u32_u256_call(signature: &str, first: u32, second: u128) -> String {
     encode_hex(&bytes)
 }
 
+pub(crate) fn encode_set_remote_gas_data(
+    remote_domain: u32,
+    token_exchange_rate: u128,
+    gas_price: u128,
+) -> String {
+    let mut bytes = Vec::with_capacity(4 + 96);
+    bytes.extend_from_slice(&SET_REMOTE_GAS_DATA_SELECTOR);
+    append_u32_word(&mut bytes, remote_domain);
+    append_u128_word(&mut bytes, token_exchange_rate);
+    append_u128_word(&mut bytes, gas_price);
+    encode_hex(&bytes)
+}
+
 fn selector(signature: &str) -> [u8; 4] {
     match signature {
         DESTINATION_GAS_CONFIGS => DESTINATION_GAS_CONFIGS_SELECTOR,
         DESTINATION_GAS_LIMIT => DESTINATION_GAS_LIMIT_SELECTOR,
+        OWNER => OWNER_SELECTOR,
         REMOTE_GAS_DATA => REMOTE_GAS_DATA_SELECTOR,
+        SET_REMOTE_GAS_DATA => SET_REMOTE_GAS_DATA_SELECTOR,
         _ => unreachable!("unsupported EVM IGP function signature"),
     }
 }
@@ -316,7 +372,7 @@ fn encode_hex(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use crate::{
-        config::{ClampConfig, GasConfig, TargetConfig, WriteConfig},
+        config::{ClampConfig, GasConfig, GasMode, TargetConfig, WriteConfig},
         models::{ChainId, ChainMetadata, ChainProtocol, CoreAddresses, NativeToken, UrlEntry},
     };
 
@@ -326,7 +382,9 @@ mod tests {
     fn computes_known_igp_selectors() {
         assert_eq!(encode_hex(&selector(DESTINATION_GAS_CONFIGS)), "0x43c467c0");
         assert_eq!(encode_hex(&selector(DESTINATION_GAS_LIMIT)), "0x26d5b1a6");
+        assert_eq!(encode_hex(&selector(OWNER)), "0x8da5cb5b");
         assert_eq!(encode_hex(&selector(REMOTE_GAS_DATA)), "0xb08e56d0");
+        assert_eq!(encode_hex(&selector(SET_REMOTE_GAS_DATA)), "0xf3a1495f");
     }
 
     #[test]
@@ -361,6 +419,14 @@ mod tests {
         assert_eq!(
             decode_u128_word(response, 1, "gasPrice").expect("gas price should decode"),
             100
+        );
+    }
+
+    #[test]
+    fn encodes_set_remote_gas_data_call() {
+        assert_eq!(
+            encode_set_remote_gas_data(69_420, 1_607_707_095_149_661_413, 2),
+            "0xf3a1495f0000000000000000000000000000000000000000000000000000000000010f2c000000000000000000000000000000000000000000000000164fb915c5454ce50000000000000000000000000000000000000000000000000000000000000002"
         );
     }
 
@@ -426,6 +492,7 @@ mod tests {
             remote_selection: crate::config::RemoteSelection::ConfiguredOnOriginIgp,
             enabled: true,
             gas: GasConfig {
+                mode: GasMode::Sample,
                 source: "rpc".to_string(),
                 min: "1".to_string(),
                 max: "1000000000000".to_string(),

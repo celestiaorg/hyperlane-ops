@@ -2,7 +2,7 @@ use rust_decimal::Decimal;
 
 use crate::{
     adapter::{GasAdapter, PriceAdapter},
-    config::{ClampConfig, DefaultsConfig},
+    config::{ClampConfig, DefaultsConfig, GasMode},
     data::{decimal_str_to_ceil_u128, decimal_to_ceil_u128},
     error::{IgpOracleError, Result},
     models::{
@@ -16,12 +16,13 @@ const BPS_DENOMINATOR: u64 = 10_000;
 
 pub async fn compute_proposed_config(
     target: &ReconciliationTarget,
+    current: &CurrentIgpConfig,
     defaults: &DefaultsConfig,
     gas_adapter: &dyn GasAdapter,
     price_adapter: &dyn PriceAdapter,
 ) -> Result<ProposedIgpConfig> {
     Ok(
-        compute_proposal(target, defaults, gas_adapter, price_adapter)
+        compute_proposal(target, current, defaults, gas_adapter, price_adapter)
             .await?
             .proposed,
     )
@@ -29,12 +30,11 @@ pub async fn compute_proposed_config(
 
 pub async fn compute_proposal(
     target: &ReconciliationTarget,
+    current: &CurrentIgpConfig,
     defaults: &DefaultsConfig,
     gas_adapter: &dyn GasAdapter,
     price_adapter: &dyn PriceAdapter,
 ) -> Result<ProposalComputation> {
-    let gas_sample = gas_adapter.remote_gas_price(target).await?;
-    let remote_gas_price = decimal_str_to_ceil_u128(&gas_sample.sampled_gas_price)?;
     let origin_price = price_adapter
         .native_token_price_usd(&target.origin.name)
         .await?;
@@ -49,8 +49,19 @@ pub async fn compute_proposal(
         )));
     }
 
-    let gas_price = apply_bps_multiplier(remote_gas_price, defaults.safety_multiplier_bps)?;
-    let gas_price = clamp_u128(gas_price, &target.config.gas.min, &target.config.gas.max)?;
+    let (gas_sample, gas_price) = match target.config.gas.mode {
+        GasMode::Sample => {
+            let sample = gas_adapter.remote_gas_price(target).await?;
+            let remote_gas_price = decimal_str_to_ceil_u128(&sample.sampled_gas_price)?;
+            let gas_price = apply_bps_multiplier(remote_gas_price, defaults.safety_multiplier_bps)?;
+            let gas_price = clamp_u128(gas_price, &target.config.gas.min, &target.config.gas.max)?;
+            (Some(sample), gas_price.to_string())
+        }
+        GasMode::Preserve => {
+            parse_u128(&current.gas_price, "current gasPrice")?;
+            (None, current.gas_price.clone())
+        }
+    };
 
     let token_decimal_adjustment = decimal_power_of_ten(
         target.origin.native_token.decimals as i16 - target.remote.native_token.decimals as i16,
@@ -68,11 +79,16 @@ pub async fn compute_proposal(
 
     Ok(ProposalComputation {
         proposed: ProposedIgpConfig {
-            gas_price: gas_price.to_string(),
+            gas_price,
             token_exchange_rate: exchange_rate.to_string(),
             gas_overhead: target.gas_overhead,
         },
         gas: gas_sample,
+        gas_mode: match target.config.gas.mode {
+            GasMode::Sample => "sample",
+            GasMode::Preserve => "preserve",
+        }
+        .to_string(),
         origin_price_usd: origin_price.to_string(),
         remote_price_usd: remote_price.to_string(),
         origin_native_token_decimals: target.origin.native_token.decimals,
@@ -334,7 +350,7 @@ mod tests {
 
     use crate::{
         adapter::{GasAdapter, PriceAdapter},
-        config::{DefaultsConfig, GasConfig, TargetConfig, WriteConfig},
+        config::{DefaultsConfig, GasConfig, GasMode, TargetConfig, WriteConfig},
         models::{
             ChainId, ChainMetadata, ChainProtocol, CoreAddresses, GasPriceSample, NativeToken,
             ReconciliationTarget,
@@ -358,6 +374,17 @@ mod tests {
                 reason: None,
                 endpoint: None,
             })
+        }
+    }
+
+    struct FailingGasAdapter;
+
+    #[async_trait]
+    impl GasAdapter for FailingGasAdapter {
+        async fn remote_gas_price(&self, _target: &ReconciliationTarget) -> Result<GasPriceSample> {
+            Err(IgpOracleError::DataSource(
+                "gas adapter should not be called".to_string(),
+            ))
         }
     }
 
@@ -406,6 +433,7 @@ mod tests {
 
         let proposed = compute_proposed_config(
             &target,
+            &current_config(),
             &defaults,
             &StaticGasAdapter(100),
             &StaticPriceAdapter(prices),
@@ -437,6 +465,7 @@ mod tests {
 
         let proposal = compute_proposal(
             &target,
+            &current_config(),
             &defaults,
             &StaticGasAdapter(300_000_000),
             &StaticPriceAdapter(prices),
@@ -450,6 +479,44 @@ mod tests {
         assert_eq!(proposal.origin_native_token_decimals, 6);
         assert_eq!(proposal.remote_native_token_decimals, 18);
         assert_eq!(proposal.token_decimal_adjustment, "0.000000000001");
+    }
+
+    #[tokio::test]
+    async fn preserve_gas_mode_reuses_current_gas_price_without_sampling() {
+        let mut target = target_with_decimals(18, 6);
+        target.config.gas.mode = GasMode::Preserve;
+        let defaults = DefaultsConfig {
+            min_bps_change_to_write: 500,
+            max_bps_change_per_update: 5000,
+            cooldown_seconds: 900,
+            safety_multiplier_bps: 10_000,
+            gas_sample_freshness_seconds: 120,
+        };
+        let current = CurrentIgpConfig {
+            gas_price: "300000000".to_string(),
+            token_exchange_rate: "1600000000000000000".to_string(),
+            gas_overhead: 10_000,
+        };
+        let mut prices = BTreeMap::new();
+        prices.insert("origin".to_string(), Decimal::from(2));
+        prices.insert("remote".to_string(), Decimal::from(4));
+
+        let proposal = compute_proposal(
+            &target,
+            &current,
+            &defaults,
+            &FailingGasAdapter,
+            &StaticPriceAdapter(prices),
+        )
+        .await
+        .expect("proposal");
+        let decision =
+            decide_reconciliation(&current, &proposal.proposed, &defaults).expect("decision");
+
+        assert_eq!(proposal.proposed.gas_price, "300000000");
+        assert_eq!(proposal.gas_mode, "preserve");
+        assert!(proposal.gas.is_none());
+        assert_eq!(decision.deltas.gas_price_bps, Some(0));
     }
 
     #[test]
@@ -516,6 +583,7 @@ mod tests {
 
         let proposal = compute_proposal(
             &target,
+            &current_config(),
             &defaults,
             &StaticGasAdapter(reference_gas_price),
             &StaticPriceAdapter(prices),
@@ -601,6 +669,7 @@ mod tests {
                 remote_selection: crate::config::RemoteSelection::ConfiguredOnOriginIgp,
                 enabled: true,
                 gas: GasConfig {
+                    mode: GasMode::Sample,
                     source: "rpc".to_string(),
                     min: "1".to_string(),
                     max: "1000000000000".to_string(),
@@ -612,6 +681,14 @@ mod tests {
                     signer_profile: "owner".to_string(),
                 },
             },
+            gas_overhead: 174_289,
+        }
+    }
+
+    fn current_config() -> CurrentIgpConfig {
+        CurrentIgpConfig {
+            gas_price: "100".to_string(),
+            token_exchange_rate: "1".to_string(),
             gas_overhead: 174_289,
         }
     }

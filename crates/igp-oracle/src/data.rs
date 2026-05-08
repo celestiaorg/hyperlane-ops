@@ -408,7 +408,7 @@ mod tests {
     use rust_decimal::Decimal;
 
     use crate::{
-        config::{GasConfig, RemoteSelection, TargetConfig, WriteConfig},
+        config::{GasConfig, GasMode, RemoteSelection, TargetConfig, WriteConfig},
         models::{
             ChainId, ChainMetadata, ChainProtocol, CoreAddresses, MetadataGasPrice, NativeToken,
             ReconciliationTarget,
@@ -529,6 +529,7 @@ mod tests {
                 remote_selection: RemoteSelection::ConfiguredOnOriginIgp,
                 enabled: true,
                 gas: GasConfig {
+                    mode: GasMode::Sample,
                     source: "registry".to_string(),
                     min: "1".to_string(),
                     max: "1000000000000".to_string(),
