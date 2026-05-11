@@ -211,6 +211,29 @@ ready. EVM plans require the configured signer address to match the
 profile and protocol; when `from` is a local key alias rather than a bech32
 address, the artifact records `key_alias_unverified`.
 
+## Cosmosnative Write Submission
+
+`--write` without `--generate-only` signs and submits a cosmosnative
+`MsgSetDestinationGasConfig` through `celestia-grpc`. The signer private key is
+loaded from the configured signer profile `keyEnv`. The value may include a
+`0x` prefix, but the key is never written to artifacts.
+
+```bash
+export HYP_KEY_COSMOSNATIVE=0x...
+
+cargo run -p igp-oracle -- reconcile \
+  --config crates/igp-oracle/igp-oracle.example.yaml \
+  --registry . \
+  --origin celestiatestnet \
+  --remote-chain edentestnet \
+  --output-dir .tmp/igp-oracle-write \
+  --write
+```
+
+Initial submit mode supports one cosmosnative update target at a time. Use
+`--remote-chain` or `--remote-domain` to select a single remote. Generate-only
+mode may still model multiple cosmosnative messages for review.
+
 ## Artifacts
 
 Each run writes two files:
@@ -235,7 +258,8 @@ Each run writes two files:
 - review-only transaction plan data when available
 - transaction planning errors when evaluation succeeds but tx payload construction fails
 - generate-only write grouping metadata when `--write --generate-only` is used
-- signer authorization status for generate-only write targets
+- signer authorization status for write targets
+- write receipts when a transaction is submitted
 
 `igp-summary.md` is the human-readable review artifact intended for GitHub step
 summaries and notification bodies.
@@ -256,14 +280,13 @@ market-derived value.
 
 ## Exit Codes
 
-- `0`: dry-run completed with no required updates, or `--write --generate-only`
-  completed and wrote a ready or no-op write plan
+- `0`: dry-run completed with no required updates, `--write --generate-only`
+  completed and wrote a ready or no-op write plan, or a supported write
+  completed
 - `10`: at least one target has `update_recommended`
 - `20`: config, registry, market data, gas data, artifact, or on-chain read error
 - `30`: target selection, unsupported protocol, or policy violation
-- `40`: `--write` was requested without `--generate-only`
-
-Transaction submission is intentionally unsupported at this stage.
+- `40`: unsupported write path
 
 ## Current Limitations
 
@@ -274,7 +297,8 @@ Transaction submission is intentionally unsupported at this stage.
   configured domains.
 - EVM tx planning currently covers `StorageGasOracle.setRemoteGasData` only.
   Gas overhead and gas oracle address updates are not planned yet.
-- `--write --generate-only` is a preparation mode only. It never signs or
-  submits transactions.
+- EVM write submission is not implemented yet.
+- Cosmosnative submit mode supports one update target at a time. Multi-message
+  cosmosnative submission is still modeled in generate-only output only.
 - Slack, IM, and webhook notifications are workflow-owned. `igp-oracle` only
   emits artifacts, logs, and exit codes.

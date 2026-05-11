@@ -19,6 +19,21 @@ pub struct DestinationGasConfig {
 }
 
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgSetDestinationGasConfig {
+    #[prost(string, tag = "1")]
+    pub owner: String,
+    #[prost(string, tag = "2")]
+    pub igp_id: String,
+    #[prost(message, optional, tag = "3")]
+    pub destination_gas_config: Option<DestinationGasConfig>,
+}
+
+impl ::prost::Name for MsgSetDestinationGasConfig {
+    const NAME: &'static str = "MsgSetDestinationGasConfig";
+    const PACKAGE: &'static str = "hyperlane.core.post_dispatch.v1";
+}
+
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InterchainGasPaymaster {
     #[prost(string, tag = "1")]
     pub id: String,

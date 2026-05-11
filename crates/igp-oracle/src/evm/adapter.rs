@@ -2,6 +2,7 @@ use async_trait::async_trait;
 
 use crate::{
     adapter::ChainAdapter,
+    config::SignerConfig,
     error::{IgpOracleError, Result},
     evm::query::{encode_set_remote_gas_data, EvmIgpReader, SET_REMOTE_GAS_DATA},
     models::{
@@ -97,6 +98,7 @@ impl ChainAdapter for EvmAdapter {
         &self,
         _target: &ReconciliationTarget,
         _plan: &TxPlan,
+        _signer: &SignerConfig,
     ) -> Result<TxReceipt> {
         Err(IgpOracleError::UnsupportedWrite)
     }

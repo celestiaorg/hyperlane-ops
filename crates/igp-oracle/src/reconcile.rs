@@ -5,13 +5,13 @@ use crate::{
     artifacts::{
         target_artifact, write_artifacts, DecisionArtifact, DiscoveryArtifact, PlanArtifact,
         PolicyArtifact, SignerAuthorizationArtifact, SkippedTargetArtifact, TargetArtifactInput,
-        TxPlanErrorArtifact, WritePlanArtifact, WritePlanTargetArtifact,
+        TxPlanErrorArtifact, WritePlanArtifact, WritePlanTargetArtifact, WriteReceiptArtifact,
     },
     cli::ReconcileArgs,
     config::UpdaterConfig,
     data::{CoinGeckoPriceAdapter, ProtocolGasAdapter},
     error::{IgpOracleError, Result},
-    models::{ChainProtocol, ReconciliationTarget},
+    models::{ChainProtocol, ReconciliationTarget, TxPlan},
     policy::{compute_proposal, decide_reconciliation},
     registry::RegistryIndex,
     resolver::{
@@ -24,9 +24,6 @@ type ChainAdapterFactory = dyn Fn(ChainProtocol) -> Box<dyn ChainAdapter> + Sync
 
 pub async fn run_reconcile(args: ReconcileArgs) -> Result<i32> {
     validate_mode(&args)?;
-    if args.write && !args.generate_only {
-        return Err(IgpOracleError::UnsupportedWrite);
-    }
 
     let config = UpdaterConfig::load(&args.config)?;
     let gas_adapter = ProtocolGasAdapter::new();
@@ -34,7 +31,15 @@ pub async fn run_reconcile(args: ReconcileArgs) -> Result<i32> {
     let price_adapter =
         CoinGeckoPriceAdapter::new_scoped(&config.market_data, required_price_chains(&prepared))?;
 
-    reconcile_prepared(&args, &config, &price_adapter, &gas_adapter, prepared).await
+    reconcile_prepared(
+        &args,
+        &config,
+        &price_adapter,
+        &gas_adapter,
+        prepared,
+        &adapter_for,
+    )
+    .await
 }
 
 pub async fn run_reconcile_with_sources(
@@ -61,12 +66,17 @@ pub async fn run_reconcile_with_sources_and_adapter_factory(
     adapter_factory: &ChainAdapterFactory,
 ) -> Result<i32> {
     validate_mode(&args)?;
-    if args.write && !args.generate_only {
-        return Err(IgpOracleError::UnsupportedWrite);
-    }
 
     let prepared = prepare_reconciliation(&args, config, adapter_factory).await?;
-    reconcile_prepared(&args, config, price_adapter, gas_adapter, prepared).await
+    reconcile_prepared(
+        &args,
+        config,
+        price_adapter,
+        gas_adapter,
+        prepared,
+        adapter_factory,
+    )
+    .await
 }
 
 struct PreparedOrigin {
@@ -76,6 +86,17 @@ struct PreparedOrigin {
     configured_count: usize,
     adapter: Box<dyn ChainAdapter>,
     expanded: Vec<ExpandedTarget>,
+}
+
+struct ExecutableUpdate {
+    target: ReconciliationTarget,
+    tx: TxPlan,
+}
+
+struct ReconciledTarget {
+    artifact: crate::artifacts::TargetPlanArtifact,
+    target: ReconciliationTarget,
+    tx: Option<TxPlan>,
 }
 
 async fn prepare_reconciliation(
@@ -211,10 +232,12 @@ async fn reconcile_prepared(
     price_adapter: &dyn PriceAdapter,
     gas_adapter: &dyn GasAdapter,
     prepared: Vec<PreparedOrigin>,
+    adapter_factory: &ChainAdapterFactory,
 ) -> Result<i32> {
     let mut target_artifacts = Vec::new();
     let mut skipped_targets = Vec::new();
     let mut discovery = Vec::new();
+    let mut executable_updates = Vec::new();
 
     for prepared_origin in prepared {
         let mut resolved_count = 0usize;
@@ -227,7 +250,7 @@ async fn reconcile_prepared(
                     current_read,
                 } => {
                     resolved_count += 1;
-                    let artifact = match reconcile_target(
+                    let reconciled = match reconcile_target(
                         *target,
                         current_read,
                         config,
@@ -237,12 +260,23 @@ async fn reconcile_prepared(
                     )
                     .await
                     {
-                        Ok(artifact) => artifact,
+                        Ok(reconciled) => reconciled,
                         Err((target, current_read, err)) => {
-                            error_target_artifact(&target, current_read, config, &err)
+                            let artifact =
+                                error_target_artifact(&target, current_read, config, &err);
+                            target_artifacts.push(artifact);
+                            continue;
                         }
                     };
-                    target_artifacts.push(artifact);
+                    if reconciled.artifact.decision.status == "update_recommended" {
+                        if let Some(tx) = reconciled.tx.clone() {
+                            executable_updates.push(ExecutableUpdate {
+                                target: reconciled.target.clone(),
+                                tx,
+                            });
+                        }
+                    }
+                    target_artifacts.push(reconciled.artifact);
                 }
                 ExpandedTarget::Skipped {
                     origin_chain,
@@ -293,12 +327,26 @@ async fn reconcile_prepared(
     };
 
     let mut plan = plan;
-    if args.write && args.generate_only {
-        plan.write_plan = Some(generate_only_write_plan(config, &plan)?);
+    if args.write {
+        let mode = if args.generate_only {
+            "generate_only"
+        } else {
+            "submit"
+        };
+        plan.write_plan = Some(build_write_plan(config, &plan, mode)?);
+        if !args.generate_only {
+            if let Err(err) =
+                submit_write_plan(config, &mut plan, executable_updates, adapter_factory).await
+            {
+                mark_write_plan_failed(&mut plan, &err);
+                write_artifacts(&args.output_dir, &plan)?;
+                return Err(err);
+            }
+        }
     }
 
     write_artifacts(&args.output_dir, &plan)?;
-    if args.write && args.generate_only {
+    if args.write {
         Ok(0)
     } else {
         Ok(exit_code_for_plan(&plan))
@@ -321,9 +369,10 @@ fn validate_mode(args: &ReconcileArgs) -> Result<()> {
     Ok(())
 }
 
-fn generate_only_write_plan(
+fn build_write_plan(
     config: &UpdaterConfig,
     plan: &PlanArtifact,
+    mode: &str,
 ) -> Result<WritePlanArtifact> {
     if plan
         .targets
@@ -363,7 +412,7 @@ fn generate_only_write_plan(
             .map(|origin| origin.protocol.clone())
             .unwrap_or_else(|| "unknown".to_string());
         return Ok(WritePlanArtifact {
-            mode: "generate_only".to_string(),
+            mode: mode.to_string(),
             status: "no_update_required".to_string(),
             protocol,
             origin_chain,
@@ -371,6 +420,8 @@ fn generate_only_write_plan(
             target_count: 0,
             message_count: 0,
             targets: Vec::new(),
+            receipts: Vec::new(),
+            error: None,
         });
     }
 
@@ -438,7 +489,7 @@ fn generate_only_write_plan(
         .collect::<Result<Vec<_>>>()?;
 
     Ok(WritePlanArtifact {
-        mode: "generate_only".to_string(),
+        mode: mode.to_string(),
         status: "ready".to_string(),
         protocol,
         origin_chain,
@@ -446,7 +497,90 @@ fn generate_only_write_plan(
         target_count: targets.len(),
         message_count: targets.len(),
         targets,
+        receipts: Vec::new(),
+        error: None,
     })
+}
+
+fn mark_write_plan_failed(plan: &mut PlanArtifact, err: &IgpOracleError) {
+    let Some(write_plan) = plan.write_plan.as_mut() else {
+        return;
+    };
+    let (_, code) = target_error_classification(err);
+    write_plan.status = "failed".to_string();
+    write_plan.error = Some(TxPlanErrorArtifact {
+        code: code.to_string(),
+        reason: err.to_string(),
+    });
+}
+
+async fn submit_write_plan(
+    config: &UpdaterConfig,
+    plan: &mut PlanArtifact,
+    executable_updates: Vec<ExecutableUpdate>,
+    adapter_factory: &ChainAdapterFactory,
+) -> Result<()> {
+    let write_plan = plan.write_plan.as_mut().ok_or_else(|| {
+        IgpOracleError::InvalidTarget("write mode requires a generated write plan".to_string())
+    })?;
+
+    if write_plan.status == "no_update_required" {
+        write_plan.status = "no_update_required".to_string();
+        return Ok(());
+    }
+
+    if write_plan.protocol != "cosmosnative" {
+        return Err(IgpOracleError::UnsupportedWrite);
+    }
+
+    if executable_updates.len() != write_plan.target_count {
+        return Err(IgpOracleError::InvalidTarget(format!(
+            "write plan has {} target(s), but {} executable update(s) were prepared",
+            write_plan.target_count,
+            executable_updates.len()
+        )));
+    }
+
+    if executable_updates.len() != 1 {
+        return Err(IgpOracleError::InvalidTarget(
+            "cosmosnative submit mode currently supports exactly one update target; use --remote-chain or --remote-domain, or run --generate-only for multi-message review"
+                .to_string(),
+        ));
+    }
+
+    let update = executable_updates
+        .into_iter()
+        .next()
+        .expect("exactly one executable update is validated above");
+    let tx_signer = update.tx.signer.as_ref().ok_or_else(|| {
+        IgpOracleError::InvalidTarget(format!(
+            "write target {} -> {} has no signer plan",
+            update.target.origin.name, update.target.remote.name
+        ))
+    })?;
+    let signer_config = config
+        .signers
+        .get(&tx_signer.signer_profile)
+        .ok_or_else(|| {
+            IgpOracleError::InvalidConfig(format!(
+                "signer profile {} is not configured",
+                tx_signer.signer_profile
+            ))
+        })?;
+    let adapter = adapter_factory(update.target.origin.protocol);
+    let receipt = adapter
+        .submit_update(&update.target, &update.tx, signer_config)
+        .await?;
+
+    write_plan.status = "submitted".to_string();
+    write_plan.receipts.push(WriteReceiptArtifact {
+        remote_chain: update.target.remote.name,
+        remote_domain: update.target.remote.domain_id,
+        tx_hash: receipt.tx_hash,
+        height: receipt.height,
+    });
+
+    Ok(())
 }
 
 fn signer_authorization(
@@ -568,7 +702,7 @@ async fn reconcile_target(
     gas_adapter: &dyn GasAdapter,
     adapter: &dyn ChainAdapter,
 ) -> std::result::Result<
-    crate::artifacts::TargetPlanArtifact,
+    ReconciledTarget,
     (
         crate::models::ReconciliationTarget,
         crate::models::IgpConfigRead,
@@ -615,16 +749,22 @@ async fn reconcile_target(
         (None, None)
     };
 
-    Ok(target_artifact(TargetArtifactInput {
+    let artifact = target_artifact(TargetArtifactInput {
         target: &target,
         config,
         proposal: Some(proposal),
         current_read: Some(current_read),
         deltas,
-        tx,
+        tx: tx.clone(),
         tx_plan_error,
         decision,
-    }))
+    });
+
+    Ok(ReconciledTarget {
+        artifact,
+        target,
+        tx,
+    })
 }
 
 fn error_target_artifact(
@@ -915,8 +1055,12 @@ mod tests {
             &self,
             _target: &ReconciliationTarget,
             _plan: &TxPlan,
+            _signer: &SignerConfig,
         ) -> Result<TxReceipt> {
-            Err(IgpOracleError::UnsupportedWrite)
+            Ok(TxReceipt {
+                tx_hash: "test-tx-hash".to_string(),
+                height: Some(123),
+            })
         }
 
         async fn verify_update(
@@ -1011,6 +1155,7 @@ mod tests {
             &self,
             _target: &ReconciliationTarget,
             _plan: &TxPlan,
+            _signer: &SignerConfig,
         ) -> Result<TxReceipt> {
             Err(IgpOracleError::UnsupportedWrite)
         }
@@ -1027,26 +1172,56 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn write_mode_is_rejected() {
+    async fn write_mode_submits_single_cosmosnative_update_with_test_adapter() {
         let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+        let output_dir = tempdir().expect("tempdir");
+        let config =
+            UpdaterConfig::load(&repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"))
+                .expect("config should load");
+        let mut prices = BTreeMap::new();
+        prices.insert("celestiatestnet".to_string(), Decimal::from(2));
+        prices.insert("edentestnet".to_string(), Decimal::from(4));
         let args = ReconcileArgs {
             config: repo_root.join("crates/igp-oracle/igp-oracle.example.yaml"),
             registry: repo_root,
             origin: Some("celestiatestnet".to_string()),
             remote_chain: Some("edentestnet".to_string()),
             remote_domain: None,
-            output_dir: PathBuf::from("artifacts"),
+            output_dir: output_dir.path().to_path_buf(),
             format: "markdown,json".to_string(),
             dry_run: false,
             write: true,
             generate_only: false,
         };
+        let current = CurrentIgpConfig {
+            gas_price: "100".to_string(),
+            token_exchange_rate: "1".to_string(),
+            gas_overhead: 174_289,
+        };
+        let adapter_factory = move |protocol| {
+            Box::new(StaticChainAdapter {
+                protocol,
+                configs: vec![configured_remote(2_147_483_647, current.clone())],
+                fail_plan_update: false,
+            }) as Box<dyn ChainAdapter>
+        };
 
-        let err = run_reconcile(args)
-            .await
-            .expect_err("write mode should fail");
-        assert!(matches!(err, IgpOracleError::UnsupportedWrite));
-        assert_eq!(err.exit_code(), 40);
+        let code = run_reconcile_with_sources_and_adapter_factory(
+            args,
+            &config,
+            &StaticPriceAdapter(prices),
+            &StaticGasAdapter(100),
+            &adapter_factory,
+        )
+        .await
+        .expect("write mode should submit through the test adapter");
+
+        assert_eq!(code, 0);
+        let plan = std::fs::read_to_string(output_dir.path().join("igp-plan.json")).expect("plan");
+        assert!(plan.contains("\"mode\": \"submit\""));
+        assert!(plan.contains("\"status\": \"submitted\""));
+        assert!(plan.contains("\"txHash\": \"test-tx-hash\""));
+        assert!(plan.contains("\"height\": 123"));
     }
 
     #[tokio::test]

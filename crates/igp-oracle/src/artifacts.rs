@@ -100,6 +100,10 @@ pub struct WritePlanArtifact {
     pub target_count: usize,
     pub message_count: usize,
     pub targets: Vec<WritePlanTargetArtifact>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub receipts: Vec<WriteReceiptArtifact>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<TxPlanErrorArtifact>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -111,6 +115,15 @@ pub struct WritePlanTargetArtifact {
     pub target: String,
     pub selector: Option<String>,
     pub signer_authorization: SignerAuthorizationArtifact,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WriteReceiptArtifact {
+    pub remote_chain: String,
+    pub remote_domain: u32,
+    pub tx_hash: String,
+    pub height: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize)]

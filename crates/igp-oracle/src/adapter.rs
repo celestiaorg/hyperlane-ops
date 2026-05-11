@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use rust_decimal::Decimal;
 
 use crate::{
+    config::SignerConfig,
     cosmosnative::adapter::CosmosNativeAdapter,
     error::Result,
     evm::adapter::EvmAdapter,
@@ -38,6 +39,7 @@ pub trait ChainAdapter: Send + Sync {
         &self,
         target: &ReconciliationTarget,
         plan: &TxPlan,
+        signer: &SignerConfig,
     ) -> Result<TxReceipt>;
 
     async fn verify_update(
