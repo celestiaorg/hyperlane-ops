@@ -5,6 +5,7 @@ use crate::{
     models::{
         ChainMetadata, ConfiguredRemoteDomain, CoreAddresses, IgpConfigRead, ReconciliationTarget,
     },
+    policy::DecisionStatus,
     registry::RegistryIndex,
 };
 
@@ -23,8 +24,7 @@ pub enum ExpandedTarget {
     },
     ReadError {
         target: Box<ReconciliationTarget>,
-        status: String,
-        code: String,
+        status: DecisionStatus,
         reason: String,
     },
     Skipped {
@@ -158,7 +158,7 @@ mod tests {
 
     use crate::{
         config::UpdaterConfig,
-        models::{CurrentIgpConfig, OnChainReadSource},
+        models::{ChainProtocol, IgpConfig, OnChainReadSource},
         registry::RegistryIndex,
     };
 
@@ -214,14 +214,14 @@ mod tests {
             .expect("work item should resolve")
             .remove(0);
         let source = OnChainReadSource {
-            protocol: "cosmosnative".to_string(),
+            protocol: ChainProtocol::CosmosNative,
             endpoint: Some("test://grpc".to_string()),
             query: "test-query".to_string(),
         };
         let configured = vec![
             ConfiguredRemoteDomain {
                 remote_domain: 2_147_483_647,
-                current: CurrentIgpConfig {
+                current: IgpConfig {
                     gas_price: "100".to_string(),
                     token_exchange_rate: "1".to_string(),
                     gas_overhead: 300_000,
@@ -230,7 +230,7 @@ mod tests {
             },
             ConfiguredRemoteDomain {
                 remote_domain: 123_456,
-                current: CurrentIgpConfig {
+                current: IgpConfig {
                     gas_price: "100".to_string(),
                     token_exchange_rate: "1".to_string(),
                     gas_overhead: 174_289,
@@ -388,13 +388,13 @@ mod tests {
     fn configured_remote(remote_domain: u32) -> ConfiguredRemoteDomain {
         ConfiguredRemoteDomain {
             remote_domain,
-            current: CurrentIgpConfig {
+            current: IgpConfig {
                 gas_price: "100".to_string(),
                 token_exchange_rate: "1".to_string(),
                 gas_overhead: 300_000,
             },
             source: OnChainReadSource {
-                protocol: "cosmosnative".to_string(),
+                protocol: ChainProtocol::CosmosNative,
                 endpoint: Some("test://grpc".to_string()),
                 query: "test-query".to_string(),
             },
@@ -406,7 +406,7 @@ mod tests {
             serde_json::from_str(include_str!("../sample-configs.celestia.json"))
                 .expect("sample configs should parse");
         let source = OnChainReadSource {
-            protocol: "cosmosnative".to_string(),
+            protocol: ChainProtocol::CosmosNative,
             endpoint: Some("fixture://sample-configs.celestia.json".to_string()),
             query: "fixture".to_string(),
         };
@@ -416,7 +416,7 @@ mod tests {
             .into_iter()
             .map(|config| ConfiguredRemoteDomain {
                 remote_domain: config.remote_domain,
-                current: CurrentIgpConfig {
+                current: IgpConfig {
                     gas_price: config.gas_oracle.gas_price,
                     token_exchange_rate: config.gas_oracle.token_exchange_rate,
                     gas_overhead: config

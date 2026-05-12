@@ -2,7 +2,7 @@ use tonic::{transport::Endpoint, Request};
 
 use crate::{
     error::{IgpOracleError, Result},
-    models::{ConfiguredRemoteDomain, CurrentIgpConfig, OnChainReadSource},
+    models::{ChainProtocol, ConfiguredRemoteDomain, IgpConfig, OnChainReadSource},
     proto::hyperlane::core::post_dispatch::v1::{
         query_client::QueryClient, DestinationGasConfig, QueryDestinationGasConfigsRequest,
         QueryIgpRequest,
@@ -29,13 +29,13 @@ impl CosmosNativeQueryClient {
         chain_name: &str,
         igp_id: &str,
         remote_domain: u32,
-    ) -> Result<(CurrentIgpConfig, OnChainReadSource)> {
+    ) -> Result<(IgpConfig, OnChainReadSource)> {
         let configs = self.destination_gas_configs(chain_name, igp_id).await?;
         let config = configs
             .into_iter()
             .find(|config| config.remote_domain == remote_domain)
             .ok_or_else(|| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::OnchainRead(format!(
                     "destination gas config for remote domain {remote_domain} was not found"
                 ))
             })?;
@@ -57,14 +57,14 @@ impl CosmosNativeQueryClient {
             }))
             .await
             .map_err(|source| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::OnchainRead(format!(
                     "destination gas config gRPC query failed for {chain_name} IGP {igp_id}: {source}"
                 ))
             })?
             .into_inner();
 
         let source = OnChainReadSource {
-            protocol: "cosmosnative".to_string(),
+            protocol: ChainProtocol::CosmosNative,
             endpoint: Some(self.endpoint.clone()),
             query: DESTINATION_GAS_CONFIGS_QUERY.to_string(),
         };
@@ -81,7 +81,7 @@ impl CosmosNativeQueryClient {
             }))
             .await
             .map_err(|source| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::OnchainRead(format!(
                     "IGP gRPC query failed for {chain_name} IGP {igp_id}: {source}"
                 ))
             })?
@@ -92,7 +92,7 @@ impl CosmosNativeQueryClient {
             .map(|igp| igp.owner)
             .filter(|owner| !owner.is_empty())
             .ok_or_else(|| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::OnchainRead(format!(
                     "IGP gRPC query for {chain_name} IGP {igp_id} returned no owner"
                 ))
             })
@@ -101,7 +101,7 @@ impl CosmosNativeQueryClient {
     async fn connect(&self, chain_name: &str) -> Result<tonic::transport::Channel> {
         Endpoint::new(self.endpoint.clone())
             .map_err(|source| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::OnchainRead(format!(
                     "invalid gRPC endpoint for {chain_name}: {source}"
                 ))
             })?
@@ -110,7 +110,7 @@ impl CosmosNativeQueryClient {
             .connect()
             .await
             .map_err(|source| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::OnchainRead(format!(
                     "failed to connect to {chain_name} gRPC endpoint {}: {source}",
                     self.endpoint
                 ))
@@ -136,22 +136,22 @@ fn parse_destination_gas_configs(
         .collect()
 }
 
-fn parse_single_destination_gas_config(config: DestinationGasConfig) -> Result<CurrentIgpConfig> {
+fn parse_single_destination_gas_config(config: DestinationGasConfig) -> Result<IgpConfig> {
     let remote_domain = config.remote_domain;
     let gas_oracle = config.gas_oracle.ok_or_else(|| {
-        IgpOracleError::DataSource(format!(
+        IgpOracleError::OnchainRead(format!(
             "destination gas config for remote domain {remote_domain} has no gas oracle"
         ))
     })?;
 
     let gas_overhead = config.gas_overhead.parse::<u64>().map_err(|source| {
-        IgpOracleError::DataSource(format!(
+        IgpOracleError::OnchainRead(format!(
             "invalid gasOverhead {} for remote domain {}: {source}",
             config.gas_overhead, remote_domain
         ))
     })?;
 
-    Ok(CurrentIgpConfig {
+    Ok(IgpConfig {
         gas_price: gas_oracle.gas_price,
         token_exchange_rate: gas_oracle.token_exchange_rate,
         gas_overhead,
@@ -206,7 +206,7 @@ mod tests {
             },
         ];
         let source = OnChainReadSource {
-            protocol: "cosmosnative".to_string(),
+            protocol: ChainProtocol::CosmosNative,
             endpoint: Some("test://grpc".to_string()),
             query: DESTINATION_GAS_CONFIGS_QUERY.to_string(),
         };

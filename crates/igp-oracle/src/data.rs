@@ -69,7 +69,7 @@ impl CoinGeckoPriceAdapter {
         };
 
         let mut cache = self.cache.lock().map_err(|_| {
-            IgpOracleError::DataSource("CoinGecko price cache lock was poisoned".to_string())
+            IgpOracleError::MarketData("CoinGecko price cache lock was poisoned".to_string())
         })?;
         *cache = Some(CoinGeckoCacheEntry {
             fetched_at: now,
@@ -85,7 +85,7 @@ impl CoinGeckoPriceAdapter {
 
     fn cached_prices(&self, now: u64) -> Result<Option<Result<BTreeMap<String, CoinGeckoPrice>>>> {
         let cache = self.cache.lock().map_err(|_| {
-            IgpOracleError::DataSource("CoinGecko price cache lock was poisoned".to_string())
+            IgpOracleError::MarketData("CoinGecko price cache lock was poisoned".to_string())
         })?;
         Ok(cache
             .as_ref()
@@ -110,16 +110,16 @@ impl CoinGeckoPriceAdapter {
             .send()
             .await
             .map_err(|source| {
-                IgpOracleError::DataSource(format!("CoinGecko request failed: {source}"))
+                IgpOracleError::MarketData(format!("CoinGecko request failed: {source}"))
             })?
             .error_for_status()
             .map_err(|source| {
-                IgpOracleError::DataSource(format!("CoinGecko returned an error: {source}"))
+                IgpOracleError::MarketData(format!("CoinGecko returned an error: {source}"))
             })?
             .json()
             .await
             .map_err(|source| {
-                IgpOracleError::DataSource(format!("CoinGecko response parse failed: {source}"))
+                IgpOracleError::MarketData(format!("CoinGecko response parse failed: {source}"))
             })
     }
 }
@@ -136,23 +136,23 @@ impl PriceAdapter for CoinGeckoPriceAdapter {
         let response = self.prices().await?;
 
         let price = response.get(asset).ok_or_else(|| {
-            IgpOracleError::DataSource(format!("CoinGecko did not return asset {asset}"))
+            IgpOracleError::MarketData(format!("CoinGecko did not return asset {asset}"))
         })?;
 
         if price.usd <= Decimal::ZERO {
-            return Err(IgpOracleError::DataSource(format!(
+            return Err(IgpOracleError::MarketData(format!(
                 "CoinGecko did not return a positive USD price for asset {asset}"
             )));
         }
 
         let last_updated_at = price.last_updated_at.ok_or_else(|| {
-            IgpOracleError::DataSource(format!(
+            IgpOracleError::MarketData(format!(
                 "CoinGecko did not return last_updated_at for asset {asset}"
             ))
         })?;
         let now = unix_now()?;
         if now.saturating_sub(last_updated_at) > self.stale_after_seconds {
-            return Err(IgpOracleError::DataSource(format!(
+            return Err(IgpOracleError::MarketData(format!(
                 "CoinGecko price for asset {asset} is stale: last updated {last_updated_at}, now {now}"
             )));
         }
@@ -177,7 +177,7 @@ impl CoinGeckoCachedResponse {
     fn to_result(&self) -> Result<BTreeMap<String, CoinGeckoPrice>> {
         match self {
             Self::Prices(prices) => Ok(prices.clone()),
-            Self::Error(error) => Err(IgpOracleError::DataSource(error.clone())),
+            Self::Error(error) => Err(IgpOracleError::MarketData(error.clone())),
         }
     }
 }
@@ -225,7 +225,7 @@ impl ProtocolGasAdapter {
             .rpc_urls
             .first()
             .ok_or_else(|| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::GasData(format!(
                     "remote chain {} has no rpcUrls entry",
                     target.remote.name
                 ))
@@ -245,14 +245,14 @@ impl ProtocolGasAdapter {
             .send()
             .await
             .map_err(|source| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::GasData(format!(
                     "eth_gasPrice request failed for {}: {source}",
                     target.remote.name
                 ))
             })?
             .error_for_status()
             .map_err(|source| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::GasData(format!(
                     "eth_gasPrice HTTP error for {}: {source}",
                     target.remote.name
                 ))
@@ -260,21 +260,21 @@ impl ProtocolGasAdapter {
             .json()
             .await
             .map_err(|source| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::GasData(format!(
                     "eth_gasPrice response parse failed for {}: {source}",
                     target.remote.name
                 ))
             })?;
 
         if let Some(error) = response.error {
-            return Err(IgpOracleError::DataSource(format!(
+            return Err(IgpOracleError::GasData(format!(
                 "eth_gasPrice RPC error for {}: {}",
                 target.remote.name, error.message
             )));
         }
 
         let raw_amount = response.result.ok_or_else(|| {
-            IgpOracleError::DataSource(format!(
+            IgpOracleError::GasData(format!(
                 "eth_gasPrice response for {} had no result",
                 target.remote.name
             ))
@@ -283,7 +283,6 @@ impl ProtocolGasAdapter {
 
         Ok(GasPriceSample {
             source: "rpc".to_string(),
-            remote_chain: target.remote.name.clone(),
             raw_amount: Some(raw_amount),
             raw_denom: Some(
                 target
@@ -303,7 +302,7 @@ impl ProtocolGasAdapter {
 
 fn registry_cosmos_gas_price(target: &ReconciliationTarget) -> Result<GasPriceSample> {
     let gas_price = target.remote.gas_price.as_ref().ok_or_else(|| {
-        IgpOracleError::DataSource(format!(
+        IgpOracleError::GasData(format!(
             "remote cosmosnative chain {} has no gasPrice metadata",
             target.remote.name
         ))
@@ -321,7 +320,6 @@ fn registry_cosmos_gas_price(target: &ReconciliationTarget) -> Result<GasPriceSa
 
     Ok(GasPriceSample {
         source: "registry".to_string(),
-        remote_chain: target.remote.name.clone(),
         raw_amount: Some(gas_price.amount.clone()),
         raw_denom: Some(gas_price.denom.clone()),
         sampled_gas_price: sampled_gas_price.to_string(),
@@ -408,7 +406,7 @@ mod tests {
     use rust_decimal::Decimal;
 
     use crate::{
-        config::{GasConfig, GasMode, RemoteSelection, TargetConfig, WriteConfig},
+        config::{GasConfig, GasMode, RemoteSelection, TargetConfig, WriteConfig, WriteMethod},
         models::{
             ChainId, ChainMetadata, ChainProtocol, CoreAddresses, MetadataGasPrice, NativeToken,
             ReconciliationTarget,
@@ -467,7 +465,6 @@ mod tests {
         let sample = registry_cosmos_gas_price(&target).expect("gas sample");
 
         assert_eq!(sample.source, "registry");
-        assert_eq!(sample.remote_chain, "celestia");
         assert_eq!(sample.raw_amount.as_deref(), Some("0.002"));
         assert_eq!(sample.raw_denom.as_deref(), Some("utia"));
         assert_eq!(sample.sampled_gas_price, "1");
@@ -537,7 +534,7 @@ mod tests {
                 exchange_rate: clamp_config("1", "1000000000000000000000000000000"),
                 write: WriteConfig {
                     enabled: false,
-                    method: "evm".to_string(),
+                    method: WriteMethod::Evm,
                     signer_profile: "test".to_string(),
                 },
             },

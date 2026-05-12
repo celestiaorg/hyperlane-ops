@@ -2,13 +2,14 @@ use async_trait::async_trait;
 use celestia_grpc::{GrpcClient, TxConfig};
 
 use crate::{
-    adapter::ChainAdapter,
-    config::SignerConfig,
+    adapter::{ChainAdapter, SignerAuthStatus},
+    config::{SignerConfig, WriteMethod},
     cosmosnative::query::CosmosNativeQueryClient,
     error::{IgpOracleError, Result},
     models::{
-        ChainMetadata, ChainProtocol, ConfiguredRemoteDomain, CoreAddresses, IgpConfigRead,
-        ProposedIgpConfig, ReconciliationTarget, TxPlan, TxReceipt, TxSigner, VerificationResult,
+        ChainMetadata, ChainProtocol, ConfiguredRemoteDomain, CoreAddresses, IgpConfig,
+        IgpConfigRead, ReconciliationTarget, TxPayload, TxPlan, TxReceipt, TxSigner,
+        VerificationResult,
     },
     proto::hyperlane::core::post_dispatch::v1::{
         DestinationGasConfig, GasOracle, MsgSetDestinationGasConfig,
@@ -42,7 +43,7 @@ impl ChainAdapter for CosmosNativeAdapter {
             .grpc_urls
             .first()
             .ok_or_else(|| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::OnchainRead(format!(
                     "origin chain {} has no grpcUrls entry",
                     origin.name
                 ))
@@ -71,7 +72,7 @@ impl ChainAdapter for CosmosNativeAdapter {
             .grpc_urls
             .first()
             .ok_or_else(|| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::OnchainRead(format!(
                     "origin chain {} has no grpcUrls entry",
                     target.origin.name
                 ))
@@ -89,7 +90,7 @@ impl ChainAdapter for CosmosNativeAdapter {
     async fn plan_update(
         &self,
         target: &ReconciliationTarget,
-        proposed: &ProposedIgpConfig,
+        proposed: &IgpConfig,
     ) -> Result<TxPlan> {
         let igp_id = target
             .origin_addresses
@@ -106,7 +107,7 @@ impl ChainAdapter for CosmosNativeAdapter {
             .grpc_urls
             .first()
             .ok_or_else(|| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::OnchainRead(format!(
                     "origin chain {} has no grpcUrls entry",
                     target.origin.name
                 ))
@@ -117,35 +118,32 @@ impl ChainAdapter for CosmosNativeAdapter {
             .igp_owner(&target.origin.name, igp_id)
             .await?;
 
+        let message = MsgSetDestinationGasConfig {
+            owner: owner.clone(),
+            igp_id: igp_id.to_string(),
+            destination_gas_config: Some(DestinationGasConfig {
+                remote_domain: target.remote.domain_id,
+                gas_oracle: Some(GasOracle {
+                    token_exchange_rate: proposed.token_exchange_rate.clone(),
+                    gas_price: proposed.gas_price.clone(),
+                }),
+                gas_overhead: proposed.gas_overhead.to_string(),
+            }),
+        };
+
         Ok(TxPlan {
-            protocol: "cosmosnative".to_string(),
+            protocol: ChainProtocol::CosmosNative,
             action: "setDestinationGasConfig".to_string(),
             message_type: "/hyperlane.core.post_dispatch.v1.MsgSetDestinationGasConfig"
                 .to_string(),
             target: igp_id.to_string(),
             selector: None,
             calldata: None,
-            command: None,
             signer: Some(TxSigner {
                 signer_profile: target.config.write.signer_profile.clone(),
-                address: Some(owner.clone()),
+                address: Some(owner),
             }),
-            message: serde_json::json!({
-                "owner": owner,
-                "igpId": igp_id,
-                "destinationGasConfig": {
-                    "remoteDomain": target.remote.domain_id,
-                    "gasOracle": {
-                        "tokenExchangeRate": proposed.token_exchange_rate.as_str(),
-                        "gasPrice": proposed.gas_price.as_str()
-                    },
-                    "gasOverhead": proposed.gas_overhead.to_string()
-                }
-            }),
-            notes: vec![
-                "review artifact; submit mode signs and broadcasts this protobuf message through celestia-grpc".to_string(),
-                "values are recomputed immediately before any write submission".to_string(),
-            ],
+            payload: TxPayload::CosmosSetDestinationGasConfig(message),
         })
     }
 
@@ -155,33 +153,35 @@ impl ChainAdapter for CosmosNativeAdapter {
         plan: &TxPlan,
         signer: &SignerConfig,
     ) -> Result<TxReceipt> {
-        if target.config.write.method != "celestia-grpc" {
-            return Err(IgpOracleError::InvalidConfig(format!(
-                "cosmosnative write method must be celestia-grpc, got {}",
-                target.config.write.method
-            )));
+        if target.config.write.method != WriteMethod::CelestiaGrpc {
+            return Err(IgpOracleError::InvalidConfig(
+                "cosmosnative write method must be celestia-grpc".to_string(),
+            ));
         }
+
+        let TxPayload::CosmosSetDestinationGasConfig(message) = plan.payload.clone() else {
+            return Err(IgpOracleError::UnsupportedWrite);
+        };
 
         let endpoint = target
             .origin
             .grpc_urls
             .first()
             .ok_or_else(|| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::OnchainRead(format!(
                     "origin chain {} has no grpcUrls entry",
                     target.origin.name
                 ))
             })?
             .http
             .as_str();
-        let private_key = private_key_from_env(signer)?;
-        let message = msg_set_destination_gas_config(plan)?;
+        let private_key = signer.load_private_key_hex()?;
         let client = GrpcClient::builder()
             .url(endpoint)
             .private_key_hex(&private_key)
             .build()
             .map_err(|source| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::OnchainRead(format!(
                     "failed to build celestia-grpc client for {}: {source}",
                     target.origin.name
                 ))
@@ -194,7 +194,7 @@ impl ChainAdapter for CosmosNativeAdapter {
             )
             .await
             .map_err(|source| {
-                IgpOracleError::DataSource(format!(
+                IgpOracleError::OnchainRead(format!(
                     "failed to submit cosmosnative IGP update for {} -> {}: {source}",
                     target.origin.name, target.remote.name
                 ))
@@ -206,10 +206,30 @@ impl ChainAdapter for CosmosNativeAdapter {
         })
     }
 
+    fn check_signer_authorization(
+        &self,
+        tx_signer: &TxSigner,
+        signer_config: &SignerConfig,
+    ) -> Result<SignerAuthStatus> {
+        let Some(authorized) = tx_signer.address.as_deref() else {
+            return Ok(SignerAuthStatus::AuthorityUnavailable);
+        };
+        if !is_probable_cosmos_address(&signer_config.from) {
+            return Ok(SignerAuthStatus::KeyAliasUnverified);
+        }
+        if signer_config.from != authorized {
+            return Err(IgpOracleError::InvalidTarget(format!(
+                "configured signer {} is not authorized for cosmosnative target; expected {authorized}",
+                signer_config.from
+            )));
+        }
+        Ok(SignerAuthStatus::AddressMatch)
+    }
+
     async fn verify_update(
         &self,
         _target: &ReconciliationTarget,
-        _expected: &ProposedIgpConfig,
+        _expected: &IgpConfig,
     ) -> Result<VerificationResult> {
         Err(IgpOracleError::UnsupportedLiveRead(
             "cosmosnative verification".to_string(),
@@ -217,70 +237,7 @@ impl ChainAdapter for CosmosNativeAdapter {
     }
 }
 
-fn private_key_from_env(signer: &SignerConfig) -> Result<String> {
-    let value = std::env::var(&signer.key_env).map_err(|_| {
-        IgpOracleError::InvalidConfig(format!("signer key env {} is not set", signer.key_env))
-    })?;
-    let value = value.trim();
-    let value = value.strip_prefix("0x").unwrap_or(value);
-    if value.len() != 64 || !value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
-        return Err(IgpOracleError::InvalidConfig(format!(
-            "signer key env {} must contain a 32-byte hex private key",
-            signer.key_env
-        )));
-    }
-
-    Ok(value.to_string())
+fn is_probable_cosmos_address(value: &str) -> bool {
+    value.len() > 20 && value.contains('1')
 }
 
-fn msg_set_destination_gas_config(plan: &TxPlan) -> Result<MsgSetDestinationGasConfig> {
-    if plan.message_type != "/hyperlane.core.post_dispatch.v1.MsgSetDestinationGasConfig" {
-        return Err(IgpOracleError::UnsupportedWrite);
-    }
-
-    let destination = plan
-        .message
-        .get("destinationGasConfig")
-        .ok_or_else(|| missing_plan_field("destinationGasConfig"))?;
-    let gas_oracle = destination
-        .get("gasOracle")
-        .ok_or_else(|| missing_plan_field("destinationGasConfig.gasOracle"))?;
-
-    Ok(MsgSetDestinationGasConfig {
-        owner: required_str(&plan.message, "owner")?.to_string(),
-        igp_id: required_str(&plan.message, "igpId")?.to_string(),
-        destination_gas_config: Some(DestinationGasConfig {
-            remote_domain: required_u32(destination, "remoteDomain")?,
-            gas_oracle: Some(GasOracle {
-                token_exchange_rate: required_str(gas_oracle, "tokenExchangeRate")?.to_string(),
-                gas_price: required_str(gas_oracle, "gasPrice")?.to_string(),
-            }),
-            gas_overhead: required_str(destination, "gasOverhead")?.to_string(),
-        }),
-    })
-}
-
-fn required_str<'a>(value: &'a serde_json::Value, field: &str) -> Result<&'a str> {
-    value
-        .get(field)
-        .and_then(serde_json::Value::as_str)
-        .ok_or_else(|| missing_plan_field(field))
-}
-
-fn required_u32(value: &serde_json::Value, field: &str) -> Result<u32> {
-    let value = value
-        .get(field)
-        .and_then(serde_json::Value::as_u64)
-        .ok_or_else(|| missing_plan_field(field))?;
-    u32::try_from(value).map_err(|_| {
-        IgpOracleError::InvalidTarget(format!(
-            "cosmosnative tx plan field {field} does not fit u32: {value}"
-        ))
-    })
-}
-
-fn missing_plan_field(field: &str) -> IgpOracleError {
-    IgpOracleError::InvalidTarget(format!(
-        "cosmosnative tx plan is missing required field {field}"
-    ))
-}

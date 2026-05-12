@@ -1,17 +1,24 @@
 use async_trait::async_trait;
 use rust_decimal::Decimal;
+use serde::Serialize;
 
 use crate::{
     config::SignerConfig,
-    cosmosnative::adapter::CosmosNativeAdapter,
     error::Result,
-    evm::adapter::EvmAdapter,
     models::{
         ChainMetadata, ChainProtocol, ConfiguredRemoteDomain, CoreAddresses, GasPriceSample,
-        IgpConfigRead, ProposedIgpConfig, ReconciliationTarget, TxPlan, TxReceipt,
+        IgpConfig, IgpConfigRead, ReconciliationTarget, TxPlan, TxReceipt, TxSigner,
         VerificationResult,
     },
 };
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SignerAuthStatus {
+    AddressMatch,
+    KeyAliasUnverified,
+    AuthorityUnavailable,
+}
 
 #[async_trait]
 pub trait ChainAdapter: Send + Sync {
@@ -32,7 +39,7 @@ pub trait ChainAdapter: Send + Sync {
     async fn plan_update(
         &self,
         target: &ReconciliationTarget,
-        proposed: &ProposedIgpConfig,
+        proposed: &IgpConfig,
     ) -> Result<TxPlan>;
 
     async fn submit_update(
@@ -45,8 +52,14 @@ pub trait ChainAdapter: Send + Sync {
     async fn verify_update(
         &self,
         target: &ReconciliationTarget,
-        expected: &ProposedIgpConfig,
+        expected: &IgpConfig,
     ) -> Result<VerificationResult>;
+
+    fn check_signer_authorization(
+        &self,
+        tx_signer: &TxSigner,
+        signer_config: &SignerConfig,
+    ) -> Result<SignerAuthStatus>;
 }
 
 #[async_trait]
@@ -59,28 +72,4 @@ pub trait PriceAdapter: Send + Sync {
     async fn native_token_price_usd(&self, chain_name: &str) -> Result<Decimal>;
 }
 
-pub fn adapter_for(protocol: ChainProtocol) -> Box<dyn ChainAdapter> {
-    match protocol {
-        ChainProtocol::CosmosNative => Box::<CosmosNativeAdapter>::default(),
-        ChainProtocol::Ethereum => Box::<EvmAdapter>::default(),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::models::ChainProtocol;
-
-    use super::*;
-
-    #[test]
-    fn adapter_factory_returns_cosmosnative_adapter() {
-        let adapter = adapter_for(ChainProtocol::CosmosNative);
-        assert_eq!(adapter.protocol(), ChainProtocol::CosmosNative);
-    }
-
-    #[test]
-    fn adapter_factory_returns_evm_adapter() {
-        let adapter = adapter_for(ChainProtocol::Ethereum);
-        assert_eq!(adapter.protocol(), ChainProtocol::Ethereum);
-    }
-}
+pub type ChainAdapterFactory = dyn Fn(ChainProtocol) -> Box<dyn ChainAdapter> + Sync;

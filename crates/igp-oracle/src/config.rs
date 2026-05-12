@@ -178,8 +178,15 @@ pub struct ClampConfig {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct WriteConfig {
     pub enabled: bool,
-    pub method: String,
+    pub method: WriteMethod,
     pub signer_profile: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum WriteMethod {
+    Evm,
+    CelestiaGrpc,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -188,6 +195,26 @@ pub struct SignerConfig {
     pub protocol: ChainProtocol,
     pub from: String,
     pub key_env: String,
+}
+
+impl SignerConfig {
+    /// Read the configured key_env environment variable and validate it as a
+    /// 32-byte hex private key (optional 0x prefix). Used by both EVM and
+    /// cosmosnative submit paths.
+    pub fn load_private_key_hex(&self) -> Result<String> {
+        let value = std::env::var(&self.key_env).map_err(|_| {
+            IgpOracleError::InvalidConfig(format!("signer key env {} is not set", self.key_env))
+        })?;
+        let value = value.trim();
+        let value = value.strip_prefix("0x").unwrap_or(value);
+        if value.len() != 64 || !value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+            return Err(IgpOracleError::InvalidConfig(format!(
+                "signer key env {} must contain a 32-byte hex private key",
+                self.key_env
+            )));
+        }
+        Ok(value.to_string())
+    }
 }
 
 #[cfg(test)]

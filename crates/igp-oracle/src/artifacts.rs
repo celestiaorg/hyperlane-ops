@@ -3,17 +3,20 @@ use std::path::{Path, PathBuf};
 use serde::Serialize;
 
 use crate::{
-    config::{DefaultsConfig, UpdaterConfig},
+    adapter::SignerAuthStatus,
+    config::{DefaultsConfig, UpdaterConfig, WriteMethod},
     error::{create_dir_all, write, IgpOracleError, Result},
     models::{
-        CurrentIgpConfig, IgpConfigRead, ProposalComputation, ProposedIgpConfig,
+        ChainProtocol, IgpConfig, IgpConfigRead, OnChainReadSource, ProposalComputation,
         ReconciliationDelta, ReconciliationTarget, TxPlan,
     },
+    policy::{DecisionCode, DecisionStatus, ReconciliationField},
 };
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlanArtifact {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub git_sha: Option<String>,
     pub policy: PolicyArtifact,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -31,19 +34,28 @@ pub struct TargetPlanArtifact {
     pub origin_chain: String,
     pub remote_chain: String,
     pub remote_domain: u32,
-    pub origin_protocol: String,
-    pub remote_protocol: String,
+    pub origin_protocol: ChainProtocol,
+    pub remote_protocol: ChainProtocol,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub igp_identifier: Option<String>,
     pub write_enabled: bool,
-    pub write_method: String,
+    pub write_method: WriteMethod,
     pub gas_overhead: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub gas: Option<GasInputsArtifact>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub prices: Option<PriceInputsArtifact>,
-    pub on_chain_read: Option<OnChainReadArtifact>,
-    pub current: Option<CurrentIgpConfig>,
-    pub proposed: Option<ProposedIgpConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub on_chain_read: Option<OnChainReadSource>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub current: Option<IgpConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub proposed: Option<IgpConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub deltas: Option<ReconciliationDelta>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tx: Option<TxPlan>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tx_plan_error: Option<TxPlanErrorArtifact>,
     pub decision: DecisionArtifact,
 }
@@ -73,32 +85,55 @@ impl From<&DefaultsConfig> for PolicyArtifact {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DecisionArtifact {
-    pub status: String,
-    pub code: String,
-    pub field: Option<String>,
+    pub status: DecisionStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code: Option<DecisionCode>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub field: Option<ReconciliationField>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub delta_bps: Option<u128>,
-    pub min_write_delta_bps: Option<u64>,
-    pub max_allowed_delta_bps: Option<u64>,
     pub reason: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TxPlanErrorArtifact {
-    pub code: String,
+    pub status: DecisionStatus,
     pub reason: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WritePlanMode {
+    Submit,
+    GenerateOnly,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WritePlanStatus {
+    Ready,
+    Submitted,
+    Failed,
+    NoUpdateRequired,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TransactionModel {
+    SingleEvmCall,
+    SingleCosmosTxMultiMessage,
+    None,
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WritePlanArtifact {
-    pub mode: String,
-    pub status: String,
-    pub protocol: String,
+    pub mode: WritePlanMode,
+    pub status: WritePlanStatus,
+    pub protocol: ChainProtocol,
     pub origin_chain: String,
-    pub transaction_model: String,
-    pub target_count: usize,
-    pub message_count: usize,
+    pub transaction_model: TransactionModel,
     pub targets: Vec<WritePlanTargetArtifact>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub receipts: Vec<WriteReceiptArtifact>,
@@ -113,6 +148,7 @@ pub struct WritePlanTargetArtifact {
     pub remote_domain: u32,
     pub action: String,
     pub target: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub selector: Option<String>,
     pub signer_authorization: SignerAuthorizationArtifact,
 }
@@ -123,6 +159,7 @@ pub struct WriteReceiptArtifact {
     pub remote_chain: String,
     pub remote_domain: u32,
     pub tx_hash: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub height: Option<u64>,
 }
 
@@ -131,16 +168,18 @@ pub struct WriteReceiptArtifact {
 pub struct SignerAuthorizationArtifact {
     pub signer_profile: String,
     pub configured_signer: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub authorized_signer: Option<String>,
-    pub status: String,
+    pub status: SignerAuthStatus,
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiscoveryArtifact {
     pub origin_chain: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub igp_identifier: Option<String>,
-    pub protocol: String,
+    pub protocol: ChainProtocol,
     pub configured_remote_domains: usize,
     pub resolved_remote_domains: usize,
     pub skipped_remote_domains: usize,
@@ -151,7 +190,6 @@ pub struct DiscoveryArtifact {
 pub struct SkippedTargetArtifact {
     pub origin_chain: String,
     pub remote_domain: u32,
-    pub status: String,
     pub code: String,
     pub reason: String,
 }
@@ -160,14 +198,19 @@ pub struct SkippedTargetArtifact {
 #[serde(rename_all = "camelCase")]
 pub struct GasInputsArtifact {
     pub mode: String,
-    pub source: String,
-    pub remote_chain: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub raw_amount: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub raw_denom: Option<String>,
     pub sampled_gas_price: String,
     pub proposed_gas_price: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub rounding: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub endpoint: Option<String>,
 }
 
@@ -175,21 +218,15 @@ pub struct GasInputsArtifact {
 #[serde(rename_all = "camelCase")]
 pub struct PriceInputsArtifact {
     pub price_provider: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub origin_market_asset: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub remote_market_asset: Option<String>,
     pub origin_price_usd: String,
     pub remote_price_usd: String,
     pub origin_native_token_decimals: u8,
     pub remote_native_token_decimals: u8,
     pub token_decimal_adjustment: String,
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct OnChainReadArtifact {
-    pub protocol: String,
-    pub endpoint: Option<String>,
-    pub query: String,
 }
 
 pub struct TargetArtifactInput<'a> {
@@ -204,18 +241,12 @@ pub struct TargetArtifactInput<'a> {
 }
 
 pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
-    let gas = input
-        .proposal
-        .as_ref()
-        .map(|proposal| gas_inputs(input.target, proposal));
+    let gas = input.proposal.as_ref().map(gas_inputs);
     let prices = input
         .proposal
         .as_ref()
         .map(|proposal| price_inputs(input.target, input.config, proposal));
-    let on_chain_read = input
-        .current_read
-        .as_ref()
-        .map(|read| OnChainReadArtifact::from(&read.source));
+    let on_chain_read = input.current_read.as_ref().map(|read| read.source.clone());
     let current = input.current_read.map(|read| read.config);
     let proposed = input.proposal.map(|proposal| proposal.proposed);
 
@@ -223,15 +254,15 @@ pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
         origin_chain: input.target.origin.name.clone(),
         remote_chain: input.target.remote.name.clone(),
         remote_domain: input.target.remote.domain_id,
-        origin_protocol: input.target.origin.protocol.as_str().to_string(),
-        remote_protocol: input.target.remote.protocol.as_str().to_string(),
+        origin_protocol: input.target.origin.protocol,
+        remote_protocol: input.target.remote.protocol,
         igp_identifier: input
             .target
             .origin_addresses
             .interchain_gas_paymaster
             .clone(),
         write_enabled: input.target.config.write.enabled,
-        write_method: input.target.config.write.method.clone(),
+        write_method: input.target.config.write.method,
         gas_overhead: input.target.gas_overhead,
         gas,
         prices,
@@ -245,12 +276,11 @@ pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
     }
 }
 
-fn gas_inputs(target: &ReconciliationTarget, proposal: &ProposalComputation) -> GasInputsArtifact {
+fn gas_inputs(proposal: &ProposalComputation) -> GasInputsArtifact {
     match proposal.gas.as_ref() {
         Some(sample) => GasInputsArtifact {
             mode: proposal.gas_mode.clone(),
-            source: sample.source.clone(),
-            remote_chain: sample.remote_chain.clone(),
+            source: Some(sample.source.clone()),
             raw_amount: sample.raw_amount.clone(),
             raw_denom: sample.raw_denom.clone(),
             sampled_gas_price: sample.sampled_gas_price.clone(),
@@ -261,14 +291,13 @@ fn gas_inputs(target: &ReconciliationTarget, proposal: &ProposalComputation) -> 
         },
         None => GasInputsArtifact {
             mode: proposal.gas_mode.clone(),
-            source: "onchain".to_string(),
-            remote_chain: target.remote.name.clone(),
+            source: None,
             raw_amount: None,
             raw_denom: None,
             sampled_gas_price: proposal.proposed.gas_price.clone(),
             proposed_gas_price: proposal.proposed.gas_price.clone(),
             rounding: None,
-            reason: Some("gasPrice preserved from current on-chain config".to_string()),
+            reason: None,
             endpoint: None,
         },
     }
@@ -288,16 +317,6 @@ fn price_inputs(
         origin_native_token_decimals: proposal.origin_native_token_decimals,
         remote_native_token_decimals: proposal.remote_native_token_decimals,
         token_decimal_adjustment: proposal.token_decimal_adjustment.clone(),
-    }
-}
-
-impl From<&crate::models::OnChainReadSource> for OnChainReadArtifact {
-    fn from(source: &crate::models::OnChainReadSource) -> Self {
-        Self {
-            protocol: source.protocol.clone(),
-            endpoint: source.endpoint.clone(),
-            query: source.query.clone(),
-        }
     }
 }
 
@@ -381,9 +400,17 @@ pub fn render_summary(plan: &PlanArtifact) -> String {
             gas_price,
             exchange_rate,
             target.gas_overhead,
-            target.decision.status,
-            target.decision.code,
-            target.decision.field.as_deref().unwrap_or("n/a")
+            target.decision.status.as_str(),
+            target
+                .decision
+                .code
+                .map(DecisionCode::as_str)
+                .unwrap_or("n/a"),
+            target
+                .decision
+                .field
+                .map(ReconciliationField::as_str)
+                .unwrap_or("n/a")
         ));
     }
 

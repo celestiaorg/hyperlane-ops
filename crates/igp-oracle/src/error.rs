@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use thiserror::Error;
 
+use crate::policy::DecisionStatus;
+
 pub type Result<T> = std::result::Result<T, IgpOracleError>;
 
 #[derive(Debug, Error)]
@@ -36,6 +38,15 @@ pub enum IgpOracleError {
     #[error("invalid target selection: {0}")]
     InvalidTarget(String),
 
+    #[error("market data error: {0}")]
+    MarketData(String),
+
+    #[error("gas data error: {0}")]
+    GasData(String),
+
+    #[error("on-chain read error: {0}")]
+    OnchainRead(String),
+
     #[error("data source error: {0}")]
     DataSource(String),
 
@@ -60,10 +71,29 @@ impl IgpOracleError {
             | Self::Io { .. }
             | Self::Yaml { .. }
             | Self::Json { .. }
+            | Self::MarketData(_)
+            | Self::GasData(_)
+            | Self::OnchainRead(_)
             | Self::DataSource(_) => 20,
             Self::InvalidTarget(_) | Self::UnsupportedProtocol(_) | Self::Policy(_) => 30,
             Self::UnsupportedWrite => 40,
             Self::UnsupportedLiveRead(_) => 30,
+        }
+    }
+
+    pub fn classify(&self) -> DecisionStatus {
+        match self {
+            Self::InvalidConfig(_)
+            | Self::Registry(_)
+            | Self::InvalidTarget(_)
+            | Self::UnsupportedProtocol(_) => DecisionStatus::ConfigError,
+            Self::Policy(_) => DecisionStatus::PolicyError,
+            Self::MarketData(_) => DecisionStatus::MarketDataError,
+            Self::GasData(_) => DecisionStatus::GasDataError,
+            Self::OnchainRead(_) | Self::UnsupportedLiveRead(_) => DecisionStatus::OnchainReadError,
+            Self::DataSource(_) => DecisionStatus::DataSourceError,
+            Self::Io { .. } | Self::Yaml { .. } | Self::Json { .. } => DecisionStatus::ArtifactError,
+            Self::UnsupportedWrite => DecisionStatus::WriteError,
         }
     }
 }

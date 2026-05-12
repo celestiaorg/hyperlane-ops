@@ -1,13 +1,19 @@
 use async_trait::async_trait;
 
+use alloy::primitives::Address;
+
 use crate::{
-    adapter::ChainAdapter,
-    config::SignerConfig,
+    adapter::{ChainAdapter, SignerAuthStatus},
+    config::{SignerConfig, WriteMethod},
     error::{IgpOracleError, Result},
-    evm::query::{encode_set_remote_gas_data, EvmIgpReader, SET_REMOTE_GAS_DATA},
+    evm::{
+        query::{encode_set_remote_gas_data, EvmIgpReader, SET_REMOTE_GAS_DATA},
+        submit::{same_evm_address, signer_address_from_key, submit_calldata},
+    },
     models::{
-        ChainMetadata, ChainProtocol, ConfiguredRemoteDomain, CoreAddresses, IgpConfigRead,
-        ProposedIgpConfig, ReconciliationTarget, TxPlan, TxReceipt, TxSigner, VerificationResult,
+        ChainMetadata, ChainProtocol, ConfiguredRemoteDomain, CoreAddresses, IgpConfig,
+        IgpConfigRead, ReconciliationTarget, TxPayload, TxPlan, TxReceipt, TxSigner,
+        VerificationResult,
     },
 };
 
@@ -42,7 +48,7 @@ impl ChainAdapter for EvmAdapter {
     async fn plan_update(
         &self,
         target: &ReconciliationTarget,
-        proposed: &ProposedIgpConfig,
+        proposed: &IgpConfig,
     ) -> Result<TxPlan> {
         let reader = EvmIgpReader::new()?;
         let destination_config = reader.read_destination_gas_config(target).await?;
@@ -64,53 +70,129 @@ impl ChainAdapter for EvmAdapter {
             .await?;
 
         Ok(TxPlan {
-            protocol: "ethereum".to_string(),
+            protocol: ChainProtocol::Ethereum,
             action: "setRemoteGasData".to_string(),
             message_type: SET_REMOTE_GAS_DATA.to_string(),
             target: destination_config.gas_oracle.clone(),
             selector: Some("0xf3a1495f".to_string()),
             calldata: Some(calldata),
-            command: None,
             signer: Some(TxSigner {
                 signer_profile: target.config.write.signer_profile.clone(),
-                address: Some(owner.clone()),
+                address: Some(owner),
             }),
-            message: serde_json::json!({
-                "igp": destination_config.igp_address,
-                "gasOracle": destination_config.gas_oracle,
-                "gasOracleOwner": owner,
-                "remoteGasData": {
-                    "remoteDomain": target.remote.domain_id,
-                    "tokenExchangeRate": proposed.token_exchange_rate.as_str(),
-                    "gasPrice": proposed.gas_price.as_str()
-                },
-                "preservedGasOverhead": destination_config.gas_overhead
-            }),
-            notes: vec![
-                "review artifact only; transaction submission is not implemented".to_string(),
-                "calldata updates StorageGasOracle remote gas data only; IGP gasOracle and gasOverhead are preserved".to_string(),
-                "values were generated from the dry-run proposal and must be recomputed before write mode".to_string(),
-            ],
+            payload: TxPayload::EvmSetRemoteGasData {
+                gas_oracle: destination_config.gas_oracle.clone(),
+                remote_domain: target.remote.domain_id,
+                token_exchange_rate,
+                gas_price,
+            },
         })
     }
 
     async fn submit_update(
         &self,
-        _target: &ReconciliationTarget,
-        _plan: &TxPlan,
-        _signer: &SignerConfig,
+        target: &ReconciliationTarget,
+        plan: &TxPlan,
+        signer: &SignerConfig,
     ) -> Result<TxReceipt> {
-        Err(IgpOracleError::UnsupportedWrite)
+        if target.config.write.method != WriteMethod::Evm {
+            return Err(IgpOracleError::InvalidConfig(
+                "EVM write method must be evm".to_string(),
+            ));
+        }
+
+        let TxPayload::EvmSetRemoteGasData { gas_oracle, .. } = &plan.payload else {
+            return Err(IgpOracleError::UnsupportedWrite);
+        };
+        let calldata = plan.calldata.as_deref().ok_or_else(|| {
+            IgpOracleError::InvalidTarget(
+                "EVM submit requires calldata on the tx plan".to_string(),
+            )
+        })?;
+        let rpc_url = target
+            .origin
+            .rpc_urls
+            .first()
+            .ok_or_else(|| {
+                IgpOracleError::OnchainRead(format!(
+                    "origin chain {} has no rpcUrls entry",
+                    target.origin.name
+                ))
+            })?
+            .http
+            .as_str();
+
+        let private_key = signer.load_private_key_hex()?;
+        let signer_address = signer_address_from_key(&private_key)?;
+        let on_chain_owner = EvmIgpReader::new()?.read_owner(rpc_url, gas_oracle).await?;
+        if !same_evm_address(&signer_address, &on_chain_owner) {
+            return Err(IgpOracleError::InvalidTarget(format!(
+                "EVM signer {signer_address} is not the StorageGasOracle owner {on_chain_owner} for {} -> {}",
+                target.origin.name, target.remote.name
+            )));
+        }
+
+        let submitted = submit_calldata(rpc_url, &private_key, gas_oracle, calldata).await?;
+        Ok(TxReceipt {
+            tx_hash: submitted.tx_hash,
+            height: submitted.block_number,
+        })
+    }
+
+    fn check_signer_authorization(
+        &self,
+        tx_signer: &TxSigner,
+        signer_config: &SignerConfig,
+    ) -> Result<SignerAuthStatus> {
+        let authorized = tx_signer.address.as_deref().ok_or_else(|| {
+            IgpOracleError::InvalidTarget(
+                "EVM write target has no authorized signer address".to_string(),
+            )
+        })?;
+        let configured: Address = signer_config.from.parse().map_err(|err| {
+            IgpOracleError::InvalidConfig(format!(
+                "configured signer {} is not a valid EVM address: {err}",
+                signer_config.from
+            ))
+        })?;
+        let authorized_address: Address = authorized.parse().map_err(|err| {
+            IgpOracleError::InvalidTarget(format!(
+                "authorized signer {authorized} is not a valid EVM address: {err}"
+            ))
+        })?;
+        if configured != authorized_address {
+            return Err(IgpOracleError::InvalidTarget(format!(
+                "configured signer {configured} is not authorized for EVM target; expected {authorized_address}"
+            )));
+        }
+        Ok(SignerAuthStatus::AddressMatch)
     }
 
     async fn verify_update(
         &self,
-        _target: &ReconciliationTarget,
-        _expected: &ProposedIgpConfig,
+        target: &ReconciliationTarget,
+        expected: &IgpConfig,
     ) -> Result<VerificationResult> {
-        Err(IgpOracleError::UnsupportedLiveRead(
-            "EVM verification".to_string(),
-        ))
+        let actual = EvmIgpReader::new()?.read_igp_config(target).await?.config;
+        if actual.gas_price == expected.gas_price
+            && actual.token_exchange_rate == expected.token_exchange_rate
+        {
+            Ok(VerificationResult {
+                success: true,
+                reason: None,
+            })
+        } else {
+            Ok(VerificationResult {
+                success: false,
+                reason: Some(format!(
+                    "remote gas data mismatch after submit: on-chain ({}, {}) vs expected ({}, {})",
+                    actual.gas_price,
+                    actual.token_exchange_rate,
+                    expected.gas_price,
+                    expected.token_exchange_rate
+                )),
+            })
+        }
     }
 }
 

@@ -1,4 +1,5 @@
 use rust_decimal::Decimal;
+use serde::Serialize;
 
 use crate::{
     adapter::{GasAdapter, PriceAdapter},
@@ -6,7 +7,7 @@ use crate::{
     data::{decimal_str_to_ceil_u128, decimal_to_ceil_u128},
     error::{IgpOracleError, Result},
     models::{
-        CurrentIgpConfig, ProposalComputation, ProposedIgpConfig, ReconciliationDelta,
+        IgpConfig, ProposalComputation, ReconciliationDelta,
         ReconciliationTarget,
     },
 };
@@ -16,11 +17,11 @@ const BPS_DENOMINATOR: u64 = 10_000;
 
 pub async fn compute_proposed_config(
     target: &ReconciliationTarget,
-    current: &CurrentIgpConfig,
+    current: &IgpConfig,
     defaults: &DefaultsConfig,
     gas_adapter: &dyn GasAdapter,
     price_adapter: &dyn PriceAdapter,
-) -> Result<ProposedIgpConfig> {
+) -> Result<IgpConfig> {
     Ok(
         compute_proposal(target, current, defaults, gas_adapter, price_adapter)
             .await?
@@ -30,7 +31,7 @@ pub async fn compute_proposed_config(
 
 pub async fn compute_proposal(
     target: &ReconciliationTarget,
-    current: &CurrentIgpConfig,
+    current: &IgpConfig,
     defaults: &DefaultsConfig,
     gas_adapter: &dyn GasAdapter,
     price_adapter: &dyn PriceAdapter,
@@ -43,7 +44,7 @@ pub async fn compute_proposal(
         .await?;
 
     if origin_price <= Decimal::ZERO || remote_price <= Decimal::ZERO {
-        return Err(IgpOracleError::DataSource(format!(
+        return Err(IgpOracleError::MarketData(format!(
             "non-positive price data for {} or {}",
             target.origin.name, target.remote.name
         )));
@@ -78,7 +79,7 @@ pub async fn compute_proposal(
     )?;
 
     Ok(ProposalComputation {
-        proposed: ProposedIgpConfig {
+        proposed: IgpConfig {
             gas_price,
             token_exchange_rate: exchange_rate.to_string(),
             gas_overhead: target.gas_overhead,
@@ -158,24 +159,56 @@ pub struct ReconciliationDecision {
     pub observed_delta_bps: Option<u128>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum DecisionStatus {
     Noop,
     UpdateRecommended,
     PolicyViolation,
+    ConfigError,
+    PolicyError,
+    OnchainReadError,
+    MarketDataError,
+    GasDataError,
+    DataSourceError,
+    ArtifactError,
+    WriteError,
 }
 
 impl DecisionStatus {
+    pub fn is_error(self) -> bool {
+        matches!(
+            self,
+            Self::ConfigError
+                | Self::PolicyError
+                | Self::OnchainReadError
+                | Self::MarketDataError
+                | Self::GasDataError
+                | Self::DataSourceError
+                | Self::ArtifactError
+                | Self::WriteError
+        )
+    }
+
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Noop => "noop",
             Self::UpdateRecommended => "update_recommended",
             Self::PolicyViolation => "policy_violation",
+            Self::ConfigError => "config_error",
+            Self::PolicyError => "policy_error",
+            Self::OnchainReadError => "onchain_read_error",
+            Self::MarketDataError => "market_data_error",
+            Self::GasDataError => "gas_data_error",
+            Self::DataSourceError => "data_source_error",
+            Self::ArtifactError => "artifact_error",
+            Self::WriteError => "write_error",
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum DecisionCode {
     Noop,
     UpdateThresholdMet,
@@ -196,10 +229,13 @@ impl DecisionCode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum ReconciliationField {
+    #[serde(rename = "gasPrice")]
     GasPrice,
+    #[serde(rename = "tokenExchangeRate")]
     TokenExchangeRate,
+    #[serde(rename = "gasOverhead")]
     GasOverhead,
 }
 
@@ -214,8 +250,8 @@ impl ReconciliationField {
 }
 
 pub fn decide_reconciliation(
-    current: &CurrentIgpConfig,
-    proposed: &ProposedIgpConfig,
+    current: &IgpConfig,
+    proposed: &IgpConfig,
     defaults: &DefaultsConfig,
 ) -> Result<ReconciliationDecision> {
     let current_gas_price = parse_u128(&current.gas_price, "current gasPrice")?;
@@ -350,7 +386,7 @@ mod tests {
 
     use crate::{
         adapter::{GasAdapter, PriceAdapter},
-        config::{DefaultsConfig, GasConfig, GasMode, TargetConfig, WriteConfig},
+        config::{DefaultsConfig, GasConfig, GasMode, TargetConfig, WriteConfig, WriteMethod},
         models::{
             ChainId, ChainMetadata, ChainProtocol, CoreAddresses, GasPriceSample, NativeToken,
             ReconciliationTarget,
@@ -363,10 +399,12 @@ mod tests {
 
     #[async_trait]
     impl GasAdapter for StaticGasAdapter {
-        async fn remote_gas_price(&self, target: &ReconciliationTarget) -> Result<GasPriceSample> {
+        async fn remote_gas_price(
+            &self,
+            _target: &ReconciliationTarget,
+        ) -> Result<GasPriceSample> {
             Ok(GasPriceSample {
                 source: "test".to_string(),
-                remote_chain: target.remote.name.clone(),
                 raw_amount: Some(self.0.to_string()),
                 raw_denom: None,
                 sampled_gas_price: self.0.to_string(),
@@ -382,7 +420,7 @@ mod tests {
     #[async_trait]
     impl GasAdapter for FailingGasAdapter {
         async fn remote_gas_price(&self, _target: &ReconciliationTarget) -> Result<GasPriceSample> {
-            Err(IgpOracleError::DataSource(
+            Err(IgpOracleError::GasData(
                 "gas adapter should not be called".to_string(),
             ))
         }
@@ -394,7 +432,7 @@ mod tests {
     impl PriceAdapter for StaticPriceAdapter {
         async fn native_token_price_usd(&self, chain_name: &str) -> Result<Decimal> {
             self.0.get(chain_name).copied().ok_or_else(|| {
-                IgpOracleError::DataSource(format!("missing static price for {chain_name}"))
+                IgpOracleError::MarketData(format!("missing static price for {chain_name}"))
             })
         }
     }
@@ -492,7 +530,7 @@ mod tests {
             safety_multiplier_bps: 10_000,
             gas_sample_freshness_seconds: 120,
         };
-        let current = CurrentIgpConfig {
+        let current = IgpConfig {
             gas_price: "300000000".to_string(),
             token_exchange_rate: "1600000000000000000".to_string(),
             gas_overhead: 10_000,
@@ -610,12 +648,12 @@ mod tests {
             safety_multiplier_bps: 11_000,
             gas_sample_freshness_seconds: 120,
         };
-        let current = CurrentIgpConfig {
+        let current = IgpConfig {
             gas_price: "100".to_string(),
             token_exchange_rate: "100".to_string(),
             gas_overhead: 100,
         };
-        let proposed = ProposedIgpConfig {
+        let proposed = IgpConfig {
             gas_price: "110".to_string(),
             token_exchange_rate: "100".to_string(),
             gas_overhead: 100,
@@ -635,12 +673,12 @@ mod tests {
             safety_multiplier_bps: 11_000,
             gas_sample_freshness_seconds: 120,
         };
-        let current = CurrentIgpConfig {
+        let current = IgpConfig {
             gas_price: "100".to_string(),
             token_exchange_rate: "100".to_string(),
             gas_overhead: 100,
         };
-        let proposed = ProposedIgpConfig {
+        let proposed = IgpConfig {
             gas_price: "10000".to_string(),
             token_exchange_rate: "100".to_string(),
             gas_overhead: 100,
@@ -677,7 +715,7 @@ mod tests {
                 exchange_rate: clamp_config("1", "1000000000000000"),
                 write: WriteConfig {
                     enabled: true,
-                    method: "celestia-grpc".to_string(),
+                    method: WriteMethod::CelestiaGrpc,
                     signer_profile: "owner".to_string(),
                 },
             },
@@ -685,8 +723,8 @@ mod tests {
         }
     }
 
-    fn current_config() -> CurrentIgpConfig {
-        CurrentIgpConfig {
+    fn current_config() -> IgpConfig {
+        IgpConfig {
             gas_price: "100".to_string(),
             token_exchange_rate: "1".to_string(),
             gas_overhead: 174_289,
