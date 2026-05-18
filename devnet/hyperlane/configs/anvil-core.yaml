@@ -1,10 +1,16 @@
 defaultHook:
-  address: "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82"
+  address: "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE"
   beneficiary: "0xaF9053bB6c4346381C77C2FeD279B17ABAfCDf4d"
-  maxProtocolFee: "0"
-  owner: "0xaF9053bB6c4346381C77C2FeD279B17ABAfCDf4d"
-  protocolFee: "0"
-  type: protocolFee
+  oracleConfig:
+    celestiadev:
+      gasPrice: "1"
+      tokenDecimals: 6
+      tokenExchangeRate: "1600000000000000000"
+  oracleKey: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+  overhead:
+    celestiadev: 10000
+  owner: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+  type: interchainGasPaymaster
 defaultIsm:
   address: "0xb0279Db6a2F1E01fbC8483FCCef0Be2bC6299cC3"
   domains:
@@ -14,19 +20,19 @@ defaultIsm:
       type: merkleRootMultisigIsm
       validators:
         - "0x122644796671D1D90B20bA291C5081625e298059"
-  owner: "0xaF9053bB6c4346381C77C2FeD279B17ABAfCDf4d"
+  owner: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
   type: domainRoutingIsm
 interchainAccountRouter:
-  address: "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"
+  address: "0x59b670e9fA9D0A427751Af201D676719a970857b"
   commitmentIsm:
-    address: "0x033488800Ae672726c34620D4Bd817E1590d4cDc"
+    address: "0x18998c7E38ede4dF09cEec08E5372Bf8fe5719ea"
     owner: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
     type: offchainLookupIsm
     urls:
       - https://commitment-read-ism.hyperlane.xyz
   hook: "0x0000000000000000000000000000000000000000"
   interchainSecurityModule:
-    address: "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"
+    address: "0x59b670e9fA9D0A427751Af201D676719a970857b"
     isms: {}
     owner: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
     type: interchainAccountRouting
@@ -34,10 +40,10 @@ interchainAccountRouter:
   owner: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
   remoteRouters: {}
   routerType: regular
-owner: "0xaF9053bB6c4346381C77C2FeD279B17ABAfCDf4d"
+owner: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 proxyAdmin:
   address: "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6"
-  owner: "0xaF9053bB6c4346381C77C2FeD279B17ABAfCDf4d"
+  owner: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 requiredHook:
-  address: "0x9A676e781A523b5d0C0e43731313A708CB607508"
+  address: "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c"
   type: merkleTreeHook

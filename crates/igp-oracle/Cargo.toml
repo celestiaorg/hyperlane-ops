@@ -1,0 +1,23 @@
+[package]
+name = "igp-oracle"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+alloy = "2"
+async-trait = "0.1"
+celestia-grpc = "1.0.0"
+clap = { version = "4.5", features = ["derive"] }
+prost = "0.13"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+rust_decimal = { version = "1", features = ["serde-with-float", "serde-with-str"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+thiserror = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tonic = { version = "0.12", features = ["tls-native-roots"] }
+
+[dev-dependencies]
+tempfile = "3"

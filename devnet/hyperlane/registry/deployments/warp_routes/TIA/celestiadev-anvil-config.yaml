@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../schema.json
 tokens:
-  - addressOrDenom: "0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f"
+  - addressOrDenom: "0xc5a5C42992dECbae36851359345FE25997F5C42d"
     chainName: anvil
     connections:
       - token: cosmosnative|celestiadev|0x726f757465725f61707000000000000000000000000000010000000000000000
@@ -12,7 +12,7 @@ tokens:
     chainName: celestiadev
     collateralAddressOrDenom: utia
     connections:
-      - token: ethereum|anvil|0xa85233C63b9Ee964Add6F2cffe00Fd84eb32338f
+      - token: ethereum|anvil|0xc5a5C42992dECbae36851359345FE25997F5C42d
     decimals: 6
     name: TIA
     standard: CosmosNativeHypCollateral

@@ -1,0 +1,209 @@
+use std::collections::BTreeMap;
+
+use serde::{Deserialize, Serialize};
+
+use crate::{
+    config::TargetConfig, proto::hyperlane::core::post_dispatch::v1::MsgSetDestinationGasConfig,
+};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ChainProtocol {
+    Ethereum,
+    CosmosNative,
+}
+
+impl ChainProtocol {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Ethereum => "ethereum",
+            Self::CosmosNative => "cosmosnative",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ChainId {
+    String(String),
+    Number(u64),
+}
+
+impl ChainId {
+    pub fn as_string(&self) -> String {
+        match self {
+            Self::String(value) => value.clone(),
+            Self::Number(value) => value.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UrlEntry {
+    pub http: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NativeToken {
+    pub name: String,
+    pub symbol: String,
+    pub decimals: u8,
+    pub denom: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MetadataGasPrice {
+    pub amount: String,
+    pub denom: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChainMetadata {
+    pub name: String,
+    pub domain_id: u32,
+    pub chain_id: ChainId,
+    pub protocol: ChainProtocol,
+    pub native_token: NativeToken,
+    #[serde(default)]
+    pub rpc_urls: Vec<UrlEntry>,
+    #[serde(default)]
+    pub grpc_urls: Vec<UrlEntry>,
+    #[serde(default)]
+    pub rest_urls: Vec<UrlEntry>,
+    pub gas_price: Option<MetadataGasPrice>,
+    pub bech32_prefix: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CoreAddresses {
+    pub interchain_gas_paymaster: Option<String>,
+    pub mailbox: Option<String>,
+    pub interchain_security_module: Option<String>,
+    pub merkle_tree_hook: Option<String>,
+    #[serde(flatten)]
+    pub other: BTreeMap<String, serde_yaml::Value>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ReconciliationTarget {
+    pub origin: ChainMetadata,
+    pub remote: ChainMetadata,
+    pub origin_addresses: CoreAddresses,
+    pub config: TargetConfig,
+    pub gas_overhead: u64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IgpConfig {
+    pub gas_price: String,
+    pub token_exchange_rate: String,
+    pub gas_overhead: u64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IgpConfigRead {
+    pub config: IgpConfig,
+    pub source: OnChainReadSource,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfiguredRemoteDomain {
+    pub remote_domain: u32,
+    pub current: IgpConfig,
+    pub source: OnChainReadSource,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OnChainReadSource {
+    pub protocol: ChainProtocol,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub endpoint: Option<String>,
+    pub query: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GasPriceSample {
+    pub source: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub raw_amount: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub raw_denom: Option<String>,
+    pub sampled_gas_price: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rounding: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub endpoint: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TxPlan {
+    pub protocol: ChainProtocol,
+    pub action: String,
+    pub message_type: String,
+    pub target: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selector: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub calldata: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub signer: Option<TxSigner>,
+    #[serde(skip)]
+    pub payload: TxPayload,
+}
+
+#[derive(Debug, Clone)]
+pub enum TxPayload {
+    CosmosSetDestinationGasConfig(MsgSetDestinationGasConfig),
+    EvmSetRemoteGasData {
+        gas_oracle: String,
+        remote_domain: u32,
+        token_exchange_rate: u128,
+        gas_price: u128,
+    },
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TxSigner {
+    pub signer_profile: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub address: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TxReceipt {
+    pub tx_hash: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub height: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VerificationResult {
+    pub success: bool,
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReconciliationDelta {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gas_price_bps: Option<u128>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub token_exchange_rate_bps: Option<u128>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gas_overhead_bps: Option<u128>,
+}
+
