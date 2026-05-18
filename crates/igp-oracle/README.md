@@ -1,15 +1,17 @@
 # igp-oracle
 
-`igp-oracle` is a one-shot dry-run CLI for Hyperlane IGP configuration
-reconciliation.
+`igp-oracle` is a one-shot CLI for Hyperlane IGP configuration reconciliation.
+It runs in three modes:
 
-The current implementation starts from configured origin IGPs, discovers
-cosmosnative destination gas configs through the Hyperlane protobuf gRPC query
-service, resolves discovered remote domains through the local Hyperlane
-registry, fetches market and gas data, computes proposed IGP values, compares
-deltas, and writes review artifacts.
+- **dry-run** (default): read on-chain config, compute proposed values, write
+  review artifacts. No signer required.
+- **`--write --generate-only`**: same as dry-run, plus build a write plan with
+  signer authorization checks. Still no signer key required, no broadcast.
+- **`--write`**: sign and broadcast the update. Supported for cosmosnative
+  origins (via `celestia-grpc`) and EVM origins (via `alloy`).
 
-It does not sign transactions, submit transactions, or send notifications.
+The CLI does not send notifications — that's owned by the workflow that
+invokes it.
 
 ## Build
 
@@ -234,6 +236,45 @@ Initial submit mode supports one cosmosnative update target at a time. Use
 `--remote-chain` or `--remote-domain` to select a single remote. Generate-only
 mode may still model multiple cosmosnative messages for review.
 
+To confirm the update landed on-chain, re-run the same command with
+`--dry-run`: the `current` block on the target should match the previously
+proposed values, and the run should report `noop`.
+
+## EVM Write Submission
+
+`--write` without `--generate-only` for an EVM origin signs and broadcasts a
+`StorageGasOracle.setRemoteGasData` transaction through `alloy`. The signer
+private key is loaded from the configured signer profile `keyEnv` (e.g.
+`HYP_KEY`); the value may include a `0x` prefix. The key is never written to
+artifacts.
+
+Before broadcasting, the adapter re-reads `StorageGasOracle.owner()` from
+chain and aborts if it does not match the signer address derived from the
+loaded key. This is a write-time recompute — it does not rely on the
+dry-run plan's ownership snapshot.
+
+```bash
+export HYP_KEY=0x...
+
+cargo run -p igp-oracle -- reconcile \
+  --config crates/igp-oracle/igp-oracle.example.yaml \
+  --registry . \
+  --origin ethereum \
+  --remote-chain celestia \
+  --output-dir .tmp/igp-oracle-evm-write \
+  --write
+```
+
+The receipt in `igp-plan.json` records the transaction hash and block number.
+A reverted transaction surfaces as an `onchain_read_error` and leaves the
+write plan status as `failed`.
+
+EVM submit mode supports one update target at a time. The EVM
+`setRemoteGasData` selector updates `tokenExchangeRate` and `gasPrice` only;
+`gasOverhead` and the configured gas-oracle address on the IGP are preserved.
+To confirm the update, re-run with `--dry-run` and verify the `current` block
+matches the proposed values.
+
 ## Artifacts
 
 Each run writes two files:
@@ -297,8 +338,11 @@ market-derived value.
   configured domains.
 - EVM tx planning currently covers `StorageGasOracle.setRemoteGasData` only.
   Gas overhead and gas oracle address updates are not planned yet.
-- EVM write submission is not implemented yet.
-- Cosmosnative submit mode supports one update target at a time. Multi-message
-  cosmosnative submission is still modeled in generate-only output only.
+- Submit mode (cosmosnative or EVM) supports one update target at a time.
+  Multi-message cosmosnative submission is still modeled in generate-only
+  output only.
+- Post-submit on-chain verification is implemented per adapter
+  (`verify_update`) but is not yet auto-invoked from the submit flow; operators
+  can re-run dry-run to confirm the on-chain values match the proposed plan.
 - Slack, IM, and webhook notifications are workflow-owned. `igp-oracle` only
   emits artifacts, logs, and exit codes.

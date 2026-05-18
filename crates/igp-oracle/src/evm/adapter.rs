@@ -7,7 +7,10 @@ use crate::{
     config::{SignerConfig, WriteMethod},
     error::{IgpOracleError, Result},
     evm::{
-        query::{encode_set_remote_gas_data, EvmIgpReader, SET_REMOTE_GAS_DATA},
+        query::{
+            encode_set_remote_gas_data, read_destination_gas_config, read_igp_config, read_owner,
+            SET_REMOTE_GAS_DATA,
+        },
         submit::{same_evm_address, signer_address_from_key, submit_calldata},
     },
     models::{
@@ -26,10 +29,6 @@ impl ChainAdapter for EvmAdapter {
         ChainProtocol::Ethereum
     }
 
-    fn supports_destination_config_discovery(&self) -> bool {
-        false
-    }
-
     async fn list_igp_destination_configs(
         &self,
         origin: &ChainMetadata,
@@ -42,7 +41,7 @@ impl ChainAdapter for EvmAdapter {
     }
 
     async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<IgpConfigRead> {
-        EvmIgpReader::new()?.read_igp_config(target).await
+        read_igp_config(target).await
     }
 
     async fn plan_update(
@@ -50,8 +49,7 @@ impl ChainAdapter for EvmAdapter {
         target: &ReconciliationTarget,
         proposed: &IgpConfig,
     ) -> Result<TxPlan> {
-        let reader = EvmIgpReader::new()?;
-        let destination_config = reader.read_destination_gas_config(target).await?;
+        let destination_config = read_destination_gas_config(target).await?;
 
         if proposed.gas_overhead != destination_config.gas_overhead {
             return Err(IgpOracleError::UnsupportedLiveRead(format!(
@@ -65,9 +63,11 @@ impl ChainAdapter for EvmAdapter {
         let gas_price = parse_u128_config("gasPrice", &proposed.gas_price)?;
         let calldata =
             encode_set_remote_gas_data(target.remote.domain_id, token_exchange_rate, gas_price);
-        let owner = reader
-            .read_owner(&destination_config.endpoint, &destination_config.gas_oracle)
-            .await?;
+        let owner = read_owner(
+            &destination_config.endpoint,
+            &destination_config.gas_oracle,
+        )
+        .await?;
 
         Ok(TxPlan {
             protocol: ChainProtocol::Ethereum,
@@ -124,7 +124,7 @@ impl ChainAdapter for EvmAdapter {
 
         let private_key = signer.load_private_key_hex()?;
         let signer_address = signer_address_from_key(&private_key)?;
-        let on_chain_owner = EvmIgpReader::new()?.read_owner(rpc_url, gas_oracle).await?;
+        let on_chain_owner = read_owner(rpc_url, gas_oracle).await?;
         if !same_evm_address(&signer_address, &on_chain_owner) {
             return Err(IgpOracleError::InvalidTarget(format!(
                 "EVM signer {signer_address} is not the StorageGasOracle owner {on_chain_owner} for {} -> {}",
@@ -173,7 +173,7 @@ impl ChainAdapter for EvmAdapter {
         target: &ReconciliationTarget,
         expected: &IgpConfig,
     ) -> Result<VerificationResult> {
-        let actual = EvmIgpReader::new()?.read_igp_config(target).await?.config;
+        let actual = read_igp_config(target).await?.config;
         if actual.gas_price == expected.gas_price
             && actual.token_exchange_rate == expected.token_exchange_rate
         {

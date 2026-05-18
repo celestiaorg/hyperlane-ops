@@ -4,11 +4,11 @@ use serde::Serialize;
 
 use crate::{
     adapter::SignerAuthStatus,
-    config::{DefaultsConfig, UpdaterConfig, WriteMethod},
+    config::{DefaultsConfig, WriteMethod},
     error::{create_dir_all, write, IgpOracleError, Result},
     models::{
-        ChainProtocol, IgpConfig, IgpConfigRead, OnChainReadSource, ProposalComputation,
-        ReconciliationDelta, ReconciliationTarget, TxPlan,
+        ChainProtocol, IgpConfig, IgpConfigRead, OnChainReadSource, ReconciliationDelta,
+        ReconciliationTarget, TxPlan,
     },
     policy::{DecisionCode, DecisionStatus, ReconciliationField},
 };
@@ -231,8 +231,9 @@ pub struct PriceInputsArtifact {
 
 pub struct TargetArtifactInput<'a> {
     pub target: &'a ReconciliationTarget,
-    pub config: &'a UpdaterConfig,
-    pub proposal: Option<ProposalComputation>,
+    pub gas: Option<GasInputsArtifact>,
+    pub prices: Option<PriceInputsArtifact>,
+    pub proposed: Option<IgpConfig>,
     pub current_read: Option<IgpConfigRead>,
     pub deltas: Option<ReconciliationDelta>,
     pub tx: Option<TxPlan>,
@@ -241,14 +242,8 @@ pub struct TargetArtifactInput<'a> {
 }
 
 pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
-    let gas = input.proposal.as_ref().map(gas_inputs);
-    let prices = input
-        .proposal
-        .as_ref()
-        .map(|proposal| price_inputs(input.target, input.config, proposal));
     let on_chain_read = input.current_read.as_ref().map(|read| read.source.clone());
     let current = input.current_read.map(|read| read.config);
-    let proposed = input.proposal.map(|proposal| proposal.proposed);
 
     TargetPlanArtifact {
         origin_chain: input.target.origin.name.clone(),
@@ -264,59 +259,15 @@ pub fn target_artifact(input: TargetArtifactInput<'_>) -> TargetPlanArtifact {
         write_enabled: input.target.config.write.enabled,
         write_method: input.target.config.write.method,
         gas_overhead: input.target.gas_overhead,
-        gas,
-        prices,
+        gas: input.gas,
+        prices: input.prices,
         on_chain_read,
         current,
-        proposed,
+        proposed: input.proposed,
         deltas: input.deltas,
         tx: input.tx,
         tx_plan_error: input.tx_plan_error,
         decision: input.decision,
-    }
-}
-
-fn gas_inputs(proposal: &ProposalComputation) -> GasInputsArtifact {
-    match proposal.gas.as_ref() {
-        Some(sample) => GasInputsArtifact {
-            mode: proposal.gas_mode.clone(),
-            source: Some(sample.source.clone()),
-            raw_amount: sample.raw_amount.clone(),
-            raw_denom: sample.raw_denom.clone(),
-            sampled_gas_price: sample.sampled_gas_price.clone(),
-            proposed_gas_price: proposal.proposed.gas_price.clone(),
-            rounding: sample.rounding.clone(),
-            reason: sample.reason.clone(),
-            endpoint: sample.endpoint.clone(),
-        },
-        None => GasInputsArtifact {
-            mode: proposal.gas_mode.clone(),
-            source: None,
-            raw_amount: None,
-            raw_denom: None,
-            sampled_gas_price: proposal.proposed.gas_price.clone(),
-            proposed_gas_price: proposal.proposed.gas_price.clone(),
-            rounding: None,
-            reason: None,
-            endpoint: None,
-        },
-    }
-}
-
-fn price_inputs(
-    target: &ReconciliationTarget,
-    config: &UpdaterConfig,
-    proposal: &ProposalComputation,
-) -> PriceInputsArtifact {
-    PriceInputsArtifact {
-        price_provider: config.market_data.provider.clone(),
-        origin_market_asset: config.market_data.assets.get(&target.origin.name).cloned(),
-        remote_market_asset: config.market_data.assets.get(&target.remote.name).cloned(),
-        origin_price_usd: proposal.origin_price_usd.clone(),
-        remote_price_usd: proposal.remote_price_usd.clone(),
-        origin_native_token_decimals: proposal.origin_native_token_decimals,
-        remote_native_token_decimals: proposal.remote_native_token_decimals,
-        token_decimal_adjustment: proposal.token_decimal_adjustment.clone(),
     }
 }
 

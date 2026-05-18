@@ -42,127 +42,117 @@ sol! {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct EvmIgpReader;
-
-impl EvmIgpReader {
-    pub fn new() -> Result<Self> {
-        Ok(Self)
-    }
-
-    pub async fn read_destination_gas_config(
-        &self,
-        target: &ReconciliationTarget,
-    ) -> Result<EvmDestinationGasConfig> {
-        let igp_address_raw = target
-            .origin_addresses
-            .interchain_gas_paymaster
-            .as_deref()
-            .ok_or_else(|| {
-                IgpOracleError::Registry(format!(
-                    "origin chain {} has no interchainGasPaymaster address",
-                    target.origin.name
-                ))
-            })?;
-        let igp_address = parse_registry_address(igp_address_raw, "interchainGasPaymaster")?;
-        let endpoint = first_rpc(target)?;
-        let provider = build_provider(endpoint)?;
-        let igp = IInterchainGasPaymaster::new(igp_address, &provider);
-
-        let remote_domain = target.remote.domain_id;
-
-        let gas_oracle = igp
-            .destinationGasConfigs(remote_domain)
-            .call()
-            .await
-            .map_err(|err| {
-                IgpOracleError::OnchainRead(format!(
-                    "destinationGasConfigs eth_call failed for {}: {err}",
-                    target.origin.name
-                ))
-            })?
-            .gasOracle;
-        if gas_oracle == Address::ZERO {
-            return Err(IgpOracleError::OnchainRead(format!(
-                "IGP {igp_address} on {} has no gas oracle configured for remote domain {remote_domain}",
+pub async fn read_destination_gas_config(
+    target: &ReconciliationTarget,
+) -> Result<EvmDestinationGasConfig> {
+    let igp_address_raw = target
+        .origin_addresses
+        .interchain_gas_paymaster
+        .as_deref()
+        .ok_or_else(|| {
+            IgpOracleError::Registry(format!(
+                "origin chain {} has no interchainGasPaymaster address",
                 target.origin.name
-            )));
-        }
+            ))
+        })?;
+    let igp_address = parse_registry_address(igp_address_raw, "interchainGasPaymaster")?;
+    let endpoint = first_rpc(target)?;
+    let provider = build_provider(endpoint)?;
+    let igp = IInterchainGasPaymaster::new(igp_address, &provider);
 
-        let gas_limit: U256 = igp
-            .destinationGasLimit(remote_domain, U256::ZERO)
-            .call()
-            .await
-            .map_err(|err| {
-                IgpOracleError::OnchainRead(format!(
-                    "destinationGasLimit eth_call failed for {}: {err}",
-                    target.origin.name
-                ))
-            })?;
-        let gas_overhead: u64 = gas_limit.try_into().map_err(|err| {
+    let remote_domain = target.remote.domain_id;
+
+    let gas_oracle = igp
+        .destinationGasConfigs(remote_domain)
+        .call()
+        .await
+        .map_err(|err| {
             IgpOracleError::OnchainRead(format!(
-                "destinationGasLimit for remote domain {remote_domain} does not fit in u64: {err}"
+                "destinationGasConfigs eth_call failed for {}: {err}",
+                target.origin.name
+            ))
+        })?
+        .gasOracle;
+    if gas_oracle == Address::ZERO {
+        return Err(IgpOracleError::OnchainRead(format!(
+            "IGP {igp_address} on {} has no gas oracle configured for remote domain {remote_domain}",
+            target.origin.name
+        )));
+    }
+
+    let gas_limit: U256 = igp
+        .destinationGasLimit(remote_domain, U256::ZERO)
+        .call()
+        .await
+        .map_err(|err| {
+            IgpOracleError::OnchainRead(format!(
+                "destinationGasLimit eth_call failed for {}: {err}",
+                target.origin.name
+            ))
+        })?;
+    let gas_overhead: u64 = gas_limit.try_into().map_err(|err| {
+        IgpOracleError::OnchainRead(format!(
+            "destinationGasLimit for remote domain {remote_domain} does not fit in u64: {err}"
+        ))
+    })?;
+
+    Ok(EvmDestinationGasConfig {
+        endpoint: endpoint.to_string(),
+        igp_address: igp_address.to_string(),
+        gas_oracle: gas_oracle.to_string(),
+        gas_overhead,
+    })
+}
+
+pub async fn read_igp_config(target: &ReconciliationTarget) -> Result<IgpConfigRead> {
+    let destination_config = read_destination_gas_config(target).await?;
+    let gas_oracle: Address = destination_config.gas_oracle.parse().map_err(|err| {
+        IgpOracleError::OnchainRead(format!(
+            "gas oracle address {} is not parseable: {err}",
+            destination_config.gas_oracle
+        ))
+    })?;
+    let provider = build_provider(&destination_config.endpoint)?;
+    let contract = IStorageGasOracle::new(gas_oracle, &provider);
+    let remote_data = contract
+        .remoteGasData(target.remote.domain_id)
+        .call()
+        .await
+        .map_err(|err| {
+            IgpOracleError::OnchainRead(format!(
+                "remoteGasData eth_call failed for {}: {err}",
+                target.origin.name
             ))
         })?;
 
-        Ok(EvmDestinationGasConfig {
-            endpoint: endpoint.to_string(),
-            igp_address: igp_address.to_string(),
-            gas_oracle: gas_oracle.to_string(),
-            gas_overhead,
-        })
-    }
+    Ok(IgpConfigRead {
+        config: IgpConfig {
+            gas_price: remote_data.gasPrice.to_string(),
+            token_exchange_rate: remote_data.tokenExchangeRate.to_string(),
+            gas_overhead: destination_config.gas_overhead,
+        },
+        source: OnChainReadSource {
+            protocol: ChainProtocol::Ethereum,
+            endpoint: Some(destination_config.endpoint),
+            query: EVM_IGP_QUERY.to_string(),
+        },
+    })
+}
 
-    pub async fn read_igp_config(&self, target: &ReconciliationTarget) -> Result<IgpConfigRead> {
-        let destination_config = self.read_destination_gas_config(target).await?;
-        let gas_oracle: Address = destination_config.gas_oracle.parse().map_err(|err| {
-            IgpOracleError::OnchainRead(format!(
-                "gas oracle address {} is not parseable: {err}",
-                destination_config.gas_oracle
-            ))
-        })?;
-        let provider = build_provider(&destination_config.endpoint)?;
-        let contract = IStorageGasOracle::new(gas_oracle, &provider);
-        let remote_data = contract
-            .remoteGasData(target.remote.domain_id)
-            .call()
-            .await
-            .map_err(|err| {
-                IgpOracleError::OnchainRead(format!(
-                    "remoteGasData eth_call failed for {}: {err}",
-                    target.origin.name
-                ))
-            })?;
-
-        Ok(IgpConfigRead {
-            config: IgpConfig {
-                gas_price: remote_data.gasPrice.to_string(),
-                token_exchange_rate: remote_data.tokenExchangeRate.to_string(),
-                gas_overhead: destination_config.gas_overhead,
-            },
-            source: OnChainReadSource {
-                protocol: ChainProtocol::Ethereum,
-                endpoint: Some(destination_config.endpoint),
-                query: EVM_IGP_QUERY.to_string(),
-            },
-        })
-    }
-
-    pub async fn read_owner(&self, endpoint: &str, contract_address: &str) -> Result<String> {
-        let address: Address = contract_address.parse().map_err(|err| {
-            IgpOracleError::OnchainRead(format!(
-                "gas oracle address {contract_address} is not parseable: {err}"
-            ))
-        })?;
-        let provider = build_provider(endpoint)?;
-        let contract = IStorageGasOracle::new(address, &provider);
-        let owner = contract
-            .owner()
-            .call()
-            .await
-            .map_err(|err| IgpOracleError::OnchainRead(format!("owner eth_call failed: {err}")))?;
-        Ok(owner.to_string())
-    }
+pub async fn read_owner(endpoint: &str, contract_address: &str) -> Result<String> {
+    let address: Address = contract_address.parse().map_err(|err| {
+        IgpOracleError::OnchainRead(format!(
+            "gas oracle address {contract_address} is not parseable: {err}"
+        ))
+    })?;
+    let provider = build_provider(endpoint)?;
+    let contract = IStorageGasOracle::new(address, &provider);
+    let owner = contract
+        .owner()
+        .call()
+        .await
+        .map_err(|err| IgpOracleError::OnchainRead(format!("owner eth_call failed: {err}")))?;
+    Ok(owner.to_string())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -288,9 +278,7 @@ mod tests {
             gas_overhead: 1,
         };
 
-        let err = EvmIgpReader::new()
-            .expect("reader should build")
-            .read_igp_config(&target)
+        let err = read_igp_config(&target)
             .await
             .expect_err("missing IGP address should fail before any RPC call");
 

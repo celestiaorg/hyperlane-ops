@@ -767,7 +767,7 @@ The CLI must be deterministic, strongly validate integer values and policy bound
 
 ## Implementation Phases
 
-### Phase 0: Workflow Spec and Config
+### Phase 0: Workflow Spec and Config — shipped
 
 - finalize target config schema
 - confirm v1 origin and remote chains
@@ -776,7 +776,7 @@ The CLI must be deterministic, strongly validate integer values and policy bound
 - define normalized metadata and chain adapter traits
 - define GitHub workflow inputs and environment protection
 
-### Phase 1: Dry-Run CLI
+### Phase 1: Dry-Run CLI — shipped
 
 Deliver:
 
@@ -793,7 +793,7 @@ Exit criteria:
 
 - scheduled dry-run can identify update recommendations without signer secrets
 
-### Phase 2: Notification Workflow
+### Phase 2: Notification Workflow — pending
 
 Deliver:
 
@@ -806,43 +806,53 @@ Exit criteria:
 
 - operators are notified only when action is needed or the job fails
 
-### Phase 3: Manual Celestia Write
+### Phase 3: Manual Celestia Write — shipped (verification partial)
 
 Deliver:
 
-- `--write` for one Celestia origin and one remote target
-- `--generate-only` support where useful
-- post-write readback and verification
-- protected GitHub environment for write mode
+- `--write` for one Celestia origin and one remote target — done via
+  `celestia-grpc`
+- `--generate-only` support where useful — done; can model multi-message
+  cosmosnative writes
+- post-write readback and verification — `CosmosNativeAdapter::verify_update`
+  is not yet implemented; operators currently re-run `--dry-run` to confirm
+  on-chain state
+- protected GitHub environment for write mode — pending Phase 2
 
 Exit criteria:
 
-- an operator can safely update one Celestia IGP destination gas config through workflow dispatch
+- an operator can safely update one Celestia IGP destination gas config
+  through workflow dispatch — manual-CLI path is verified; workflow dispatch
+  pending Phase 2
 
-### Phase 4: EVM Read Support
+### Phase 4: EVM Read Support — shipped
 
 Deliver:
 
-- IGP and gas oracle discovery
-- dry-run transaction planning for `StorageGasOracle.setRemoteGasData`
-- ownership validation before submission
+- IGP and gas oracle discovery — done via `alloy::sol!` typed contract reads
+- dry-run transaction planning for `StorageGasOracle.setRemoteGasData` — done
+- ownership validation before submission — done
 
 Exit criteria:
 
 - operators can review proposed EVM IGP token exchange rate and gas price
   updates without writing
 
-### Phase 5: EVM Write Support
+### Phase 5: EVM Write Support — shipped (verification partial)
 
 Deliver:
 
-- direct allowlisted setter calls
-- post-write verification
-- single-target workflow dispatch
+- direct allowlisted setter calls — `setRemoteGasData` via `alloy`
+- post-write verification — `EvmAdapter::verify_update` is implemented
+  (re-reads `remoteGasData`, compares against proposed) but is not yet
+  auto-invoked from `submit_write_plan`; operators currently re-run
+  `--dry-run` to confirm
+- single-target workflow dispatch — pending Phase 2
 
 Exit criteria:
 
-- supported EVM-origin IGP configs can be updated without touching broader core config
+- supported EVM-origin IGP configs can be updated without touching broader
+  core config — verified end-to-end against an anvil devnet
 
 ## Open Questions
 

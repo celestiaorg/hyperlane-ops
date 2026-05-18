@@ -131,7 +131,7 @@ async fn prepare_origin_targets(
         return expand_operator_domains(work_item, registry, args, adapter, domains).await;
     }
 
-    if adapter.supports_destination_config_discovery() {
+    if adapter.protocol() == ChainProtocol::CosmosNative {
         let configured = adapter
             .list_igp_destination_configs(&work_item.origin, &work_item.origin_addresses)
             .await?;
@@ -256,7 +256,7 @@ async fn reconcile_prepared(
                         Ok(reconciled) => reconciled,
                         Err((target, current_read, err)) => {
                             let artifact =
-                                error_target_artifact(&target, current_read, config, &err);
+                                error_target_artifact(&target, current_read, &err);
                             target_artifacts.push(artifact);
                             continue;
                         }
@@ -292,7 +292,7 @@ async fn reconcile_prepared(
                 } => {
                     resolved_count += 1;
                     target_artifacts
-                        .push(target_read_error_artifact(&target, config, status, reason));
+                        .push(target_read_error_artifact(&target, status, reason));
                 }
             }
         }
@@ -392,6 +392,7 @@ async fn reconcile_target(
         &target,
         &current_read.config,
         &config.defaults,
+        &config.market_data,
         gas_adapter,
         price_adapter,
     )
@@ -425,8 +426,9 @@ async fn reconcile_target(
 
     let artifact = target_artifact(TargetArtifactInput {
         target: &target,
-        config,
-        proposal: Some(proposal),
+        gas: Some(proposal.gas),
+        prices: Some(proposal.prices),
+        proposed: Some(proposal.proposed),
         current_read: Some(current_read),
         deltas,
         tx: tx.clone(),
@@ -444,13 +446,13 @@ async fn reconcile_target(
 fn error_target_artifact(
     target: &crate::models::ReconciliationTarget,
     current_read: crate::models::IgpConfigRead,
-    config: &UpdaterConfig,
     err: &IgpOracleError,
 ) -> crate::artifacts::TargetPlanArtifact {
     target_artifact(TargetArtifactInput {
         target,
-        config,
-        proposal: None,
+        gas: None,
+        prices: None,
+        proposed: None,
         current_read: Some(current_read),
         deltas: None,
         tx: None,
@@ -467,14 +469,14 @@ fn error_target_artifact(
 
 fn target_read_error_artifact(
     target: &crate::models::ReconciliationTarget,
-    config: &UpdaterConfig,
     status: DecisionStatus,
     reason: String,
 ) -> crate::artifacts::TargetPlanArtifact {
     target_artifact(TargetArtifactInput {
         target,
-        config,
-        proposal: None,
+        gas: None,
+        prices: None,
+        proposed: None,
         current_read: None,
         deltas: None,
         tx: None,
@@ -732,10 +734,6 @@ mod tests {
     impl ChainAdapter for NoDiscoveryChainAdapter {
         fn protocol(&self) -> ChainProtocol {
             self.protocol
-        }
-
-        fn supports_destination_config_discovery(&self) -> bool {
-            false
         }
 
         async fn list_igp_destination_configs(

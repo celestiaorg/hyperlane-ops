@@ -24,10 +24,6 @@ pub enum SignerAuthStatus {
 pub trait ChainAdapter: Send + Sync {
     fn protocol(&self) -> ChainProtocol;
 
-    fn supports_destination_config_discovery(&self) -> bool {
-        true
-    }
-
     async fn list_igp_destination_configs(
         &self,
         origin: &ChainMetadata,

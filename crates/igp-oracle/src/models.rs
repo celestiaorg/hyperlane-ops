@@ -207,15 +207,3 @@ pub struct ReconciliationDelta {
     pub gas_overhead_bps: Option<u128>,
 }
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ProposalComputation {
-    pub proposed: IgpConfig,
-    pub gas: Option<GasPriceSample>,
-    pub gas_mode: String,
-    pub origin_price_usd: String,
-    pub remote_price_usd: String,
-    pub origin_native_token_decimals: u8,
-    pub remote_native_token_decimals: u8,
-    pub token_decimal_adjustment: String,
-}

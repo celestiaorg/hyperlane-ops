@@ -5,11 +5,12 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
+use alloy::providers::{Provider, ProviderBuilder};
 use async_trait::async_trait;
 use reqwest::Client;
 use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::{
     adapter::{GasAdapter, PriceAdapter},
@@ -189,22 +190,12 @@ struct CoinGeckoPrice {
     last_updated_at: Option<u64>,
 }
 
-#[derive(Debug, Clone)]
-pub struct ProtocolGasAdapter {
-    client: Client,
-}
+#[derive(Debug, Clone, Default)]
+pub struct ProtocolGasAdapter;
 
 impl ProtocolGasAdapter {
     pub fn new() -> Self {
-        Self {
-            client: http_client().expect("static user agent must build a reqwest client"),
-        }
-    }
-}
-
-impl Default for ProtocolGasAdapter {
-    fn default() -> Self {
-        Self::new()
+        Self
     }
 }
 
@@ -233,57 +224,20 @@ impl ProtocolGasAdapter {
             .http
             .clone();
 
-        let response: JsonRpcResponse = self
-            .client
-            .post(&rpc_url)
-            .json(&JsonRpcRequest {
-                jsonrpc: "2.0",
-                method: "eth_gasPrice",
-                params: Vec::<String>::new(),
-                id: 1,
-            })
-            .send()
-            .await
-            .map_err(|source| {
-                IgpOracleError::GasData(format!(
-                    "eth_gasPrice request failed for {}: {source}",
-                    target.remote.name
-                ))
-            })?
-            .error_for_status()
-            .map_err(|source| {
-                IgpOracleError::GasData(format!(
-                    "eth_gasPrice HTTP error for {}: {source}",
-                    target.remote.name
-                ))
-            })?
-            .json()
-            .await
-            .map_err(|source| {
-                IgpOracleError::GasData(format!(
-                    "eth_gasPrice response parse failed for {}: {source}",
-                    target.remote.name
-                ))
-            })?;
-
-        if let Some(error) = response.error {
-            return Err(IgpOracleError::GasData(format!(
-                "eth_gasPrice RPC error for {}: {}",
-                target.remote.name, error.message
-            )));
-        }
-
-        let raw_amount = response.result.ok_or_else(|| {
+        let url = rpc_url.parse().map_err(|err| {
+            IgpOracleError::GasData(format!("invalid EVM RPC URL {rpc_url}: {err}"))
+        })?;
+        let provider = ProviderBuilder::new().connect_http(url);
+        let sampled_gas_price = provider.get_gas_price().await.map_err(|err| {
             IgpOracleError::GasData(format!(
-                "eth_gasPrice response for {} had no result",
+                "eth_gasPrice failed for {}: {err}",
                 target.remote.name
             ))
         })?;
-        let sampled_gas_price = parse_hex_u128(&raw_amount)?;
 
         Ok(GasPriceSample {
             source: "rpc".to_string(),
-            raw_amount: Some(raw_amount),
+            raw_amount: Some(format!("{sampled_gas_price:#x}")),
             raw_denom: Some(
                 target
                     .remote
@@ -326,13 +280,6 @@ fn registry_cosmos_gas_price(target: &ReconciliationTarget) -> Result<GasPriceSa
         rounding,
         reason,
         endpoint: None,
-    })
-}
-
-pub fn parse_hex_u128(value: &str) -> Result<u128> {
-    let value = value.strip_prefix("0x").unwrap_or(value);
-    u128::from_str_radix(value, 16).map_err(|source| {
-        IgpOracleError::DataSource(format!("invalid hex integer {value}: {source}"))
     })
 }
 
@@ -382,25 +329,6 @@ fn asset_ids<'a>(assets: impl IntoIterator<Item = (&'a String, &'a String)>) -> 
         .join(",")
 }
 
-#[derive(Debug, Serialize)]
-struct JsonRpcRequest<'a, T> {
-    jsonrpc: &'a str,
-    method: &'a str,
-    params: T,
-    id: u64,
-}
-
-#[derive(Debug, Deserialize)]
-struct JsonRpcResponse {
-    result: Option<String>,
-    error: Option<JsonRpcError>,
-}
-
-#[derive(Debug, Deserialize)]
-struct JsonRpcError {
-    message: String,
-}
-
 #[cfg(test)]
 mod tests {
     use rust_decimal::Decimal;
@@ -445,11 +373,6 @@ mod tests {
             ),
             "celestia,ethereum"
         );
-    }
-
-    #[test]
-    fn parses_evm_hex_gas_price() {
-        assert_eq!(parse_hex_u128("0x3b9aca00").expect("hex"), 1_000_000_000);
     }
 
     #[test]

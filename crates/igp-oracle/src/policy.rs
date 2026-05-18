@@ -3,39 +3,30 @@ use serde::Serialize;
 
 use crate::{
     adapter::{GasAdapter, PriceAdapter},
-    config::{ClampConfig, DefaultsConfig, GasMode},
+    artifacts::{GasInputsArtifact, PriceInputsArtifact},
+    config::{ClampConfig, DefaultsConfig, GasMode, MarketDataConfig},
     data::{decimal_str_to_ceil_u128, decimal_to_ceil_u128},
     error::{IgpOracleError, Result},
-    models::{
-        IgpConfig, ProposalComputation, ReconciliationDelta,
-        ReconciliationTarget,
-    },
+    models::{IgpConfig, ReconciliationDelta, ReconciliationTarget},
 };
 
 const TOKEN_EXCHANGE_RATE_SCALE: u64 = 10_000_000_000;
 const BPS_DENOMINATOR: u64 = 10_000;
 
-pub async fn compute_proposed_config(
-    target: &ReconciliationTarget,
-    current: &IgpConfig,
-    defaults: &DefaultsConfig,
-    gas_adapter: &dyn GasAdapter,
-    price_adapter: &dyn PriceAdapter,
-) -> Result<IgpConfig> {
-    Ok(
-        compute_proposal(target, current, defaults, gas_adapter, price_adapter)
-            .await?
-            .proposed,
-    )
+pub struct Proposal {
+    pub proposed: IgpConfig,
+    pub gas: GasInputsArtifact,
+    pub prices: PriceInputsArtifact,
 }
 
 pub async fn compute_proposal(
     target: &ReconciliationTarget,
     current: &IgpConfig,
     defaults: &DefaultsConfig,
+    market_data: &MarketDataConfig,
     gas_adapter: &dyn GasAdapter,
     price_adapter: &dyn PriceAdapter,
-) -> Result<ProposalComputation> {
+) -> Result<Proposal> {
     let origin_price = price_adapter
         .native_token_price_usd(&target.origin.name)
         .await?;
@@ -78,23 +69,54 @@ pub async fn compute_proposal(
         &target.config.exchange_rate.max,
     )?;
 
-    Ok(ProposalComputation {
-        proposed: IgpConfig {
-            gas_price,
-            token_exchange_rate: exchange_rate.to_string(),
-            gas_overhead: target.gas_overhead,
+    let gas_mode = match target.config.gas.mode {
+        GasMode::Sample => "sample",
+        GasMode::Preserve => "preserve",
+    };
+    let proposed = IgpConfig {
+        gas_price,
+        token_exchange_rate: exchange_rate.to_string(),
+        gas_overhead: target.gas_overhead,
+    };
+    let gas = match gas_sample {
+        Some(sample) => GasInputsArtifact {
+            mode: gas_mode.to_string(),
+            source: Some(sample.source),
+            raw_amount: sample.raw_amount,
+            raw_denom: sample.raw_denom,
+            sampled_gas_price: sample.sampled_gas_price,
+            proposed_gas_price: proposed.gas_price.clone(),
+            rounding: sample.rounding,
+            reason: sample.reason,
+            endpoint: sample.endpoint,
         },
-        gas: gas_sample,
-        gas_mode: match target.config.gas.mode {
-            GasMode::Sample => "sample",
-            GasMode::Preserve => "preserve",
-        }
-        .to_string(),
+        None => GasInputsArtifact {
+            mode: gas_mode.to_string(),
+            source: None,
+            raw_amount: None,
+            raw_denom: None,
+            sampled_gas_price: proposed.gas_price.clone(),
+            proposed_gas_price: proposed.gas_price.clone(),
+            rounding: None,
+            reason: None,
+            endpoint: None,
+        },
+    };
+    let prices = PriceInputsArtifact {
+        price_provider: market_data.provider.clone(),
+        origin_market_asset: market_data.assets.get(&target.origin.name).cloned(),
+        remote_market_asset: market_data.assets.get(&target.remote.name).cloned(),
         origin_price_usd: origin_price.to_string(),
         remote_price_usd: remote_price.to_string(),
         origin_native_token_decimals: target.origin.native_token.decimals,
         remote_native_token_decimals: target.remote.native_token.decimals,
         token_decimal_adjustment: token_decimal_adjustment.to_string(),
+    };
+
+    Ok(Proposal {
+        proposed,
+        gas,
+        prices,
     })
 }
 
@@ -469,19 +491,20 @@ mod tests {
         prices.insert("origin".to_string(), Decimal::from(2));
         prices.insert("remote".to_string(), Decimal::from(4));
 
-        let proposed = compute_proposed_config(
+        let proposal = compute_proposal(
             &target,
             &current_config(),
             &defaults,
+            &test_market_data(),
             &StaticGasAdapter(100),
             &StaticPriceAdapter(prices),
         )
         .await
         .expect("proposal");
 
-        assert_eq!(proposed.gas_price, "110");
-        assert_eq!(proposed.token_exchange_rate, "22000000000");
-        assert_eq!(proposed.gas_overhead, 174_289);
+        assert_eq!(proposal.proposed.gas_price, "110");
+        assert_eq!(proposal.proposed.token_exchange_rate, "22000000000");
+        assert_eq!(proposal.proposed.gas_overhead, 174_289);
     }
 
     #[tokio::test]
@@ -505,6 +528,7 @@ mod tests {
             &target,
             &current_config(),
             &defaults,
+            &test_market_data(),
             &StaticGasAdapter(300_000_000),
             &StaticPriceAdapter(prices),
         )
@@ -514,9 +538,9 @@ mod tests {
         assert_eq!(proposal.proposed.gas_price, "300000000");
         assert_eq!(proposal.proposed.token_exchange_rate, "100");
         assert_eq!(proposal.proposed.gas_overhead, 174_289);
-        assert_eq!(proposal.origin_native_token_decimals, 6);
-        assert_eq!(proposal.remote_native_token_decimals, 18);
-        assert_eq!(proposal.token_decimal_adjustment, "0.000000000001");
+        assert_eq!(proposal.prices.origin_native_token_decimals, 6);
+        assert_eq!(proposal.prices.remote_native_token_decimals, 18);
+        assert_eq!(proposal.prices.token_decimal_adjustment, "0.000000000001");
     }
 
     #[tokio::test]
@@ -543,6 +567,7 @@ mod tests {
             &target,
             &current,
             &defaults,
+            &test_market_data(),
             &FailingGasAdapter,
             &StaticPriceAdapter(prices),
         )
@@ -552,8 +577,8 @@ mod tests {
             decide_reconciliation(&current, &proposal.proposed, &defaults).expect("decision");
 
         assert_eq!(proposal.proposed.gas_price, "300000000");
-        assert_eq!(proposal.gas_mode, "preserve");
-        assert!(proposal.gas.is_none());
+        assert_eq!(proposal.gas.mode, "preserve");
+        assert!(proposal.gas.source.is_none());
         assert_eq!(decision.deltas.gas_price_bps, Some(0));
     }
 
@@ -623,6 +648,7 @@ mod tests {
             &target,
             &current_config(),
             &defaults,
+            &test_market_data(),
             &StaticGasAdapter(reference_gas_price),
             &StaticPriceAdapter(prices),
         )
@@ -720,6 +746,15 @@ mod tests {
                 },
             },
             gas_overhead: 174_289,
+        }
+    }
+
+    fn test_market_data() -> MarketDataConfig {
+        MarketDataConfig {
+            provider: "coingecko".to_string(),
+            cache_ttl_seconds: 60,
+            stale_after_seconds: 300,
+            assets: BTreeMap::new(),
         }
     }
 
